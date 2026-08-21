@@ -1,6 +1,6 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════
-# 🌀 UzumakiClash - Smart Config Optimizer
+# 🌀 UzumakiClash - Bulletproof Config Optimizer
 # ═══════════════════════════════════════════════
 
 echo "Content-Type: text/plain"
@@ -8,15 +8,20 @@ echo ""
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
     TMP="/tmp/uzcfg_$$.yaml"
+    TMP_CLEAN="/tmp/uzcfg_clean_$$.yaml"
     trap "rm -f ${TMP}* /tmp/uzcfg_err.log" EXIT
     cat > "$TMP"
     
     if [ -s "$TMP" ]; then
+        # ১. অপ্রয়োজনীয় ব্রোকেন রুলস ক্লিন করা
         sed -i '/GEOIP,BD,DIRECT/d' "$TMP"
         sed -i '/GEOIP,LAN,DIRECT/d' "$TMP"
-        
-        set_kv() {
-            local k="$1" v="$2"
+        sed -i '/GEOSITE,category-ads-all,REJECT/d' "$TMP"
+
+        # ২. টপ-লেভেল কি (Key) ভ্যালু সেফলি অ্যাড/আপডেট করা
+        set_top_key() {
+            local k="$1"
+            local v="$2"
             if grep -q "^${k}:" "$TMP"; then
                 sed -i "s|^${k}:.*|${k}: ${v}|g" "$TMP"
             else
@@ -24,21 +29,21 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
             fi
         }
 
-        set_kv "tproxy-port" "7893"
-        set_kv "mixed-port" "7890"
-        set_kv "allow-lan" "true"
-        set_kv "bind-address" "'*'"
-        set_kv "mode" "rule"
-        set_kv "log-level" "error"
-        set_kv "ipv6" "false"
-        set_kv "tcp-concurrent" "true"
-        set_kv "unified-delay" "true"
+        set_top_key "tproxy-port" "7893"
+        set_top_key "mixed-port" "7890"
+        set_top_key "allow-lan" "true"
+        set_top_key "bind-address" "'*'"
+        set_top_key "mode" "rule"
+        set_top_key "log-level" "error"
+        set_top_key "ipv6" "false"
+        set_top_key "tcp-concurrent" "true"
+        set_top_key "unified-delay" "true"
 
         grep -q '^external-controller:' "$TMP" || echo 'external-controller: 0.0.0.0:9595' >> "$TMP"
         grep -q '^external-ui:' "$TMP" || echo 'external-ui: /etc/mihomo/ui' >> "$TMP"
         grep -q '^secret:' "$TMP" || echo 'secret: "flclash123"' >> "$TMP"
-        grep -q '^geodata-mode:' "$TMP" || echo 'geodata-mode: true' >> "$TMP"
 
+        # ৩. ডিএনএস ইঞ্জিন ভ্যালিডেশন
         if ! grep -q '^dns:' "$TMP"; then
             cat >> "$TMP" << 'DEOF'
 
@@ -66,34 +71,41 @@ dns:
     - tls://1.1.1.1:853
     - tls://dns.google:853
 DEOF
+        else
+            sed -i 's/enhanced-mode: redir-host/enhanced-mode: fake-ip/g' "$TMP"
         fi
 
+        # ৪. স্মার্ট বাংলাদেশি সার্ভিস বাইপাস রুলস (নিখুঁত ইন্ডেন্টেশনসহ)
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
         LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
 
         if grep -q '^rules:' "$TMP" && ! grep -q "Uzumaki Smart Routing" "$TMP"; then
-            sed -i "/^rules:/a\\
-  # Uzumaki Smart Routing\\
-  - 'IP-CIDR,$LAN_NET,DIRECT,no-resolve'\\
-  - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'\\
-  - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'\\
-  - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'\\
-  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'\\
-  - 'DOMAIN-SUFFIX,local,DIRECT'\\
-  - 'DOMAIN-SUFFIX,lan,DIRECT'\\
-  - 'DST-PORT,9595,DIRECT'\\
-  # Bangladesh Banking & Apps (Direct)\\
-  - 'DOMAIN-SUFFIX,bd,DIRECT'\\
-  - 'DOMAIN-KEYWORD,bkash,DIRECT'\\
-  - 'DOMAIN-KEYWORD,nagad,DIRECT'\\
-  - 'DOMAIN-KEYWORD,rocket,DIRECT'\\
-  - 'DOMAIN-KEYWORD,daraz,DIRECT'\\
-  - 'DOMAIN-KEYWORD,pathao,DIRECT'\\
-  - 'DOMAIN-KEYWORD,foodpanda,DIRECT'\\
-  - 'DOMAIN-KEYWORD,chorki,DIRECT'\\
-  - 'DOMAIN-KEYWORD,hoichoi,DIRECT'" "$TMP"
+            awk -v lan="$LAN_NET" '
+            /^rules:/ {
+                print $0
+                print "  # Uzumaki Smart Routing"
+                print "  - IP-CIDR," lan ",DIRECT,no-resolve"
+                print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
+                print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
+                print "  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
+                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+                print "  - DOMAIN-SUFFIX,local,DIRECT"
+                print "  - DOMAIN-SUFFIX,lan,DIRECT"
+                print "  - DST-PORT,9595,DIRECT"
+                print "  - DOMAIN-SUFFIX,bd,DIRECT"
+                print "  - DOMAIN-KEYWORD,bkash,DIRECT"
+                print "  - DOMAIN-KEYWORD,nagad,DIRECT"
+                print "  - DOMAIN-KEYWORD,rocket,DIRECT"
+                print "  - DOMAIN-KEYWORD,daraz,DIRECT"
+                print "  - DOMAIN-KEYWORD,chorki,DIRECT"
+                print "  - DOMAIN-KEYWORD,hoichoi,DIRECT"
+                next
+            }
+            { print }
+            ' "$TMP" > "$TMP_CLEAN" && mv "$TMP_CLEAN" "$TMP"
         fi
 
+        # ৫. Mihomo কোর দিয়ে ভ্যালিডেশন টেস্ট
         if /usr/bin/mihomo -d /etc/mihomo -f "$TMP" -t 2>/tmp/uzcfg_err.log; then
             cp /etc/mihomo/config.yaml /etc/mihomo/config.yaml.bak 2>/dev/null
             mv "$TMP" /etc/mihomo/config.yaml
@@ -102,7 +114,7 @@ DEOF
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
-            ERR=$(head -n 3 /tmp/uzcfg_err.log 2>/dev/null)
+            ERR=$(head -n 5 /tmp/uzcfg_err.log 2>/dev/null)
             echo "INVALID YAML: $ERR"
         fi
     else
