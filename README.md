@@ -68,16 +68,18 @@ A modern transparent gateway powered by Mihomo (Clash.Meta) Core. Engineered spe
 
 ## 📊 Why UzumakiClash?
 
-| Feature / Metric | 🐢 Traditional OpenClash | 🦕 DinoClash | 🌀 UzumakiClash |
-|---|:---:|:---:|:---:|
-| **RAM Footprint** | `70MB - 150MB+` | `~25MB` | **`~20MB - 30MB` (Locked)** |
-| **Boot Startup Time** | `15 - 30s` | `3 - 5s` | **`~1.2s` (Instant)** |
-| **Stop Teardown Time** | `5 - 10s` | `2 - 3s` | **`~0.5s` (Instant)** |
-| **Firewall Engine** | Heavy Multi-Chain | Redir NAT | **Universal TPROXY (TCP+UDP)** |
-| **DNS Engine** | Dnsmasq Bound | redir-host | **Zero-Loop Fake-IP + DoH** |
-| **Device ACL (Whitelist)**| Complex | ❌ Not available | **✅ 1-Click IP Bypass** |
-| **Next-Gen Protocols** | Manual Setup | Basic | **VLESS Reality, Hysteria 2, TUIC v5** |
-| **Package Compatibility**| `opkg` only | `opkg` + `apk` | **Universal (v19 to v25+)** |
+UzumakiClash is designed specifically for routers with limited hardware resources, focusing on stability, low memory usage, and zero DNS issues.
+
+| Feature / Metric | Specifications & Capabilities |
+|---|---|
+| **RAM Footprint** | `~20MB - 30MB` (Ultra-low memory guardian) |
+| **Boot Startup Time** | `~1.2 Seconds` (Instant atomic injection) |
+| **Stop Teardown Time** | `~0.5 Seconds` (Instant clean release) |
+| **Firewall Engine** | Universal L4 TPROXY (TCP + UDP) with nftables & iptables fallback |
+| **DNS Architecture** | Zero-Loop Fake-IP (`198.18.0.0/15`) + Encrypted DoH Fallback |
+| **Access Control (ACL)**| 1-Click Device LAN IP Whitelist Bypass |
+| **Next-Gen Protocols** | VLESS-Reality, Hysteria 2 (UDP Turbo), TUIC v5, Trojan, VMess |
+| **OpenWrt Compatibility**| Universal support from v19.07 to v25+ (opkg and apk) |
 
 ---
 
@@ -106,16 +108,22 @@ A modern transparent gateway powered by Mihomo (Clash.Meta) Core. Engineered spe
 
 ---
 
-## 🚀 1-Click Universal Installation
+## 🚀 Installation
 
-Connect to your OpenWrt router via **SSH (PuTTY or Terminal)** and run:
+### 1. OpenWrt v19 - v24 (`opkg`):
 
-### Method 1: Using `curl` (Recommended)
 ```bash
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash/main/install.sh)"
+opkg update && opkg install curl ca-bundle ca-certificates && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash/main/install.sh)"
 ```
 
-### Method 2: Using `wget` (Fallback for clean OpenWrt installs)
+### 2. OpenWrt v25+ / Snapshot (`apk`):
+
+```bash
+apk update && apk add curl ca-bundle ca-certificates && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash/main/install.sh)"
+```
+
+### 3. Universal Fallback (`wget` — Works on all versions without curl):
+
 ```bash
 sh -c "$(wget -qO- --no-check-certificate https://raw.githubusercontent.com/jahid421/UzumakiClash/main/install.sh)"
 ```
