@@ -36,3 +36,20 @@ Run this command inside your OpenWrt Terminal (SSH):
 
 ```bash
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash/main/install.sh)"
+```
+## 🗑️ 1-Click Complete Uninstall
+
+To cleanly remove UzumakiClash and restore default network routing:
+
+```bash
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash/main/uninstall.sh)"
+```
+
+
+
+
+
+
+
+
+
