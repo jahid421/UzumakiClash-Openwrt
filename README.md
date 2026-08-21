@@ -113,19 +113,19 @@ UzumakiClash is designed specifically for routers with limited hardware resource
 ### 1. OpenWrt v19 - v24 (`opkg`):
 
 ```bash
-opkg update && opkg install curl ca-bundle ca-certificates && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash/main/install.sh)"
+opkg update && opkg install curl ca-bundle ca-certificates && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/install.sh)"
 ```
 
 ### 2. OpenWrt v25+ / Snapshot (`apk`):
 
 ```bash
-apk update && apk add curl ca-bundle ca-certificates && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash/main/install.sh)"
+apk update && apk add curl ca-bundle ca-certificates && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/install.sh)"
 ```
 
 ### 3. Universal Fallback (`wget` — Works on all versions without curl):
 
 ```bash
-sh -c "$(wget -qO- --no-check-certificate https://raw.githubusercontent.com/jahid421/UzumakiClash/main/install.sh)"
+sh -c "$(wget -qO- --no-check-certificate https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/install.sh)"
 ```
 
 ---
@@ -254,7 +254,7 @@ To keep your GeoIP database and sub-rules updated automatically every night at 4
 To cleanly purge UzumakiClash, restore native firewall rules, and delete all residual data:
 
 ```bash
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash/main/uninstall.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/uninstall.sh)"
 ```
 
 ---
