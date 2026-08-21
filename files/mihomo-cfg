@@ -1,0 +1,113 @@
+#!/bin/sh
+# ═══════════════════════════════════════════════
+# 🌀 UzumakiClash - Smart Config Optimizer
+# ═══════════════════════════════════════════════
+
+echo "Content-Type: text/plain"
+echo ""
+
+if [ "$REQUEST_METHOD" = "POST" ]; then
+    TMP="/tmp/uzcfg_$$.yaml"
+    trap "rm -f ${TMP}* /tmp/uzcfg_err.log" EXIT
+    cat > "$TMP"
+    
+    if [ -s "$TMP" ]; then
+        sed -i '/GEOIP,BD,DIRECT/d' "$TMP"
+        sed -i '/GEOIP,LAN,DIRECT/d' "$TMP"
+        
+        set_kv() {
+            local k="$1" v="$2"
+            if grep -q "^${k}:" "$TMP"; then
+                sed -i "s|^${k}:.*|${k}: ${v}|g" "$TMP"
+            else
+                sed -i "1s|^|${k}: ${v}\n|" "$TMP"
+            fi
+        }
+
+        set_kv "tproxy-port" "7893"
+        set_kv "mixed-port" "7890"
+        set_kv "allow-lan" "true"
+        set_kv "bind-address" "'*'"
+        set_kv "mode" "rule"
+        set_kv "log-level" "error"
+        set_kv "ipv6" "false"
+        set_kv "tcp-concurrent" "true"
+        set_kv "unified-delay" "true"
+
+        grep -q '^external-controller:' "$TMP" || echo 'external-controller: 0.0.0.0:9595' >> "$TMP"
+        grep -q '^external-ui:' "$TMP" || echo 'external-ui: /etc/mihomo/ui' >> "$TMP"
+        grep -q '^secret:' "$TMP" || echo 'secret: "flclash123"' >> "$TMP"
+        grep -q '^geodata-mode:' "$TMP" || echo 'geodata-mode: true' >> "$TMP"
+
+        if ! grep -q '^dns:' "$TMP"; then
+            cat >> "$TMP" << 'DEOF'
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - 'time.*.com'
+    - 'ntp.*.com'
+    - '+.pool.ntp.org'
+    - '+.stun.*.*'
+    - '+.whatsapp.com'
+  default-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  nameserver:
+    - https://1.1.1.1/dns-query
+    - https://dns.google/dns-query
+  fallback:
+    - tls://1.1.1.1:853
+    - tls://dns.google:853
+DEOF
+        fi
+
+        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
+        LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
+
+        if grep -q '^rules:' "$TMP" && ! grep -q "Uzumaki Smart Routing" "$TMP"; then
+            sed -i "/^rules:/a\\
+  # Uzumaki Smart Routing\\
+  - 'IP-CIDR,$LAN_NET,DIRECT,no-resolve'\\
+  - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'\\
+  - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'\\
+  - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'\\
+  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'\\
+  - 'DOMAIN-SUFFIX,local,DIRECT'\\
+  - 'DOMAIN-SUFFIX,lan,DIRECT'\\
+  - 'DST-PORT,9595,DIRECT'\\
+  # Bangladesh Banking & Apps (Direct)\\
+  - 'DOMAIN-SUFFIX,bd,DIRECT'\\
+  - 'DOMAIN-KEYWORD,bkash,DIRECT'\\
+  - 'DOMAIN-KEYWORD,nagad,DIRECT'\\
+  - 'DOMAIN-KEYWORD,rocket,DIRECT'\\
+  - 'DOMAIN-KEYWORD,daraz,DIRECT'\\
+  - 'DOMAIN-KEYWORD,pathao,DIRECT'\\
+  - 'DOMAIN-KEYWORD,foodpanda,DIRECT'\\
+  - 'DOMAIN-KEYWORD,chorki,DIRECT'\\
+  - 'DOMAIN-KEYWORD,hoichoi,DIRECT'" "$TMP"
+        fi
+
+        if /usr/bin/mihomo -d /etc/mihomo -f "$TMP" -t 2>/tmp/uzcfg_err.log; then
+            cp /etc/mihomo/config.yaml /etc/mihomo/config.yaml.bak 2>/dev/null
+            mv "$TMP" /etc/mihomo/config.yaml
+            echo "1" > /etc/mihomo/transparent
+            echo "1" > /etc/mihomo/enabled
+            /etc/init.d/mihomo restart >/dev/null 2>&1
+            echo "SAVED"
+        else
+            ERR=$(head -n 3 /tmp/uzcfg_err.log 2>/dev/null)
+            echo "INVALID YAML: $ERR"
+        fi
+    else
+        echo "EMPTY"
+    fi
+else
+    cat /etc/mihomo/config.yaml 2>/dev/null
+fi
