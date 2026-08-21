@@ -9,43 +9,96 @@ echo ""
 if [ "$REQUEST_METHOD" = "POST" ]; then
     TMP="/tmp/uzcfg_$$.yaml"
     TMP_CLEAN="/tmp/uzcfg_clean_$$.yaml"
-    trap "rm -f ${TMP}* /tmp/uzcfg_err.log" EXIT
-    cat > "$TMP"
+    TMP_FINAL="/tmp/uzcfg_final_$$.yaml"
+    
+    trap "rm -f /tmp/uzcfg_*_$$.yaml /tmp/uzcfg_err.log" EXIT
+    
+    # ১. উইন্ডোজ হিডেন ক্যারেক্টার (\r) রিমুভ করে পিওর ইউনিক্স ফাইলে রূপান্তর
+    tr -d '\r' > "$TMP"
     
     if [ -s "$TMP" ]; then
-        # ১. অপ্রয়োজনীয় ব্রোকেন রুলস ক্লিন করা
-        sed -i '/GEOIP,BD,DIRECT/d' "$TMP"
-        sed -i '/GEOIP,LAN,DIRECT/d' "$TMP"
-        sed -i '/GEOSITE,category-ads-all,REJECT/d' "$TMP"
+        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
+        LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
 
-        # ২. টপ-লেভেল কি (Key) ভ্যালু সেফলি অ্যাড/আপডেট করা
-        set_top_key() {
-            local k="$1"
-            local v="$2"
-            if grep -q "^${k}:" "$TMP"; then
-                sed -i "s|^${k}:.*|${k}: ${v}|g" "$TMP"
-            else
-                sed -i "1s|^|${k}: ${v}\n|" "$TMP"
-            fi
+        # ২. ইউজার কনফিগ থেকে কনফ্লিক্টিং সিস্টেম ব্লকগুলো বাদ দিয়ে নোড ও রুলস ক্লিন করা
+        awk '
+        BEGIN { skip=0 }
+        /^[a-zA-Z0-9_-]+:/ {
+            key = $1
+            if (key ~ /^(tproxy-port|mixed-port|redir-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|tcp-concurrent|unified-delay|geodata-mode|profile|sniffer|dns):/) {
+                skip=1
+            } else {
+                skip=0
+            }
         }
+        {
+            if (!skip) {
+                # ব্রোকেন ক্র্যাশ রুলস বাদ দেওয়া
+                if ($0 !~ /GEOIP,BD,DIRECT/ && $0 !~ /GEOIP,LAN,DIRECT/ && $0 !~ /GEOSITE,category-ads-all,REJECT/) {
+                    print $0
+                }
+            }
+        }
+        ' "$TMP" > "$TMP_CLEAN"
 
-        set_top_key "tproxy-port" "7893"
-        set_top_key "mixed-port" "7890"
-        set_top_key "allow-lan" "true"
-        set_top_key "bind-address" "'*'"
-        set_top_key "mode" "rule"
-        set_top_key "log-level" "error"
-        set_top_key "ipv6" "false"
-        set_top_key "tcp-concurrent" "true"
-        set_top_key "unified-delay" "true"
+        # ৩. স্মার্ট বাংলাদেশি সার্ভিস ও লোকাল আইপি রুলস ইনজেক্ট করা
+        awk -v lan="$LAN_NET" '
+        BEGIN { in_rules=0; added=0 }
+        /^rules:/ {
+            print $0
+            if (!added) {
+                print "  # Uzumaki Smart Routing"
+                print "  - IP-CIDR," lan ",DIRECT,no-resolve"
+                print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
+                print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
+                print "  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
+                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+                print "  - DOMAIN-SUFFIX,local,DIRECT"
+                print "  - DOMAIN-SUFFIX,lan,DIRECT"
+                print "  - DST-PORT,9595,DIRECT"
+                print "  - DOMAIN-SUFFIX,bd,DIRECT"
+                print "  - DOMAIN-KEYWORD,bkash,DIRECT"
+                print "  - DOMAIN-KEYWORD,nagad,DIRECT"
+                print "  - DOMAIN-KEYWORD,rocket,DIRECT"
+                print "  - DOMAIN-KEYWORD,daraz,DIRECT"
+                print "  - DOMAIN-KEYWORD,chorki,DIRECT"
+                print "  - DOMAIN-KEYWORD,hoichoi,DIRECT"
+                added=1
+            }
+            next
+        }
+        { print }
+        ' "$TMP_CLEAN" > "$TMP"
 
-        grep -q '^external-controller:' "$TMP" || echo 'external-controller: 0.0.0.0:9595' >> "$TMP"
-        grep -q '^external-ui:' "$TMP" || echo 'external-ui: /etc/mihomo/ui' >> "$TMP"
-        grep -q '^secret:' "$TMP" || echo 'secret: "flclash123"' >> "$TMP"
+        # ৪. উপরে ১০০% নিখুঁত ও ভ্যালিড Uzumaki Master Header যোগ করা
+        cat << 'HEOF' > "$TMP_FINAL"
+tproxy-port: 7893
+mixed-port: 7890
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: error
+ipv6: false
+external-controller: 0.0.0.0:9595
+external-ui: /etc/mihomo/ui
+secret: "flclash123"
+tcp-concurrent: true
+unified-delay: true
+geodata-mode: true
 
-        # ৩. ডিএনএস ইঞ্জিন ভ্যালিডেশন
-        if ! grep -q '^dns:' "$TMP"; then
-            cat >> "$TMP" << 'DEOF'
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: true
+  sniff:
+    HTTP: { ports: [80, 8080-8880] }
+    TLS: { ports: [443, 8443] }
+    QUIC: { ports: [443, 8443] }
 
 dns:
   enable: true
@@ -70,45 +123,16 @@ dns:
   fallback:
     - tls://1.1.1.1:853
     - tls://dns.google:853
-DEOF
-        else
-            sed -i 's/enhanced-mode: redir-host/enhanced-mode: fake-ip/g' "$TMP"
-        fi
 
-        # ৪. স্মার্ট বাংলাদেশি সার্ভিস বাইপাস রুলস (নিখুঁত ইন্ডেন্টেশনসহ)
-        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
-        LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
+HEOF
 
-        if grep -q '^rules:' "$TMP" && ! grep -q "Uzumaki Smart Routing" "$TMP"; then
-            awk -v lan="$LAN_NET" '
-            /^rules:/ {
-                print $0
-                print "  # Uzumaki Smart Routing"
-                print "  - IP-CIDR," lan ",DIRECT,no-resolve"
-                print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
-                print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
-                print "  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
-                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-                print "  - DOMAIN-SUFFIX,local,DIRECT"
-                print "  - DOMAIN-SUFFIX,lan,DIRECT"
-                print "  - DST-PORT,9595,DIRECT"
-                print "  - DOMAIN-SUFFIX,bd,DIRECT"
-                print "  - DOMAIN-KEYWORD,bkash,DIRECT"
-                print "  - DOMAIN-KEYWORD,nagad,DIRECT"
-                print "  - DOMAIN-KEYWORD,rocket,DIRECT"
-                print "  - DOMAIN-KEYWORD,daraz,DIRECT"
-                print "  - DOMAIN-KEYWORD,chorki,DIRECT"
-                print "  - DOMAIN-KEYWORD,hoichoi,DIRECT"
-                next
-            }
-            { print }
-            ' "$TMP" > "$TMP_CLEAN" && mv "$TMP_CLEAN" "$TMP"
-        fi
+        # ক্লিন করা নোড এবং রুলস হেডারের সাথে মার্জ করা
+        cat "$TMP" >> "$TMP_FINAL"
 
-        # ৫. Mihomo কোর দিয়ে ভ্যালিডেশন টেস্ট
-        if /usr/bin/mihomo -d /etc/mihomo -f "$TMP" -t 2>/tmp/uzcfg_err.log; then
+        # ৫. টেস্ট এবং অ্যাপ্লাই
+        if /usr/bin/mihomo -d /etc/mihomo -f "$TMP_FINAL" -t 2>/tmp/uzcfg_err.log; then
             cp /etc/mihomo/config.yaml /etc/mihomo/config.yaml.bak 2>/dev/null
-            mv "$TMP" /etc/mihomo/config.yaml
+            mv "$TMP_FINAL" /etc/mihomo/config.yaml
             echo "1" > /etc/mihomo/transparent
             echo "1" > /etc/mihomo/enabled
             /etc/init.d/mihomo restart >/dev/null 2>&1
