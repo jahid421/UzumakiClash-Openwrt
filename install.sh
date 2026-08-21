@@ -1,11 +1,11 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════════════
 # 🌀 UzumakiClash - Universal Master Installer (OpenWrt v19 to v25+)
-# Supports: opkg (v19-v24) & apk (v25+) | fw3 (iptables) & fw4 (nftables)
-# Developer: Jahid Hasan Shuvo
+# Repo: https://github.com/jahid421/UzumakiClash-Openwrt
+# Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
 # ═══════════════════════════════════════════════════════════════════════
 
-REPO="https://raw.githubusercontent.com/jahid421/UzumakiClash/main"
+REPO="https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main"
 V="v1.18.10"
 D="/etc/mihomo"
 
@@ -38,23 +38,20 @@ else
     exit 1
 fi
 
-# ২. ডিপেন্ডেন্সি ইনস্টলেশন (Universal Dependency Fallback)
+# ২. ডিপেন্ডেন্সি ইনস্টলেশন
 echo "[*] Installing network and cryptographic dependencies..."
 pkg_install curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup
 
-# ফায়ারওয়াল নির্ভর ডিপেন্ডেন্সি
 if command -v nft >/dev/null 2>&1; then
     pkg_install kmod-nft-tproxy
 else
     pkg_install iptables-mod-tproxy kmod-ipt-tproxy iptables-mod-extra
 fi
 
-# LuCI কম্প্যাটিবিলিটি প্যাকেজ
 if [ "$PKG_TYPE" = "opkg" ]; then
     pkg_install luci-compat luci-lib-ipkg luci-lib-nixio
 fi
 
-# ৩. ডাউনলোড ইঞ্জিন ভ্যালিডেশন
 dl() {
     if command -v curl >/dev/null 2>&1; then
         curl -sL -k -o "$2" "$1" 2>/dev/null
@@ -63,7 +60,7 @@ dl() {
     fi
 }
 
-# ৪. আর্কিটেকচার ডিটেকশন (All CPU Platforms)
+# ৩. আর্কিটেকচার ডিটেকশন
 A="${DISTRIB_ARCH:-$(uname -m)}"
 echo "[*] Detecting CPU Architecture: $A"
 
@@ -84,7 +81,7 @@ case "$A" in
 esac
 echo "[✓] Selected Core Binary: mihomo-linux-$M-$V"
 
-# ৫. কোর ইঞ্জিন ডাউনলোড
+# ৪. কোর ইঞ্জিন ডাউনলোড
 echo "[*] Downloading Core Engine..."
 cd /tmp && rm -f mihomo.gz mihomo
 dl "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz" mihomo.gz
@@ -95,13 +92,12 @@ chmod +x mihomo
 mv mihomo /usr/bin/mihomo
 echo "[✓] Core Engine verified and installed"
 
-# ৬. ডিরেক্টরি সেটআপ
 mkdir -p $D/ui $D/profiles /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
 
 echo "0" > $D/transparent
 echo "0" > $D/enabled
 
-# ৭. জিও-ডাটা ও অফলাইন ড্যাশবোর্ড
+# ৫. জিও-ডাটা ও অফলাইন ড্যাশবোর্ড
 echo "[*] Fetching GeoData & Offline UI..."
 dl "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" $D/geoip.dat
 dl "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" $D/geosite.dat
@@ -114,8 +110,8 @@ if [ -s ui.tgz ]; then
     [ -d "$D/ui/dist" ] && mv $D/ui/dist/* $D/ui/ 2>/dev/null && rm -rf $D/ui/dist
 fi
 
-# ৮. স্ক্রিপ্ট ইনজেকশন
-echo "[*] Injecting Uzumaki Scripts..."
+# ৬. রিপোজিটরি থেকে স্ক্রিপ্ট ডাউনলোড
+echo "[*] Fetching Uzumaki Scripts from GitHub..."
 dl "$REPO/files/mihomo.init" /etc/init.d/mihomo
 chmod +x /etc/init.d/mihomo
 dl "$REPO/files/config.default.yaml" $D/config.yaml
@@ -126,7 +122,6 @@ dl "$REPO/files/mihomo-cfg" /www/cgi-bin/mihomo-cfg
 dl "$REPO/files/mihomo-sub" /www/cgi-bin/mihomo-sub
 chmod +x /www/cgi-bin/mihomo-*
 
-# ৯. ইউনিভার্সাল LuCI ইন্টিগ্রেশন (Lua + JSON Menu for v19-v25+)
 dl "$REPO/files/mihomo.lua" /usr/lib/lua/luci/controller/mihomo.lua
 dl "$REPO/files/main.htm" /usr/lib/lua/luci/view/mihomo/main.htm
 
@@ -145,7 +140,7 @@ if [ -d /usr/share/luci/menu.d ]; then
 JSONEOF
 fi
 
-# ১০. ইউনিভার্সাল হটপ্লাগ পারসিসটেন্স
+# ৭. হটপ্লাগ পারসিসটেন্স
 mkdir -p /etc/hotplug.d/iface
 cat > /etc/hotplug.d/iface/99-uzumaki << 'HEOF'
 #!/bin/sh
@@ -154,7 +149,7 @@ cat > /etc/hotplug.d/iface/99-uzumaki << 'HEOF'
 }
 HEOF
 
-# ১১. ফায়ারওয়াল পোর্ট এলাউ রুল
+# ৮. ফায়ারওয়াল পোর্ট রুল
 uci -q delete firewall.uzumaki_rule 2>/dev/null
 uci set firewall.uzumaki_rule=rule
 uci set firewall.uzumaki_rule.name='Allow-UzumakiClash'
@@ -166,7 +161,6 @@ uci set firewall.uzumaki_rule.target='ACCEPT'
 uci commit firewall
 /etc/init.d/firewall restart >/dev/null 2>&1 || true
 
-# ১২. LuCI ও ওয়েব সার্ভার ক্যাশ রিলোড
 rm -rf /tmp/luci-*
 /etc/init.d/rpcd restart >/dev/null 2>&1
 /etc/init.d/uhttpd restart >/dev/null 2>&1
