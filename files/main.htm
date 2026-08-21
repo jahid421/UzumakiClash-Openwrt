@@ -1,0 +1,292 @@
+<%+header%>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;padding:0;transition:background .3s,color .3s}
+
+:root{
+  --bg:#f8fafc;--card-bg:#fff;--card-border:#e2e8f0;--text:#0f172a;--text-muted:#64748b;
+  --text-heading:#1e293b;--divider:#f1f5f9;--accent:#8b5cf6;--accent-hover:#7c3aed;
+  --accent-light:#ede9fe;--input-bg:#fff;--input-border:#cbd5e1;--textarea-bg:#f8fafc;
+  --tab-bg:#fff;--table-header:#f1f5f9;--log-bg:#0f172a;--log-text:#e2e8f0;
+  --upbox-bg:#faf5ff;--shadow:0 1px 3px rgba(0,0,0,.05);--success-bg:#dcfce7;
+  --success-text:#166534;--error-bg:#fef2f2;--error-text:#991b1b;--warn-bg:#fef3c7;
+  --warn-border:#fbbf24;--warn-text:#92400e;
+}
+
+[data-theme="dark"]{
+  --bg:#090d16;--card-bg:#111827;--card-border:#1f2937;--text:#f3f4f6;--text-muted:#9ca3af;
+  --text-heading:#e5e7eb;--divider:#1f2937;--accent:#a78bfa;--accent-hover:#8b5cf6;
+  --accent-light:#2e1065;--input-bg:#090d16;--input-border:#374151;--textarea-bg:#090d16;
+  --tab-bg:#111827;--table-header:#090d16;--log-bg:#030712;--log-text:#f3f4f6;
+  --upbox-bg:#111827;--shadow:0 1px 3px rgba(0,0,0,.4);--success-bg:#14532d;
+  --success-text:#86efac;--error-bg:#7f1d1d;--error-text:#fca5a5;
+}
+
+body{background:var(--bg);color:var(--text)}
+.mc{max-width:1200px;margin:0 auto;padding:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.theme-toggle{position:fixed;top:12px;right:12px;z-index:1000;width:44px;height:44px;border-radius:50%;border:none;background:var(--card-bg);color:var(--accent);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.15);font-size:20px}
+.tabs{display:flex;border:2px solid var(--accent);border-radius:10px;overflow-x:auto;margin-bottom:16px;background:var(--tab-bg)}
+.tabs button{flex:1;min-width:90px;padding:12px 8px;border:none;background:var(--tab-bg);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer}
+.tabs button.ac{background:var(--accent);color:#fff}
+.card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.title{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text-heading);padding-bottom:10px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:8px}
+.on{background:#22c55e;box-shadow:0 0 8px #22c55e}
+.off{background:#ef4444;box-shadow:0 0 8px #ef4444}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:none;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;color:#fff}
+.b1{background:#22c55e}.b2{background:#ef4444}.b3{background:#f59e0b}.b4{background:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px}
+.stat .l{font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;font-weight:600}
+.stat .v{font-size:20px;font-weight:700;color:var(--text)}
+.upbox{border:2px dashed var(--accent);border-radius:12px;padding:24px 16px;text-align:center;background:var(--upbox-bg);cursor:pointer}
+.mode{display:flex;border:2px solid var(--accent);border-radius:10px;overflow:hidden}
+.mode button{flex:1;padding:11px 8px;border:none;background:var(--card-bg);color:var(--accent);font-weight:700;cursor:pointer}
+.mode button.ac{background:var(--accent);color:#fff}
+.ir{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--divider);font-size:13px}
+.inp{width:100%;padding:12px;border:1px solid var(--input-border);border-radius:10px;font-size:13px;background:var(--input-bg);color:var(--text);margin-bottom:10px}
+.ta{width:100%;height:320px;padding:12px;border:1px solid var(--input-border);border-radius:10px;font-family:monospace;background:var(--textarea-bg);color:var(--text)}
+.gp{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:16px;margin-bottom:12px}
+.nd{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.ni{padding:10px 8px;border:2px solid var(--card-border);border-radius:8px;cursor:pointer;text-align:center;background:var(--card-bg)}
+.ni.ac{border-color:var(--accent);background:var(--accent-light)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 8px;border-bottom:1px solid var(--divider);font-size:12px;text-align:left}
+.lb{background:var(--log-bg);color:var(--log-text);border-radius:12px;padding:14px;height:350px;overflow-y:auto;font-family:monospace;font-size:11px}
+.pg{display:none}
+.pg.show{display:block}
+.warn{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-text);padding:12px;border-radius:10px;font-size:12px;margin-top:12px}
+.credit-card{background:linear-gradient(135deg,#8b5cf6 0%,#d946ef 100%);color:#fff;border-radius:14px;padding:24px;margin-top:24px;text-align:center}
+</style>
+
+<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
+
+<div class="mc">
+  <div class="tabs">
+    <button class="ac" onclick="sp('overview',this)">Overview</button>
+    <button onclick="sp('proxy',this)">Proxy Nodes</button>
+    <button onclick="sp('acl',this)">ACL / Devices</button>
+    <button onclick="sp('config',this)">Config Manager</button>
+    <button onclick="sp('conn',this)">Connections</button>
+    <button onclick="sp('log',this)">Live Logs</button>
+  </div>
+
+  <div class="pg show" id="pg-overview">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:17px;font-weight:700;display:flex;align-items:center">
+            <span class="dot off" id="dot"></span><span id="stxt">Checking...</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="ssub"></div>
+        </div>
+        <div class="btns">
+          <button class="btn b1" onclick="svc('start')">Fast Start</button>
+          <button class="btn b2" onclick="svc('stop')">Instant Kill</button>
+          <button class="btn b3" onclick="svc('restart')">Restart</button>
+          <button class="btn b4" onclick="window.open('http://'+location.hostname+':9595/ui','_blank')">Dashboard</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">🌀 Uzumaki Transparent Proxy (Full UDP Gaming & Fake-IP)</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div style="font-size:13px;color:var(--text-muted);max-width:500px">
+          Zero-Lag router routing. All connected devices auto-bypass local sites and tunnel blocked traffic.
+        </div>
+        <button class="btn b3" id="tpbtn" onclick="toggleTP()">Checking...</button>
+      </div>
+      <div class="warn">⚡ Ultra-Low RAM Core is active. Consumes ~20MB RAM only.</div>
+    </div>
+
+    <div class="card">
+      <div class="title">⚙️ Proxy Routing Mode</div>
+      <div class="mode">
+        <button id="m-rule" onclick="sm('rule')">Smart Rule</button>
+        <button id="m-global" onclick="sm('global')">Global Proxy</button>
+        <button id="m-direct" onclick="sm('direct')">Direct Bypass</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="stat"><div class="l">Upload Speed</div><div class="v" id="up">0 B/s</div></div>
+      <div class="stat"><div class="l">Download Speed</div><div class="v" id="dn">0 B/s</div></div>
+      <div class="stat"><div class="l">Active Sockets</div><div class="v" id="cc">0</div></div>
+      <div class="stat"><div class="l">RAM Consumed</div><div class="v" id="mem">-</div></div>
+    </div>
+
+    <div class="card"><div class="title">📊 Traffic Realtime Monitor</div><canvas id="cv" style="height:120px;width:100%"></canvas></div>
+
+    <div class="card">
+      <div class="title">⚡ Cache & Maintenance</div>
+      <div class="btns">
+        <button class="btn b4" onclick="ug()">Update GeoData</button>
+        <button class="btn b4" onclick="fd()">Flush Fake-IP Pool</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pg" id="pg-acl">
+    <div class="card">
+      <div class="title">🛡️ Client Access Control (Bypass Specific Devices)</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">
+        Enter device IP address (e.g. Smart TV or Work PC) that should directly bypass proxy without routing.
+      </div>
+      <div style="display:flex;gap:8px">
+        <input class="inp" id="aclip" placeholder="Device IP (e.g. 192.168.1.50)" style="margin:0">
+        <button class="btn b1" onclick="addACL()">Add Bypass</button>
+      </div>
+      <div id="aclmsg" style="margin-top:10px;font-size:12px"></div>
+    </div>
+  </div>
+
+  <div class="pg" id="pg-proxy">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <span class="title" style="border:0;margin:0;padding:0">🌐 Outbound Nodes</span>
+        <div style="display:flex;gap:8px">
+          <input class="inp" id="pq" placeholder="Search node..." oninput="pft()" style="width:200px;margin:0">
+          <button class="btn b4" onclick="pt()">Ping Test All</button>
+        </div>
+      </div>
+    </div>
+    <div id="pgs">Loading...</div>
+  </div>
+
+  <div class="pg" id="pg-config">
+    <div class="card">
+      <div class="title">📤 Import YAML or Subscription</div>
+      <div class="upbox" onclick="document.getElementById('yf').click()">
+        <div style="font-size:36px;margin-bottom:6px">🌀</div>
+        <div style="font-weight:700;color:var(--accent)">Select YAML Config</div>
+        <div id="fname" style="margin-top:10px;color:#16a34a;font-weight:700;font-size:13px"></div>
+        <input id="yf" type="file" accept=".yaml,.yml,.txt" onchange="pf(this)" style="display:none">
+      </div>
+      <div class="btns" style="margin-top:14px">
+        <button class="btn b4" id="ubtn" onclick="dup()" disabled>Apply YAML</button>
+      </div>
+      <div style="margin-top:18px">
+        <input class="inp" id="suburl" placeholder="Paste Sub Link (Clash / VLESS / Base64)">
+        <button class="btn b4" onclick="dsub()">Convert & Apply Sub</button>
+        <div style="font-size:12px;margin-top:8px" id="submsg"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">📝 Live Config Editor</div>
+      <textarea class="ta" id="ced"></textarea>
+      <div class="btns" style="margin-top:12px">
+        <button class="btn b4" onclick="cl()">Reload</button>
+        <button class="btn b1" onclick="cs()">Save & Apply</button>
+      </div>
+      <div id="cmsg" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <div class="pg" id="pg-conn">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <span class="title" style="border:0;margin:0;padding:0">🔗 Active Sockets (<span id="cnc">0</span>)</span>
+        <button class="btn b2" onclick="cna()">Close All</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Target</th><th>Net</th><th>Route</th><th>Rule</th><th>Up</th><th>Down</th><th>Action</th></tr></thead>
+          <tbody id="cnb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="pg" id="pg-log">
+    <div class="card">
+      <div class="title">📋 Live Logs</div>
+      <div class="lb" id="llb"></div>
+    </div>
+  </div>
+
+  <div class="credit-card">
+    <div style="font-size:42px;margin-bottom:6px">🌀</div>
+    <div style="font-size:24px;font-weight:800;margin-bottom:4px">UzumakiClash</div>
+    <div style="font-size:13px;opacity:.9">Ultra Lightweight & High Performance Gateway</div>
+    <div style="font-size:14px;font-weight:700;margin-top:10px">Created with ❤️ by Jahid Hasan Shuvo</div>
+  </div>
+</div>
+
+<script>
+var A='http://'+location.hostname+':9595',S='flclash123',H={'Authorization':'Bearer '+S,'Content-Type':'application/json'};
+var yc='',ua=[],da=[];
+
+function loadTheme(){var s=localStorage.getItem('uz-theme')||'light';document.documentElement.setAttribute('data-theme',s);var b=document.getElementById('themeBtn');if(b)b.innerHTML=s==='dark'?'☀️':'🌙'}
+function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')||'light';var n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('uz-theme',n);var b=document.getElementById('themeBtn');if(b)b.innerHTML=n==='dark'?'☀️':'🌙';setTimeout(dr,100)}
+loadTheme();
+
+function fb(b){if(!b||b===0)return'0 B';var k=1024,s=['B','KB','MB','GB','TB'];var i=Math.floor(Math.log(b)/Math.log(k));return parseFloat((b/Math.pow(k,i)).toFixed(1))+' '+s[i]}
+function af(p,o){o=o||{};o.headers=H;return fetch(A+p,o).then(function(r){return r.json()}).catch(function(){return null})}
+function sp(n,b){document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('show')});document.getElementById('pg-'+n).classList.add('show');document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('ac')});b.classList.add('ac');if(n==='proxy')pl();if(n==='config')cl();if(n==='conn')cnl();window.scrollTo({top:0,behavior:'smooth'})}
+
+function pf(el){if(!el.files.length)return;document.getElementById('fname').innerText='File: '+el.files[0].name;var r=new FileReader();r.onload=function(e){yc=e.target.result||'';document.getElementById('ubtn').disabled=yc.length<5};r.readAsText(el.files[0])}
+function dup(){if(!yc){alert('Select file');return}fetch('/cgi-bin/mihomo-cfg',{method:'POST',body:yc}).then(function(r){return r.text()}).then(function(t){alert(t.indexOf('SAVED')>=0?'Applied Successfully!':'Error: '+t);setTimeout(chk,1500)}).catch(function(){alert('Upload Failed')})}
+function dsub(){var u=document.getElementById('suburl').value;if(!u){alert('Enter Subscription URL');return}document.getElementById('submsg').innerText='Converting & Downloading...';fetch('/cgi-bin/mihomo-sub?url='+encodeURIComponent(u)).then(function(r){return r.text()}).then(function(t){document.getElementById('submsg').innerText=t.indexOf('SAVED')>=0?'Subscribed Successfully!':'Failed: '+t;setTimeout(chk,1500)}).catch(function(){document.getElementById('submsg').innerText='Error downloading sub'})}
+
+function chk(){
+  fetch('/cgi-bin/mihomo-api?action=status').then(function(r){return r.json()}).then(function(d){
+    if(d&&d.running){
+      document.getElementById('dot').className='dot on';
+      document.getElementById('stxt').innerText='Engine Active';
+      document.getElementById('ssub').innerText='PID: '+d.pid+' | RAM: '+d.memory;
+      document.getElementById('mem').innerText=d.memory;
+      updateTPBtn(d.transparent);
+    }else{
+      document.getElementById('dot').className='dot off';
+      document.getElementById('stxt').innerText='Engine Offline';
+      document.getElementById('ssub').innerText='PID: - | RAM: -';
+      updateTPBtn(d?d.transparent:0);
+    }
+  });
+}
+
+function updateTPBtn(tp){var btn=document.getElementById('tpbtn');if(!btn)return;if(tp==1){btn.innerText='TPROXY: ACTIVE';btn.className='btn b1'}else{btn.innerText='TPROXY: DISABLED';btn.className='btn b3'}}
+function toggleTP(){var btn=document.getElementById('tpbtn');var isOn=btn.innerText.indexOf('ACTIVE')>=0;var act=isOn?'disable_tp':'enable_tp';btn.innerText='Switching...';fetch('/cgi-bin/mihomo-api?action='+act).then(function(r){return r.json()}).then(function(){setTimeout(chk,1500)})}
+function sm(m){af('/configs',{method:'PATCH',body:JSON.stringify({mode:m})}).then(gc)}
+function gc(){af('/configs').then(function(d){if(!d)return;['rule','global','direct'].forEach(function(m){document.getElementById('m-'+m).classList.remove('ac')});var b=document.getElementById('m-'+(d.mode||'rule'));if(b)b.classList.add('ac')})}
+function svc(a){fetch('/cgi-bin/mihomo-api?action='+a);setTimeout(chk,1500)}
+function ug(){fetch('/cgi-bin/mihomo-api?action=update_geo').then(function(){alert('GeoData Update Triggered!')})}
+function fd(){fetch('/cgi-bin/mihomo-api?action=flush_fakeip').then(function(){alert('Fake-IP Cleared!')})}
+
+function addACL(){
+  var ip=document.getElementById('aclip').value.trim();
+  if(!ip){alert('Enter valid IP');return}
+  fetch('/cgi-bin/mihomo-api?action=add_acl_bypass&ip='+encodeURIComponent(ip)).then(function(r){return r.json()}).then(function(d){
+    document.getElementById('aclmsg').innerHTML='<span style="color:#22c55e">✅ '+ip+' added to bypass list!</span>';
+    document.getElementById('aclip').value='';
+  });
+}
+
+function sw(){try{var ws=new WebSocket('ws://'+location.hostname+':9595/traffic?token='+S);ws.onmessage=function(e){var d=JSON.parse(e.data);document.getElementById('up').innerText=fb(d.up)+'/s';document.getElementById('dn').innerText=fb(d.down)+'/s';ua.push(d.up);da.push(d.down);if(ua.length>60)ua.shift();if(da.length>60)da.shift();dr()};ws.onclose=function(){setTimeout(sw,2000)}}catch(x){setTimeout(sw,4000)}}
+function dr(){var c=document.getElementById('cv');if(!c)return;var x=c.getContext('2d');var dpr=window.devicePixelRatio||1;if(c.width!==c.offsetWidth*dpr){c.width=c.offsetWidth*dpr;c.height=c.offsetHeight*dpr;x.scale(dpr,dpr)}var w=c.offsetWidth,h=c.offsetHeight;x.clearRect(0,0,w,h);var mx=Math.max(Math.max.apply(null,ua.concat([1])),Math.max.apply(null,da.concat([1])));function ln(a,col){if(a.length<2)return;x.beginPath();x.strokeStyle=col;x.lineWidth=2;for(var i=0;i<a.length;i++){var px=(i/59)*w,py=h-(a[i]/mx)*(h-8)-4;if(i===0)x.moveTo(px,py);else x.lineTo(px,py)}x.stroke()}ln(ua,'#8b5cf6');ln(da,'#22c55e')}
+
+function pl(){fetch(A+'/proxies',{headers:H}).then(function(r){return r.json()}).then(function(d){var p=d.proxies,h='',gn=Object.keys(p).filter(function(n){return['Selector','URLTest','Fallback','LoadBalance'].indexOf(p[n].type)>=0});gn.forEach(function(g){var gr=p[g];h+='<div class="gp"><div style="font-weight:700;margin-bottom:4px">'+g+'</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">'+gr.type+' | Active: <b>'+(gr.now||'-')+'</b></div><div class="nd">';if(gr.all){gr.all.forEach(function(n){var nd=p[n];var dl=nd&&nd.history&&nd.history.length?nd.history[nd.history.length-1].delay:0;h+='<div class="ni'+(gr.now===n?' ac':'')+'" onclick="ps(\''+encodeURIComponent(g)+'\',\''+encodeURIComponent(n)+'\')"><div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div><div style="font-size:11px;font-weight:700;color:'+(dl>0?(dl<200?'#22c55e':'#f59e0b'):'var(--text-muted)')+'">'+(dl>0?dl+'ms':'-')+'</div></div>'})}h+='</div></div>'});document.getElementById('pgs').innerHTML=h||'<div class="card">No node groups found. Upload config first.</div>'}).catch(function(){document.getElementById('pgs').innerHTML='<div class="card" style="color:red">API Offline</div>'})}
+function ps(g,n){fetch(A+'/proxies/'+g,{method:'PUT',headers:H,body:JSON.stringify({name:decodeURIComponent(n)})}).then(pl)}
+function pt(){fetch(A+'/proxies',{headers:H}).then(function(r){return r.json()}).then(function(d){Object.keys(d.proxies).forEach(function(n){var t=d.proxies[n].type;if(['Selector','URLTest','Fallback','LoadBalance','Direct','Reject'].indexOf(t)<0)fetch(A+'/proxies/'+encodeURIComponent(n)+'/delay?timeout=5000&url=http://www.gstatic.com/generate_204',{headers:H}).catch(function(){})});setTimeout(pl,3500)})}
+function pft(){var q=document.getElementById('pq').value.toLowerCase();document.querySelectorAll('.ni').forEach(function(n){n.style.display=n.innerText.toLowerCase().indexOf(q)>=0?'':'none'})}
+
+function cl(){fetch('/cgi-bin/mihomo-cfg').then(function(r){return r.text()}).then(function(t){document.getElementById('ced').value=t})}
+function cs(){fetch('/cgi-bin/mihomo-cfg',{method:'POST',body:document.getElementById('ced').value}).then(function(r){return r.text()}).then(function(t){document.getElementById('cmsg').innerHTML=t.indexOf('SAVED')>=0?'<span style="color:#22c55e">Saved & Hot-Reloaded!</span>':'<span style="color:#ef4444">Error Saving!</span>';setTimeout(function(){document.getElementById('cmsg').innerHTML=''},3000)})}
+
+function cnl(){fetch(A+'/connections',{headers:H}).then(function(r){return r.json()}).then(function(d){var c=d.connections||[];document.getElementById('cnc').innerText=c.length;var h='';c.forEach(function(x){var host=x.metadata.host||x.metadata.destinationIP||'-';h+='<tr><td><b>'+host+'</b></td><td>'+x.metadata.network+'</td><td>'+(x.chains?x.chains.join('>'):'-')+'</td><td>'+(x.rule||'-')+'</td><td>'+fb(x.upload)+'</td><td>'+fb(x.download)+'</td><td><button class="btn b2" style="padding:4px 8px;font-size:11px;min-height:auto" onclick="cnd(\''+x.id+'\')">Kill</button></td></tr>'});document.getElementById('cnb').innerHTML=h||'<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No Active Connections</td></tr>'}).catch(function(){})}
+function cnd(id){fetch(A+'/connections/'+id,{method:'DELETE',headers:H}).then(cnl)}
+function cna(){fetch(A+'/connections',{method:'DELETE',headers:H}).then(cnl)}
+
+function lw(){try{var ws=new WebSocket('ws://'+location.hostname+':9595/logs?token='+S+'&level=info');ws.onmessage=function(e){var d=JSON.parse(e.data);var b=document.getElementById('llb');b.innerHTML+='<div>['+d.type+'] '+d.payload+'</div>';b.scrollTop=b.scrollHeight};ws.onclose=function(){setTimeout(lw,2000)}}catch(e){setTimeout(lw,4000)}}
+
+chk();gc();sw();lw();
+setInterval(chk,6000);
+setInterval(function(){if(document.getElementById('pg-conn').classList.contains('show'))cnl()},2500);
+</script>
+<%+footer%>
