@@ -147,13 +147,6 @@ fi
 HEOF
 chmod +x /etc/hotplug.d/iface/99-uzumaki
 
-# MWAN3 মাল্টি-ওয়ান ব্যালেন্সিং সুরক্ষা
-if [ -f /etc/config/mwan3 ]; then
-    uci set mwan3.globals.local_source='lan' 2>/dev/null || true
-    uci set mwan3.balanced.sticky='0' 2>/dev/null || true
-    uci commit mwan3
-fi
-
 uci -q delete firewall.uzumaki_rule 2>/dev/null
 uci set firewall.uzumaki_rule=rule
 uci set firewall.uzumaki_rule.name='Allow-UzumakiClash'
