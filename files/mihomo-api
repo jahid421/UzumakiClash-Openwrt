@@ -1,9 +1,9 @@
 #!/bin/sh
+export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 echo "Content-Type: application/json"
 echo ""
 
 ACTION=$(echo "$QUERY_STRING" | sed -n 's/.*action=\([a-z_]*\).*/\1/p')
-IP=$(echo "$QUERY_STRING" | sed -n 's/.*ip=\([0-9\.]*\).*/\1/p')
 TRANSPARENT_FILE="/etc/mihomo/transparent"
 ENABLED_FILE="/etc/mihomo/enabled"
 
@@ -23,14 +23,17 @@ case "$ACTION" in
 
   start)
     echo "1" > "$ENABLED_FILE"
-    /etc/init.d/mihomo enable >/dev/null 2>&1
+    echo "1" > "$TRANSPARENT_FILE"
     /etc/init.d/mihomo start >/dev/null 2>&1
     echo "{\"ok\":true}"
     ;;
 
   stop)
     echo "0" > "$ENABLED_FILE"
+    echo "0" > "$TRANSPARENT_FILE"
     /etc/init.d/mihomo stop >/dev/null 2>&1
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
@@ -42,23 +45,15 @@ case "$ACTION" in
 
   enable_tp)
     echo "1" > "$TRANSPARENT_FILE"
-    /etc/init.d/mihomo restart >/dev/null 2>&1
+    /usr/sbin/nft -f /etc/mihomo/nft.conf 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
   disable_tp)
     echo "0" > "$TRANSPARENT_FILE"
-    /etc/init.d/mihomo restart >/dev/null 2>&1
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     echo "{\"ok\":true}"
-    ;;
-
-  add_acl_bypass)
-    if [ -n "$IP" ]; then
-      nft add element inet uzumaki acl_whitelist { "$IP" } 2>/dev/null
-      echo "{\"ok\":true,\"bypassed\":\"$IP\"}"
-    else
-      echo "{\"ok\":false,\"error\":\"no_ip\"}"
-    fi
     ;;
 
   flush_fakeip)
@@ -73,7 +68,6 @@ case "$ACTION" in
       curl -sL -o geosite.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" &
       curl -sL -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" &
       wait
-      /etc/init.d/mihomo restart >/dev/null 2>&1
     ) &
     echo "{\"ok\":true,\"message\":\"Updating in background\"}"
     ;;
