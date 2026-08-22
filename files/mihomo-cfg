@@ -1,8 +1,4 @@
 #!/bin/sh
-# ═══════════════════════════════════════════════
-# 🌀 UzumakiClash - Bulletproof Config Optimizer
-# ═══════════════════════════════════════════════
-
 echo "Content-Type: text/plain"
 echo ""
 
@@ -12,20 +8,18 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     TMP_FINAL="/tmp/uzcfg_final_$$.yaml"
     
     trap "rm -f /tmp/uzcfg_*_$$.yaml /tmp/uzcfg_err.log" EXIT
-    
-    # ১. উইন্ডোজ হিডেন ক্যারেক্টার (\r) রিমুভ করে পিওর ইউনিক্স ফাইলে রূপান্তর
     tr -d '\r' > "$TMP"
     
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
         LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
 
-        # ২. ইউজার কনফিগ থেকে কনফ্লিক্টিং সিস্টেম ব্লকগুলো বাদ দিয়ে নোড ও রুলস ক্লিন করা
+        # সিস্টেম হেডার বাদ দিয়ে শুধু ইউজার নোড ও রুলস নেওয়া
         awk '
         BEGIN { skip=0 }
         /^[a-zA-Z0-9_-]+:/ {
             key = $1
-            if (key ~ /^(tproxy-port|mixed-port|redir-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|tcp-concurrent|unified-delay|geodata-mode|profile|sniffer|dns):/) {
+            if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|tcp-concurrent|unified-delay|geodata-mode|profile|sniffer|tun|dns):/) {
                 skip=1
             } else {
                 skip=0
@@ -33,21 +27,19 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         }
         {
             if (!skip) {
-                # ব্রোকেন ক্র্যাশ রুলস বাদ দেওয়া
-                if ($0 !~ /GEOIP,BD,DIRECT/ && $0 !~ /GEOIP,LAN,DIRECT/ && $0 !~ /GEOSITE,category-ads-all,REJECT/) {
+                if ($0 !~ /GEOIP,BD,DIRECT/ && $0 !~ /GEOIP,LAN,DIRECT/) {
                     print $0
                 }
             }
         }
         ' "$TMP" > "$TMP_CLEAN"
 
-        # ৩. স্মার্ট বাংলাদেশি সার্ভিস ও লোকাল আইপি রুলস ইনজেক্ট করা
+        # রুলস সেকশনে লোকাল বাইপাস যুক্ত করা
         awk -v lan="$LAN_NET" '
-        BEGIN { in_rules=0; added=0 }
+        BEGIN { added=0 }
         /^rules:/ {
             print $0
             if (!added) {
-                print "  # Uzumaki Smart Routing"
                 print "  - IP-CIDR," lan ",DIRECT,no-resolve"
                 print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
                 print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
@@ -59,10 +51,6 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 print "  - DOMAIN-SUFFIX,bd,DIRECT"
                 print "  - DOMAIN-KEYWORD,bkash,DIRECT"
                 print "  - DOMAIN-KEYWORD,nagad,DIRECT"
-                print "  - DOMAIN-KEYWORD,rocket,DIRECT"
-                print "  - DOMAIN-KEYWORD,daraz,DIRECT"
-                print "  - DOMAIN-KEYWORD,chorki,DIRECT"
-                print "  - DOMAIN-KEYWORD,hoichoi,DIRECT"
                 added=1
             }
             next
@@ -70,9 +58,8 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         { print }
         ' "$TMP_CLEAN" > "$TMP"
 
-        # ৪. উপরে ১০০% নিখুঁত ও ভ্যালিড Uzumaki Master Header যোগ করা
+        # মাস্টার হেডার বসানো
         cat << 'HEOF' > "$TMP_FINAL"
-tproxy-port: 7893
 mixed-port: 7890
 allow-lan: true
 bind-address: '*'
@@ -85,6 +72,17 @@ secret: "flclash123"
 tcp-concurrent: true
 unified-delay: true
 geodata-mode: true
+
+tun:
+  enable: true
+  stack: mixed
+  device: uzumaki-tun
+  auto-route: true
+  auto-detect-interface: true
+  strict-route: false
+  dns-hijack:
+    - "any:53"
+    - "tcp://any:53"
 
 profile:
   store-selected: true
@@ -112,33 +110,25 @@ dns:
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
-    - '+.stun.*.*'
-    - '+.whatsapp.com'
   default-nameserver:
     - 1.1.1.1
     - 8.8.8.8
   nameserver:
-    - https://1.1.1.1/dns-query
+    - 1.1.1.1
+    - 8.8.8.8
     - https://dns.google/dns-query
-  fallback:
-    - tls://1.1.1.1:853
-    - tls://dns.google:853
 
 HEOF
-
-        # ক্লিন করা নোড এবং রুলস হেডারের সাথে মার্জ করা
         cat "$TMP" >> "$TMP_FINAL"
 
-        # ৫. টেস্ট এবং অ্যাপ্লাই
         if /usr/bin/mihomo -d /etc/mihomo -f "$TMP_FINAL" -t 2>/tmp/uzcfg_err.log; then
-            cp /etc/mihomo/config.yaml /etc/mihomo/config.yaml.bak 2>/dev/null
             mv "$TMP_FINAL" /etc/mihomo/config.yaml
             echo "1" > /etc/mihomo/transparent
             echo "1" > /etc/mihomo/enabled
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
-            ERR=$(head -n 5 /tmp/uzcfg_err.log 2>/dev/null)
+            ERR=$(head -n 3 /tmp/uzcfg_err.log 2>/dev/null)
             echo "INVALID YAML: $ERR"
         fi
     else
