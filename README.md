@@ -246,12 +246,16 @@ To keep your GeoIP database and sub-rules updated automatically every night at 4
 
 ---
 
-## 🗑️ 1-Click Clean Uninstallation
+## 🗑️ Uninstallation
 
-To cleanly purge UzumakiClash, restore native firewall rules, and delete all residual data:
-
+### 1. Universal Uninstall (`curl`):
 ```bash
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/uninstall.sh)"
+```
+
+### 2. Universal Uninstall (`wget`):
+```bash
+sh -c "$(wget -qO- --no-check-certificate https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/uninstall.sh)"
 ```
 
 ---
