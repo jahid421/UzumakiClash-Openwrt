@@ -22,7 +22,6 @@ echo ""
 OWRT_VER="${DISTRIB_RELEASE:-Snapshot}"
 echo "[✓] OpenWrt detected: $DISTRIB_ID $OWRT_VER"
 
-# ১. প্যাকেজ ম্যানেজার ডিটেকশন (opkg vs apk)
 if command -v apk >/dev/null 2>&1; then
     PKG_TYPE="apk"
     echo "[✓] Package Engine: apk (OpenWrt v25+ Detected)"
@@ -38,8 +37,7 @@ else
     exit 1
 fi
 
-# ২. ডিপেন্ডেন্সি ইনস্টলেশন
-echo "[*] Installing network and cryptographic dependencies..."
+echo "[*] Installing dependencies..."
 pkg_install curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup
 
 if command -v nft >/dev/null 2>&1; then
@@ -60,7 +58,6 @@ dl() {
     fi
 }
 
-# ৩. আর্কিটেকচার ডিটেকশন
 A="${DISTRIB_ARCH:-$(uname -m)}"
 echo "[*] Detecting CPU Architecture: $A"
 
@@ -81,7 +78,6 @@ case "$A" in
 esac
 echo "[✓] Selected Core Binary: mihomo-linux-$M-$V"
 
-# ৪. কোর ইঞ্জিন ডাউনলোড
 echo "[*] Downloading Core Engine..."
 cd /tmp && rm -f mihomo.gz mihomo
 dl "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz" mihomo.gz
@@ -97,7 +93,6 @@ mkdir -p $D/ui $D/profiles /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lu
 echo "0" > $D/transparent
 echo "0" > $D/enabled
 
-# ৫. জিও-ডাটা ও অফলাইন ড্যাশবোর্ড
 echo "[*] Fetching GeoData & Offline UI..."
 dl "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" $D/geoip.dat
 dl "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" $D/geosite.dat
@@ -110,8 +105,7 @@ if [ -s ui.tgz ]; then
     [ -d "$D/ui/dist" ] && mv $D/ui/dist/* $D/ui/ 2>/dev/null && rm -rf $D/ui/dist
 fi
 
-# ৬. রিপোজিটরি থেকে স্ক্রিপ্ট ডাউনলোড
-echo "[*] Fetching Uzumaki Scripts from GitHub..."
+echo "[*] Injecting Uzumaki Scripts..."
 dl "$REPO/files/mihomo.init" /etc/init.d/mihomo
 chmod +x /etc/init.d/mihomo
 dl "$REPO/files/config.default.yaml" $D/config.yaml
@@ -140,23 +134,33 @@ if [ -d /usr/share/luci/menu.d ]; then
 JSONEOF
 fi
 
-# ৭. হটপ্লাগ পারসিসটেন্স
+# বুট ও হটপ্লাগ পারসিসটেন্স
 mkdir -p /etc/hotplug.d/iface
-cat > /etc/hotplug.d/iface/99-uzumaki << 'HEOF'
+cat << 'HEOF' > /etc/hotplug.d/iface/99-uzumaki
 #!/bin/sh
-[ "$ACTION" = "ifup" ] && [ -f /etc/mihomo/transparent ] && [ "$(cat /etc/mihomo/transparent)" = "1" ] && {
-    /etc/init.d/mihomo restart >/dev/null 2>&1
-}
+if [ "$ACTION" = "ifup" ]; then
+    sleep 3
+    if [ -f /etc/mihomo/transparent ] && [ "$(cat /etc/mihomo/transparent)" = "1" ]; then
+        /etc/init.d/mihomo restart >/dev/null 2>&1
+    fi
+fi
 HEOF
+chmod +x /etc/hotplug.d/iface/99-uzumaki
 
-# ৮. ফায়ারওয়াল পোর্ট রুল
+# MWAN3 মাল্টি-ওয়ান ব্যালেন্সিং সুরক্ষা
+if [ -f /etc/config/mwan3 ]; then
+    uci set mwan3.globals.local_source='lan' 2>/dev/null || true
+    uci set mwan3.balanced.sticky='0' 2>/dev/null || true
+    uci commit mwan3
+fi
+
 uci -q delete firewall.uzumaki_rule 2>/dev/null
 uci set firewall.uzumaki_rule=rule
 uci set firewall.uzumaki_rule.name='Allow-UzumakiClash'
 uci set firewall.uzumaki_rule.src='lan'
 uci add_list firewall.uzumaki_rule.proto='tcp'
 uci add_list firewall.uzumaki_rule.proto='udp'
-uci set firewall.uzumaki_rule.dest_port='7890 7893 9595 1053'
+uci set firewall.uzumaki_rule.dest_port='7890 7892 9595 1053'
 uci set firewall.uzumaki_rule.target='ACCEPT'
 uci commit firewall
 /etc/init.d/firewall restart >/dev/null 2>&1 || true
