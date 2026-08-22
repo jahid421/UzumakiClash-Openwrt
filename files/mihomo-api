@@ -23,6 +23,7 @@ case "$ACTION" in
     ;;
 
   start)
+    # ইউজারের চয়েস '1' সেভ করা
     echo "1" > "$ENABLED_FILE"
     echo "1" > "$TRANSPARENT_FILE"
     rm -f /var/run/mihomo.pid
@@ -37,6 +38,7 @@ case "$ACTION" in
     ;;
 
   stop)
+    # ইউজারের চয়েস '0' সেভ করা
     echo "0" > "$ENABLED_FILE"
     echo "0" > "$TRANSPARENT_FILE"
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
@@ -85,3 +87,5 @@ case "$ACTION" in
     echo "{\"ok\":false,\"error\":\"invalid_action\"}"
     ;;
 esac
+EOF
+chmod +x /www/cgi-bin/mihomo-api
