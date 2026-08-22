@@ -1,41 +1,15 @@
 mixed-port: 7890
+redir-port: 7892
 allow-lan: true
 bind-address: '*'
 mode: rule
-log-level: error
+log-level: info
 ipv6: false
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 tcp-concurrent: true
 unified-delay: true
-geodata-mode: true
-
-# OpenClash-এর মতো ১০০% স্টেবল TUN মোড
-tun:
-  enable: true
-  stack: mixed
-  device: uzumaki-tun
-  auto-route: true
-  auto-detect-interface: true
-  strict-route: false
-  dns-hijack:
-    - "any:53"
-    - "tcp://any:53"
-
-profile:
-  store-selected: true
-  store-fake-ip: true
-
-sniffer:
-  enable: true
-  force-dns-mapping: true
-  parse-pure-ip: true
-  override-destination: true
-  sniff:
-    HTTP: { ports: [80, 8080-8880] }
-    TLS: { ports: [443, 8443] }
-    QUIC: { ports: [443, 8443] }
 
 dns:
   enable: true
@@ -43,15 +17,6 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  fake-ip-filter:
-    - '*.lan'
-    - '*.local'
-    - 'time.*.com'
-    - 'ntp.*.com'
-    - '+.pool.ntp.org'
-  default-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
