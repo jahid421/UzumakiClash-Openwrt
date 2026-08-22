@@ -15,6 +15,10 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     tr -d '\r' > "$TMP"
 
     if [ -s "$TMP" ]; then
+        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
+        LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
+
+        # সিস্টেম হেডার বাদ দিয়ে শুধু নোড ও রুলস নেওয়া
         awk '
         BEGIN { skip=0 }
         /^[a-zA-Z0-9_-]+:/ {
@@ -27,6 +31,44 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         }
         { if (!skip) print $0 }
         ' "$TMP" > "$TMP_CLEAN"
+
+        # রুলস সেকশনে লোকাল, বাংলাদেশি ও রিমোট ডেস্কটপ বাইপাস ইনজেক্ট করা
+        awk -v lan="$LAN_NET" '
+        BEGIN { added=0 }
+        /^rules:/ {
+            print $0
+            if (!added) {
+                print "  # LAN Safety"
+                print "  - IP-CIDR," lan ",DIRECT,no-resolve"
+                print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
+                print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
+                print "  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
+                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+                print "  - DOMAIN-SUFFIX,local,DIRECT"
+                print "  - DOMAIN-SUFFIX,lan,DIRECT"
+                print "  - DST-PORT,9595,DIRECT"
+                print "  # Remote Desktop (DIRECT Bypass)"
+                print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
+                print "  - DOMAIN-SUFFIX,ultraviewer.net,DIRECT"
+                print "  - DOMAIN-KEYWORD,anydesk,DIRECT"
+                print "  - DOMAIN-SUFFIX,anydesk.com,DIRECT"
+                print "  - DOMAIN-KEYWORD,teamviewer,DIRECT"
+                print "  - DOMAIN-SUFFIX,teamviewer.com,DIRECT"
+                print "  - DOMAIN-KEYWORD,rustdesk,DIRECT"
+                print "  # Bangladesh Apps (DIRECT)"
+                print "  - DOMAIN-SUFFIX,bd,DIRECT"
+                print "  - DOMAIN-KEYWORD,bkash,DIRECT"
+                print "  - DOMAIN-KEYWORD,nagad,DIRECT"
+                print "  - DOMAIN-KEYWORD,rocket,DIRECT"
+                print "  - DOMAIN-KEYWORD,daraz,DIRECT"
+                print "  - DOMAIN-KEYWORD,chorki,DIRECT"
+                print "  - DOMAIN-KEYWORD,hoichoi,DIRECT"
+                added=1
+            }
+            next
+        }
+        { print }
+        ' "$TMP_CLEAN" > "$TMP"
 
         cat << 'HEOF' > "$TMP_FINAL"
 mixed-port: 7890
@@ -48,13 +90,23 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - 'time.*.com'
+    - 'ntp.*.com'
+    - '+.pool.ntp.org'
+    - '+.ultraviewer.net'
+    - '+.anydesk.com'
+    - '+.teamviewer.com'
+    - '+.rustdesk.com'
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
     - https://dns.google/dns-query
 
 HEOF
-        cat "$TMP_CLEAN" >> "$TMP_FINAL"
+        cat "$TMP" >> "$TMP_FINAL"
 
         if /usr/bin/mihomo -d /etc/mihomo -f "$TMP_FINAL" -t 2>/tmp/uzcfg_err.log; then
             mv "$TMP_FINAL" /etc/mihomo/config.yaml
