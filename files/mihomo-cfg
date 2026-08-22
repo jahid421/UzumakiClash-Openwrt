@@ -18,7 +18,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
         LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
 
-        # সিস্টেম হেডার বাদ দিয়ে শুধু নোড ও রুলস নেওয়া
+        # ইউজারের কনফিগ ফিল্টার করা
         awk '
         BEGIN { skip=0 }
         /^[a-zA-Z0-9_-]+:/ {
@@ -32,7 +32,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         { if (!skip) print $0 }
         ' "$TMP" > "$TMP_CLEAN"
 
-        # রুলস সেকশনে লোকাল, বাংলাদেশি ও রিমোট ডেস্কটপ বাইপাস ইনজেক্ট করা
+        # রুলস সেকশনে সেফটি ইনজেকশন
         awk -v lan="$LAN_NET" '
         BEGIN { added=0 }
         /^rules:/ {
@@ -47,7 +47,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 print "  - DOMAIN-SUFFIX,local,DIRECT"
                 print "  - DOMAIN-SUFFIX,lan,DIRECT"
                 print "  - DST-PORT,9595,DIRECT"
-                print "  # Remote Desktop (DIRECT Bypass)"
+                print "  # Remote Desktop Direct"
                 print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
                 print "  - DOMAIN-SUFFIX,ultraviewer.net,DIRECT"
                 print "  - DOMAIN-KEYWORD,anydesk,DIRECT"
@@ -55,14 +55,13 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 print "  - DOMAIN-KEYWORD,teamviewer,DIRECT"
                 print "  - DOMAIN-SUFFIX,teamviewer.com,DIRECT"
                 print "  - DOMAIN-KEYWORD,rustdesk,DIRECT"
-                print "  # Bangladesh Apps (DIRECT)"
+                print "  # BD Apps Direct"
                 print "  - DOMAIN-SUFFIX,bd,DIRECT"
                 print "  - DOMAIN-KEYWORD,bkash,DIRECT"
                 print "  - DOMAIN-KEYWORD,nagad,DIRECT"
                 print "  - DOMAIN-KEYWORD,rocket,DIRECT"
                 print "  - DOMAIN-KEYWORD,daraz,DIRECT"
                 print "  - DOMAIN-KEYWORD,chorki,DIRECT"
-                print "  - DOMAIN-KEYWORD,hoichoi,DIRECT"
                 added=1
             }
             next
@@ -70,6 +69,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         { print }
         ' "$TMP_CLEAN" > "$TMP"
 
+        # মাস্টার হেডার
         cat << 'HEOF' > "$TMP_FINAL"
 mixed-port: 7890
 redir-port: 7892
@@ -100,6 +100,9 @@ dns:
     - '+.anydesk.com'
     - '+.teamviewer.com'
     - '+.rustdesk.com'
+  default-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
@@ -108,12 +111,12 @@ dns:
 HEOF
         cat "$TMP" >> "$TMP_FINAL"
 
+        # সিনট্যাক্স টেস্ট
         if /usr/bin/mihomo -d /etc/mihomo -f "$TMP_FINAL" -t 2>/tmp/uzcfg_err.log; then
             mv "$TMP_FINAL" /etc/mihomo/config.yaml
             echo "1" > /etc/mihomo/transparent
             echo "1" > /etc/mihomo/enabled
-            killall -9 mihomo 2>/dev/null || true
-            /usr/bin/mihomo -d /etc/mihomo -f /etc/mihomo/config.yaml > /dev/null 2>&1 &
+            /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
             ERR=$(head -n 3 /tmp/uzcfg_err.log 2>/dev/null)
