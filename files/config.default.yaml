@@ -1,4 +1,3 @@
-tproxy-port: 7893
 mixed-port: 7890
 allow-lan: true
 bind-address: '*'
@@ -10,6 +9,19 @@ external-ui: /etc/mihomo/ui
 secret: "flclash123"
 tcp-concurrent: true
 unified-delay: true
+geodata-mode: true
+
+# OpenClash-এর মতো ১০০% স্টেবল TUN মোড
+tun:
+  enable: true
+  stack: mixed
+  device: uzumaki-tun
+  auto-route: true
+  auto-detect-interface: true
+  strict-route: false
+  dns-hijack:
+    - "any:53"
+    - "tcp://any:53"
 
 profile:
   store-selected: true
@@ -41,11 +53,9 @@ dns:
     - 1.1.1.1
     - 8.8.8.8
   nameserver:
-    - https://1.1.1.1/dns-query
+    - 1.1.1.1
+    - 8.8.8.8
     - https://dns.google/dns-query
-  fallback:
-    - tls://1.1.1.1:853
-    - tls://dns.google:853
 
 proxies: []
 
