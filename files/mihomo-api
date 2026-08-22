@@ -4,8 +4,9 @@ echo "Content-Type: application/json"
 echo ""
 
 ACTION=$(echo "$QUERY_STRING" | sed -n 's/.*action=\([a-z_]*\).*/\1/p')
-TRANSPARENT_FILE="/etc/mihomo/transparent"
-ENABLED_FILE="/etc/mihomo/enabled"
+CONF_DIR="/etc/mihomo"
+TRANSPARENT_FILE="$CONF_DIR/transparent"
+ENABLED_FILE="$CONF_DIR/enabled"
 
 case "$ACTION" in
   status)
@@ -24,16 +25,25 @@ case "$ACTION" in
   start)
     echo "1" > "$ENABLED_FILE"
     echo "1" > "$TRANSPARENT_FILE"
-    /etc/init.d/mihomo start >/dev/null 2>&1
+    rm -f /var/run/mihomo.pid
+    /etc/init.d/mihomo restart >/dev/null 2>&1
+    sleep 1
+    if ! pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
+        /usr/bin/mihomo -d "$CONF_DIR" -f "$CONF_DIR/config.yaml" >/dev/null 2>&1 &
+    fi
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
   stop)
     echo "0" > "$ENABLED_FILE"
     echo "0" > "$TRANSPARENT_FILE"
-    /etc/init.d/mihomo stop >/dev/null 2>&1
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
     /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
+    /etc/init.d/mihomo stop >/dev/null 2>&1
+    killall -9 mihomo 2>/dev/null || true
+    rm -f /var/run/mihomo.pid
     echo "{\"ok\":true}"
     ;;
 
@@ -45,14 +55,13 @@ case "$ACTION" in
 
   enable_tp)
     echo "1" > "$TRANSPARENT_FILE"
-    /usr/sbin/nft -f /etc/mihomo/nft.conf 2>/dev/null || true
+    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
   disable_tp)
     echo "0" > "$TRANSPARENT_FILE"
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
