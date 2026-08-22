@@ -21,16 +21,17 @@ start_service() {
     procd_set_param pidfile /var/run/mihomo.pid
     procd_close_instance
 
-    sleep 2
+    sleep 1
 
     if [ -f "$CONF_DIR/transparent" ] && [ "$(cat "$CONF_DIR/transparent")" = "1" ]; then
-        nft delete table ip uzumaki 2>/dev/null || true
-        nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
+        /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+        /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     fi
 }
 
 stop_service() {
-    nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     killall -9 mihomo 2>/dev/null || true
 }
 
