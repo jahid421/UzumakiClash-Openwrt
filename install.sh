@@ -134,14 +134,22 @@ if [ -d /usr/share/luci/menu.d ]; then
 JSONEOF
 fi
 
-# বুট ও হটপ্লাগ পারসিসটেন্স
+# সার্ভিস বুট রেজিস্ট্রেশন
+/etc/init.d/mihomo enable
+
+# স্টেট-অ্যাওয়ার বুট ও হটপ্লাগ পারসিসটেন্স
 mkdir -p /etc/hotplug.d/iface
 cat << 'HEOF' > /etc/hotplug.d/iface/99-uzumaki
 #!/bin/sh
 if [ "$ACTION" = "ifup" ]; then
-    sleep 3
-    if [ -f /etc/mihomo/transparent ] && [ "$(cat /etc/mihomo/transparent)" = "1" ]; then
-        /etc/init.d/mihomo restart >/dev/null 2>&1
+    if [ -f /etc/mihomo/enabled ] && [ "$(cat /etc/mihomo/enabled)" = "1" ]; then
+        sleep 2
+        if ! pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
+            /etc/init.d/mihomo restart >/dev/null 2>&1
+        else
+            /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+            /usr/sbin/nft -f /etc/mihomo/nft.conf 2>/dev/null || true
+        fi
     fi
 fi
 HEOF
