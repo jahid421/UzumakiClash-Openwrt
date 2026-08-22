@@ -111,19 +111,16 @@ UzumakiClash is designed specifically for routers with limited hardware resource
 ## 🚀 Installation
 
 ### 1. OpenWrt v19 - v24 (`opkg`):
-
 ```bash
-opkg update && opkg install curl ca-bundle ca-certificates && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/install.sh)"
+opkg update && opkg install curl ca-bundle ca-certificates kmod-tun && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/install.sh)"
 ```
 
 ### 2. OpenWrt v25+ / Snapshot (`apk`):
-
 ```bash
-apk update && apk add curl ca-bundle ca-certificates && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/install.sh)"
+apk update && apk add curl ca-bundle ca-certificates kmod-tun && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/install.sh)"
 ```
 
-### 3. Universal Fallback (`wget` — Works on all versions without curl):
-
+### 3. Universal Fallback (`wget` — Works on all versions):
 ```bash
 sh -c "$(wget -qO- --no-check-certificate https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/install.sh)"
 ```
