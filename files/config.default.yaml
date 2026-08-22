@@ -17,6 +17,19 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - 'time.*.com'
+    - 'ntp.*.com'
+    - '+.pool.ntp.org'
+    - '+.ultraviewer.net'
+    - '+.anydesk.com'
+    - '+.teamviewer.com'
+    - '+.rustdesk.com'
+  default-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
