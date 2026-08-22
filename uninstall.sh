@@ -1,65 +1,49 @@
-#!/bin/sh
-# ═══════════════════════════════════════════════════════════════════════
-# 🌀 UzumakiClash - Universal Uninstaller (opkg & apk Clean Purge)
-# Repo: https://github.com/jahid421/UzumakiClash-Openwrt
-# Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
-# ═══════════════════════════════════════════════════════════════════════
+#!/bin/sh /etc/rc.common
+USE_PROCD=1
+START=95
+STOP=05
 
-echo ""
-echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  🌀 UzumakiClash Universal Uninstaller                        ║"
-echo "║  Safely Reverting Network, Firewall & System Changes         ║"
-echo "╚══════════════════════════════════════════════════════════════╝"
-echo ""
+CONF_DIR="/etc/mihomo"
+PROG="/usr/bin/mihomo"
+ENABLED_FILE="$CONF_DIR/enabled"
 
-# ১. সার্ভিস বন্ধ করা
-if [ -f /etc/init.d/mihomo ]; then
-    echo "[*] Stopping UzumakiClash daemon..."
-    /etc/init.d/mihomo stop >/dev/null 2>&1
-    /etc/init.d/mihomo disable >/dev/null 2>&1
-    killall -9 mihomo >/dev/null 2>&1 || true
-    rm -f /etc/init.d/mihomo
-fi
+should_start() {
+    [ -f "$ENABLED_FILE" ] && [ "$(cat "$ENABLED_FILE")" = "0" ] && return 1
+    return 0
+}
 
-# ২. ফায়ারওয়াল এবং পলিসি রাউটিং ক্লিনআপ
-echo "[*] Flushing firewall tables and policy routing..."
-if command -v nft >/dev/null 2>&1; then
-    nft delete table inet uzumaki 2>/dev/null || true
-    nft delete table inet mihomo 2>/dev/null || true
-fi
-if command -v iptables >/dev/null 2>&1; then
-    iptables -t mangle -D PREROUTING -j UZUMAKI 2>/dev/null || true
-    iptables -t mangle -F UZUMAKI 2>/dev/null || true
-    iptables -t mangle -X UZUMAKI 2>/dev/null || true
-fi
-ip rule del fwmark 0x1 table 100 2>/dev/null || true
-ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null || true
+start_service() {
+    if ! should_start; then
+        return 0
+    fi
 
-rm -f /etc/hotplug.d/iface/99-uzumaki
-rm -f /usr/bin/mihomo
-rm -rf /etc/mihomo
+    # Low-RAM Optimization
+    RAM_KB=$(awk '/MemTotal/{print $2}' /proc/meminfo)
+    if [ "$RAM_KB" -lt 262144 ]; then
+        export GOMEMLIMIT=35MiB
+        export GOGC=20
+    else
+        export GOMEMLIMIT=120MiB
+        export GOGC=50
+    fi
 
-rm -f /www/cgi-bin/mihomo-api
-rm -f /www/cgi-bin/mihomo-cfg
-rm -f /www/cgi-bin/mihomo-sub
+    procd_open_instance mihomo
+    procd_set_param command "$PROG" -d "$CONF_DIR" -f "$CONF_DIR/config.yaml"
+    procd_set_param respawn 3600 5 3
+    procd_set_param limits nofile="1048576 1048576"
+    procd_set_param stdout 0
+    procd_set_param stderr 1
+    procd_set_param pidfile /var/run/mihomo.pid
+    procd_close_instance
 
-rm -f /usr/lib/lua/luci/controller/mihomo.lua
-rm -rf /usr/lib/lua/luci/view/mihomo
-rm -f /usr/share/luci/menu.d/luci-app-uzumakiclash.json
-rm -f /usr/share/luci/menu.d/luci-app-dinoclash.json
+    logger -t uzumaki "🌀 UzumakiClash Started in TUN Auto-Route Mode."
+}
 
-uci -q delete firewall.uzumaki_rule 2>/dev/null
-uci -q delete firewall.mihomo_proxy 2>/dev/null
-uci commit firewall
-/etc/init.d/firewall restart >/dev/null 2>&1 || true
+stop_service() {
+    killall -9 mihomo 2>/dev/null || true
+    logger -t uzumaki "🌀 UzumakiClash Stopped cleanly."
+}
 
-rm -rf /tmp/luci-*
-/etc/init.d/rpcd restart >/dev/null 2>&1
-/etc/init.d/uhttpd restart >/dev/null 2>&1
-
-echo ""
-echo "══════════════════════════════════════════════════════════════"
-echo "✅ UzumakiClash has been completely removed!"
-echo "   Your router's native network has been fully restored."
-echo "══════════════════════════════════════════════════════════════"
-echo ""
+service_triggers() {
+    procd_add_reload_trigger "mihomo"
+}
