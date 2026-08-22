@@ -1,40 +1,60 @@
 #!/bin/sh
+# ═══════════════════════════════════════════════════════════════════════
+# 🌀 UzumakiClash - Universal Uninstaller (opkg & apk Clean Purge)
+# Repo: https://github.com/jahid421/UzumakiClash-Openwrt
+# Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
+# ═══════════════════════════════════════════════════════════════════════
+
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  🌀 UzumakiClash Safe Uninstaller                             ║"
+echo "║  🌀 UzumakiClash Universal Uninstaller                        ║"
+echo "║  Safely Reverting Network, Firewall & System Changes         ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
-# ১. সার্ভিস পুরোপুরি বন্ধ করা
+# ১. সার্ভিস বন্ধ করা
 if [ -f /etc/init.d/mihomo ]; then
+    echo "[*] Stopping UzumakiClash daemon..."
     /etc/init.d/mihomo stop >/dev/null 2>&1
     /etc/init.d/mihomo disable >/dev/null 2>&1
     killall -9 mihomo >/dev/null 2>&1 || true
     rm -f /etc/init.d/mihomo
 fi
 
-# ২. dnsmasq ডিফল্ট অবস্থায় নিশ্চিত করা
-uci -q delete dhcp.@dnsmasq[0].server
-uci -q delete dhcp.@dnsmasq[0].noresolv
-uci commit dhcp
-/etc/init.d/dnsmasq restart >/dev/null 2>&1
+# ২. ফায়ারওয়াল এবং পলিসি রাউটিং ক্লিনআপ
+echo "[*] Flushing firewall tables..."
+/usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+/usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
 
-# ৩. কাস্টম টেবিল ডিলিট
-nft delete table inet uzumaki 2>/dev/null || true
-nft delete table inet mihomo 2>/dev/null || true
-/etc/init.d/firewall restart >/dev/null 2>&1
-
-# ৪. ফাইল রিমুভ
+# ৩. হটপ্লাগ ও বাইনারি রিমুভ
+rm -f /etc/hotplug.d/iface/99-uzumaki
 rm -f /usr/bin/mihomo
 rm -rf /etc/mihomo
-rm -f /www/cgi-bin/mihomo-*
+
+# ৪. CGI স্ক্রিপ্টস রিমুভ
+rm -f /www/cgi-bin/mihomo-api
+rm -f /www/cgi-bin/mihomo-cfg
+rm -f /www/cgi-bin/mihomo-sub
+
+# ৫. LuCI মেনু ক্লিনআপ
 rm -f /usr/lib/lua/luci/controller/mihomo.lua
 rm -rf /usr/lib/lua/luci/view/mihomo
 rm -f /usr/share/luci/menu.d/luci-app-uzumakiclash.json
-rm -f /etc/hotplug.d/iface/99-uzumaki
 
+# ৬. ফায়ারওয়াল UCI রুলস রিমুভ
+uci -q delete firewall.uzumaki_rule 2>/dev/null
+uci -q delete firewall.mihomo_proxy 2>/dev/null
+uci commit firewall
+/etc/init.d/firewall restart >/dev/null 2>&1 || true
+
+# ৭. LuCI ও ওয়েব সার্ভার ক্যাশ রিলোড
 rm -rf /tmp/luci-*
 /etc/init.d/rpcd restart >/dev/null 2>&1
 /etc/init.d/uhttpd restart >/dev/null 2>&1
 
-echo "✅ UzumakiClash has been safely removed. Your internet is 100% normal!"
+echo ""
+echo "══════════════════════════════════════════════════════════════"
+echo "✅ UzumakiClash has been completely removed!"
+echo "   Your router's native network has been fully restored."
+echo "══════════════════════════════════════════════════════════════"
+echo ""
