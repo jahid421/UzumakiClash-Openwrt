@@ -5,7 +5,6 @@ STOP=05
 
 CONF_DIR="/etc/mihomo"
 PROG="/usr/bin/mihomo"
-TRANSPARENT_FILE="$CONF_DIR/transparent"
 ENABLED_FILE="$CONF_DIR/enabled"
 
 should_start() {
@@ -15,11 +14,10 @@ should_start() {
 
 start_service() {
     if ! should_start; then
-        logger -t uzumaki "UzumakiClash is disabled."
         return 0
     fi
 
-    # মেমোরি অটো-টিউন (Low RAM Guardian)
+    # Low-RAM Optimization
     RAM_KB=$(awk '/MemTotal/{print $2}' /proc/meminfo)
     if [ "$RAM_KB" -lt 262144 ]; then
         export GOMEMLIMIT=35MiB
@@ -38,60 +36,12 @@ start_service() {
     procd_set_param pidfile /var/run/mihomo.pid
     procd_close_instance
 
-    if [ -f "$TRANSPARENT_FILE" ] && [ "$(cat "$TRANSPARENT_FILE")" = "1" ]; then
-        setup_firewall
-    fi
-
-    logger -t uzumaki "🌀 UzumakiClash Engine Started!"
+    logger -t uzumaki "🌀 UzumakiClash Started in TUN Auto-Route Mode."
 }
 
 stop_service() {
-    cleanup_firewall
     killall -9 mihomo 2>/dev/null || true
-    logger -t uzumaki "🌀 UzumakiClash Stopped."
-}
-
-setup_firewall() {
-    cleanup_firewall
-
-    # পলিসি রাউটিং টেবিল তৈরি
-    ip rule add fwmark 0x1 table 100 2>/dev/null || true
-    ip route add local 0.0.0.0/0 dev lo table 100 2>/dev/null || true
-
-    # ১. যদি nftables থাকে (OpenWrt v22+)
-    if command -v nft >/dev/null 2>&1; then
-        nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
-        logger -t uzumaki "Transparent Proxy: nftables loaded"
-    # ২. যদি লিগ্যাসি iptables থাকে (OpenWrt v19/v21)
-    elif command -v iptables >/dev/null 2>&1; then
-        iptables -t mangle -N UZUMAKI 2>/dev/null || true
-        iptables -t mangle -F UZUMAKI
-        iptables -t mangle -A UZUMAKI -d 0.0.0.0/8 -j RETURN
-        iptables -t mangle -A UZUMAKI -d 10.0.0.0/8 -j RETURN
-        iptables -t mangle -A UZUMAKI -d 127.0.0.0/8 -j RETURN
-        iptables -t mangle -A UZUMAKI -d 169.254.0.0/16 -j RETURN
-        iptables -t mangle -A UZUMAKI -d 172.16.0.0/12 -j RETURN
-        iptables -t mangle -A UZUMAKI -d 192.168.0.0/16 -j RETURN
-        iptables -t mangle -A UZUMAKI -d 224.0.0.0/4 -j RETURN
-        iptables -t mangle -A UZUMAKI -d 240.0.0.0/4 -j RETURN
-        iptables -t mangle -A UZUMAKI -p tcp -j TPROXY --on-port 7893 --tproxy-mark 0x1
-        iptables -t mangle -A UZUMAKI -p udp -j TPROXY --on-port 7893 --tproxy-mark 0x1
-        iptables -t mangle -I PREROUTING -j UZUMAKI
-        logger -t uzumaki "Transparent Proxy: iptables TPROXY loaded"
-    fi
-}
-
-cleanup_firewall() {
-    if command -v nft >/dev/null 2>&1; then
-        nft delete table inet uzumaki 2>/dev/null || true
-    fi
-    if command -v iptables >/dev/null 2>&1; then
-        iptables -t mangle -D PREROUTING -j UZUMAKI 2>/dev/null || true
-        iptables -t mangle -F UZUMAKI 2>/dev/null || true
-        iptables -t mangle -X UZUMAKI 2>/dev/null || true
-    fi
-    ip rule del fwmark 0x1 table 100 2>/dev/null || true
-    ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null || true
+    logger -t uzumaki "🌀 UzumakiClash Stopped cleanly."
 }
 
 service_triggers() {
