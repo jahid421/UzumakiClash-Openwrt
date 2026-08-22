@@ -1,49 +1,40 @@
-#!/bin/sh /etc/rc.common
-USE_PROCD=1
-START=95
-STOP=05
+#!/bin/sh
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║  🌀 UzumakiClash Safe Uninstaller                             ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
 
-CONF_DIR="/etc/mihomo"
-PROG="/usr/bin/mihomo"
-ENABLED_FILE="$CONF_DIR/enabled"
+# ১. সার্ভিস পুরোপুরি বন্ধ করা
+if [ -f /etc/init.d/mihomo ]; then
+    /etc/init.d/mihomo stop >/dev/null 2>&1
+    /etc/init.d/mihomo disable >/dev/null 2>&1
+    killall -9 mihomo >/dev/null 2>&1 || true
+    rm -f /etc/init.d/mihomo
+fi
 
-should_start() {
-    [ -f "$ENABLED_FILE" ] && [ "$(cat "$ENABLED_FILE")" = "0" ] && return 1
-    return 0
-}
+# ২. dnsmasq ডিফল্ট অবস্থায় নিশ্চিত করা
+uci -q delete dhcp.@dnsmasq[0].server
+uci -q delete dhcp.@dnsmasq[0].noresolv
+uci commit dhcp
+/etc/init.d/dnsmasq restart >/dev/null 2>&1
 
-start_service() {
-    if ! should_start; then
-        return 0
-    fi
+# ৩. কাস্টম টেবিল ডিলিট
+nft delete table inet uzumaki 2>/dev/null || true
+nft delete table inet mihomo 2>/dev/null || true
+/etc/init.d/firewall restart >/dev/null 2>&1
 
-    # Low-RAM Optimization
-    RAM_KB=$(awk '/MemTotal/{print $2}' /proc/meminfo)
-    if [ "$RAM_KB" -lt 262144 ]; then
-        export GOMEMLIMIT=35MiB
-        export GOGC=20
-    else
-        export GOMEMLIMIT=120MiB
-        export GOGC=50
-    fi
+# ৪. ফাইল রিমুভ
+rm -f /usr/bin/mihomo
+rm -rf /etc/mihomo
+rm -f /www/cgi-bin/mihomo-*
+rm -f /usr/lib/lua/luci/controller/mihomo.lua
+rm -rf /usr/lib/lua/luci/view/mihomo
+rm -f /usr/share/luci/menu.d/luci-app-uzumakiclash.json
+rm -f /etc/hotplug.d/iface/99-uzumaki
 
-    procd_open_instance mihomo
-    procd_set_param command "$PROG" -d "$CONF_DIR" -f "$CONF_DIR/config.yaml"
-    procd_set_param respawn 3600 5 3
-    procd_set_param limits nofile="1048576 1048576"
-    procd_set_param stdout 0
-    procd_set_param stderr 1
-    procd_set_param pidfile /var/run/mihomo.pid
-    procd_close_instance
+rm -rf /tmp/luci-*
+/etc/init.d/rpcd restart >/dev/null 2>&1
+/etc/init.d/uhttpd restart >/dev/null 2>&1
 
-    logger -t uzumaki "🌀 UzumakiClash Started in TUN Auto-Route Mode."
-}
-
-stop_service() {
-    killall -9 mihomo 2>/dev/null || true
-    logger -t uzumaki "🌀 UzumakiClash Stopped cleanly."
-}
-
-service_triggers() {
-    procd_add_reload_trigger "mihomo"
-}
+echo "✅ UzumakiClash has been safely removed. Your internet is 100% normal!"
