@@ -21,7 +21,7 @@ if [ -f /etc/init.d/mihomo ]; then
     rm -f /etc/init.d/mihomo
 fi
 
-# ২. ফায়ারওয়াল এবং পলিসি রাউটিং ক্লিনআপ
+# ২. ফায়ারওয়াল টেবিল ক্লিনআপ
 echo "[*] Flushing firewall tables..."
 /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
 /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
