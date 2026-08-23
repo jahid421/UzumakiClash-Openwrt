@@ -18,7 +18,6 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
         LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
 
-        # ইউজারের কনফিগ ফিল্টার করা
         awk '
         BEGIN { skip=0 }
         /^[a-zA-Z0-9_-]+:/ {
@@ -32,7 +31,6 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         { if (!skip) print $0 }
         ' "$TMP" > "$TMP_CLEAN"
 
-        # রুলস সেকশনে সেফটি ও স্পিড বাইপাস ইনজেক্ট করা
         awk -v lan="$LAN_NET" '
         BEGIN { added=0 }
         /^rules:/ {
@@ -47,7 +45,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 print "  - DOMAIN-SUFFIX,local,DIRECT"
                 print "  - DOMAIN-SUFFIX,lan,DIRECT"
                 print "  - DST-PORT,9595,DIRECT"
-                print "  # Riot Games & Valorant (Direct Low Ping)"
+                print "  # Riot Games Instant Direct"
                 print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,riotcdn.net,DIRECT"
                 print "  - DOMAIN-SUFFIX,playvalorant.com,DIRECT"
@@ -55,7 +53,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
                 print "  - DOMAIN-KEYWORD,vanguard,DIRECT"
                 print "  - DOMAIN-KEYWORD,riot,DIRECT"
-                print "  # Microsoft Store, Windows Update & CDNs (Direct Turbo)"
+                print "  # Microsoft Store CDN Turbo Direct"
                 print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,dl.delivery.mp.microsoft.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,tlu.dl.delivery.mp.microsoft.com,DIRECT"
@@ -95,7 +93,7 @@ redir-port: 7892
 allow-lan: true
 bind-address: '*'
 mode: rule
-log-level: info
+log-level: error
 ipv6: false
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
@@ -121,7 +119,7 @@ dns:
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
-    - https://dns.google/dns-query
+    - 1.0.0.1
 
 HEOF
         cat "$TMP" >> "$TMP_FINAL"
