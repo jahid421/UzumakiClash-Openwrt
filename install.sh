@@ -134,7 +134,6 @@ if [ -d /usr/share/luci/menu.d ]; then
 JSONEOF
 fi
 
-# সার্ভিস বুট রেজিস্ট্রেশন
 /etc/init.d/mihomo enable
 
 # স্টেট-অ্যাওয়ার বুট ও হটপ্লাগ পারসিসটেন্স
@@ -155,10 +154,15 @@ fi
 HEOF
 chmod +x /etc/hotplug.d/iface/99-uzumaki
 
-# ডুয়াল-ওয়ান বন্ডিং ও MSS ক্ল্যাম্পিং অপ্টিমাইজেশন
+# MWAN3 ডুয়াল-ওয়ান বন্ডিং টিউনিং (Sticky আনলক)
 if [ -f /etc/config/mwan3 ]; then
     uci set mwan3.globals.local_source='lan' 2>/dev/null || true
-    uci set mwan3.balanced.sticky='0' 2>/dev/null || true
+    for p in $(uci show mwan3 | grep '=policy' | cut -d'.' -f2 | cut -d'=' -f1); do
+        uci set mwan3.$p.sticky='0' 2>/dev/null || true
+    done
+    for r in $(uci show mwan3 | grep '=rule' | cut -d'.' -f2 | cut -d'=' -f1); do
+        uci set mwan3.$r.sticky='0' 2>/dev/null || true
+    done
     uci -q delete mwan3.direct_http_split 2>/dev/null
     uci set mwan3.direct_http_split=rule
     uci set mwan3.direct_http_split.dest_port='80,443'
@@ -166,9 +170,10 @@ if [ -f /etc/config/mwan3 ]; then
     uci set mwan3.direct_http_split.sticky='0'
     uci set mwan3.direct_http_split.use_policy='balanced'
     uci commit mwan3
+    /etc/init.d/mwan3 restart >/dev/null 2>&1 || true
 fi
 
-# কার্নেল নেটওয়ার্ক বাফার ও ল্যাগ-ফ্রি টিউনিং
+# কার্নেল টিউনিং
 cat << 'EOF' > /etc/sysctl.d/99-uzumaki-tune.conf
 net.ipv4.tcp_window_scaling = 1
 net.ipv4.tcp_timestamps = 1
@@ -187,7 +192,6 @@ uci add_list firewall.uzumaki_rule.proto='udp'
 uci set firewall.uzumaki_rule.dest_port='7890 7892 9595 1053'
 uci set firewall.uzumaki_rule.target='ACCEPT'
 
-# MTU ফিক্স
 for zone in $(uci show firewall | grep '=zone' | cut -d'.' -f2 | cut -d'=' -f1); do
     uci set firewall.$zone.mtu_fix='1' 2>/dev/null || true
 done
