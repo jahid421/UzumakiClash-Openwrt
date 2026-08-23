@@ -7,7 +7,7 @@ CONF_DIR="/etc/mihomo"
 PROG="/usr/bin/mihomo"
 
 start_service() {
-    # ইউজার যদি Stop করে রাখে (0), তবে রিবুটের পর চালু হবে না (Stop থাকবে)
+    # ইউজার যদি Stop করে রাখে (0), তবে রিবুটের পর চালু হবে না
     if [ -f "$CONF_DIR/enabled" ] && [ "$(cat "$CONF_DIR/enabled")" = "0" ]; then
         return 0
     fi
