@@ -3,7 +3,7 @@ redir-port: 7892
 allow-lan: true
 bind-address: '*'
 mode: rule
-log-level: info
+log-level: error
 ipv6: false
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
@@ -29,7 +29,7 @@ dns:
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
-    - https://dns.google/dns-query
+    - 1.0.0.1
 
 proxies: []
 
