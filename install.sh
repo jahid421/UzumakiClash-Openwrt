@@ -155,6 +155,29 @@ fi
 HEOF
 chmod +x /etc/hotplug.d/iface/99-uzumaki
 
+# ডুয়াল-ওয়ান বন্ডিং ও MSS ক্ল্যাম্পিং অপ্টিমাইজেশন
+if [ -f /etc/config/mwan3 ]; then
+    uci set mwan3.globals.local_source='lan' 2>/dev/null || true
+    uci set mwan3.balanced.sticky='0' 2>/dev/null || true
+    uci -q delete mwan3.direct_http_split 2>/dev/null
+    uci set mwan3.direct_http_split=rule
+    uci set mwan3.direct_http_split.dest_port='80,443'
+    uci set mwan3.direct_http_split.proto='tcp'
+    uci set mwan3.direct_http_split.sticky='0'
+    uci set mwan3.direct_http_split.use_policy='balanced'
+    uci commit mwan3
+fi
+
+# কার্নেল নেটওয়ার্ক বাফার ও ল্যাগ-ফ্রি টিউনিং
+cat << 'EOF' > /etc/sysctl.d/99-uzumaki-tune.conf
+net.ipv4.tcp_window_scaling = 1
+net.ipv4.tcp_timestamps = 1
+net.ipv4.tcp_sack = 1
+net.ipv4.tcp_no_metrics_save = 1
+net.core.default_qdisc = fq_codel
+EOF
+sysctl -p /etc/sysctl.d/99-uzumaki-tune.conf >/dev/null 2>&1
+
 uci -q delete firewall.uzumaki_rule 2>/dev/null
 uci set firewall.uzumaki_rule=rule
 uci set firewall.uzumaki_rule.name='Allow-UzumakiClash'
@@ -163,6 +186,11 @@ uci add_list firewall.uzumaki_rule.proto='tcp'
 uci add_list firewall.uzumaki_rule.proto='udp'
 uci set firewall.uzumaki_rule.dest_port='7890 7892 9595 1053'
 uci set firewall.uzumaki_rule.target='ACCEPT'
+
+# MTU ফিক্স
+for zone in $(uci show firewall | grep '=zone' | cut -d'.' -f2 | cut -d'=' -f1); do
+    uci set firewall.$zone.mtu_fix='1' 2>/dev/null || true
+done
 uci commit firewall
 /etc/init.d/firewall restart >/dev/null 2>&1 || true
 
