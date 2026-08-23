@@ -32,7 +32,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         { if (!skip) print $0 }
         ' "$TMP" > "$TMP_CLEAN"
 
-        # রুলস সেকশনে সেফটি ইনজেকশন
+        # রুলস সেকশনে সেফটি ও স্পিড বাইপাস ইনজেক্ট করা
         awk -v lan="$LAN_NET" '
         BEGIN { added=0 }
         /^rules:/ {
@@ -47,13 +47,28 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 print "  - DOMAIN-SUFFIX,local,DIRECT"
                 print "  - DOMAIN-SUFFIX,lan,DIRECT"
                 print "  - DST-PORT,9595,DIRECT"
+                print "  # Riot Games & Valorant (Low Ping Direct)"
+                print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,playvalorant.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,leagueoflegends.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+                print "  - DOMAIN-KEYWORD,vanguard,DIRECT"
+                print "  - DOMAIN-KEYWORD,riot,DIRECT"
+                print "  # Microsoft Store CDN Turbo (Full Speed Direct)"
+                print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,dl.delivery.mp.microsoft.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,update.microsoft.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,download.windowsupdate.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,download.microsoft.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,xboxlive.com,DIRECT"
+                print "  - DOMAIN-KEYWORD,windowsupdate,DIRECT"
                 print "  # Remote Desktop Direct"
                 print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
                 print "  - DOMAIN-SUFFIX,ultraviewer.net,DIRECT"
                 print "  - DOMAIN-KEYWORD,anydesk,DIRECT"
                 print "  - DOMAIN-SUFFIX,anydesk.com,DIRECT"
                 print "  - DOMAIN-KEYWORD,teamviewer,DIRECT"
-                print "  - DOMAIN-SUFFIX,teamviewer.com,DIRECT"
                 print "  - DOMAIN-KEYWORD,rustdesk,DIRECT"
                 print "  # BD Apps Direct"
                 print "  - DOMAIN-SUFFIX,bd,DIRECT"
@@ -69,7 +84,6 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         { print }
         ' "$TMP_CLEAN" > "$TMP"
 
-        # মাস্টার হেডার
         cat << 'HEOF' > "$TMP_FINAL"
 mixed-port: 7890
 redir-port: 7892
@@ -96,6 +110,14 @@ dns:
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
+    - '+.riotgames.com'
+    - '+.playvalorant.com'
+    - '+.leagueoflegends.com'
+    - '+.pvp.net'
+    - '+.delivery.mp.microsoft.com'
+    - '+.dl.delivery.mp.microsoft.com'
+    - '+.windowsupdate.com'
+    - '+.xboxlive.com'
     - '+.ultraviewer.net'
     - '+.anydesk.com'
     - '+.teamviewer.com'
@@ -111,7 +133,6 @@ dns:
 HEOF
         cat "$TMP" >> "$TMP_FINAL"
 
-        # সিনট্যাক্স টেস্ট
         if /usr/bin/mihomo -d /etc/mihomo -f "$TMP_FINAL" -t 2>/tmp/uzcfg_err.log; then
             mv "$TMP_FINAL" /etc/mihomo/config.yaml
             echo "1" > /etc/mihomo/transparent
