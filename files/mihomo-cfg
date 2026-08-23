@@ -38,7 +38,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         /^rules:/ {
             print $0
             if (!added) {
-                print "  # LAN Safety"
+                print "  # LAN Safety Direct"
                 print "  - IP-CIDR," lan ",DIRECT,no-resolve"
                 print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
                 print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
@@ -47,21 +47,26 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 print "  - DOMAIN-SUFFIX,local,DIRECT"
                 print "  - DOMAIN-SUFFIX,lan,DIRECT"
                 print "  - DST-PORT,9595,DIRECT"
-                print "  # Riot Games & Valorant (Low Ping Direct)"
+                print "  # Riot Games & Valorant (Direct Low Ping)"
                 print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,riotcdn.net,DIRECT"
                 print "  - DOMAIN-SUFFIX,playvalorant.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,leagueoflegends.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
                 print "  - DOMAIN-KEYWORD,vanguard,DIRECT"
                 print "  - DOMAIN-KEYWORD,riot,DIRECT"
-                print "  # Microsoft Store CDN Turbo (Full Speed Direct)"
+                print "  # Microsoft Store, Windows Update & CDNs (Direct Turbo)"
                 print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,dl.delivery.mp.microsoft.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,tlu.dl.delivery.mp.microsoft.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,emdl.ws.microsoft.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,update.microsoft.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,download.windowsupdate.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,download.microsoft.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,xboxlive.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,wustat.windows.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,msecnd.net,DIRECT"
+                print "  - DOMAIN-SUFFIX,store-images.s-microsoft.com,DIRECT"
                 print "  - DOMAIN-KEYWORD,windowsupdate,DIRECT"
                 print "  # Remote Desktop Direct"
                 print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
@@ -70,7 +75,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 print "  - DOMAIN-SUFFIX,anydesk.com,DIRECT"
                 print "  - DOMAIN-KEYWORD,teamviewer,DIRECT"
                 print "  - DOMAIN-KEYWORD,rustdesk,DIRECT"
-                print "  # BD Apps Direct"
+                print "  # Bangladesh Apps Direct"
                 print "  - DOMAIN-SUFFIX,bd,DIRECT"
                 print "  - DOMAIN-KEYWORD,bkash,DIRECT"
                 print "  - DOMAIN-KEYWORD,nagad,DIRECT"
@@ -110,18 +115,6 @@ dns:
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
-    - '+.riotgames.com'
-    - '+.playvalorant.com'
-    - '+.leagueoflegends.com'
-    - '+.pvp.net'
-    - '+.delivery.mp.microsoft.com'
-    - '+.dl.delivery.mp.microsoft.com'
-    - '+.windowsupdate.com'
-    - '+.xboxlive.com'
-    - '+.ultraviewer.net'
-    - '+.anydesk.com'
-    - '+.teamviewer.com'
-    - '+.rustdesk.com'
   default-nameserver:
     - 1.1.1.1
     - 8.8.8.8
