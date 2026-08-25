@@ -17,14 +17,6 @@
 </p>
 
 ---
-
-![Stars](https://img.shields.io/github/stars/jahid421/UzumakiClash?style=for-the-badge&logo=github&color=8b5cf6)
-![Forks](https://img.shields.io/github/forks/jahid421/UzumakiClash?style=for-the-badge&logo=github&color=7c3aed)
-![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
-![OpenWrt](https://img.shields.io/badge/OpenWrt-19.07--25.x%2B-blue?style=for-the-badge&logo=openwrt)
-![RAM Footprint](https://img.shields.io/badge/RAM%20Usage-~20MB%20Locked-brightgreen?style=for-the-badge)
-![Version](https://img.shields.io/badge/version-1.0%20Release-orange?style=for-the-badge)
-
 # 🌀 UzumakiClash for OpenWrt
 
 **Ultra-lightweight, lightning-fast, and universal gateway proxy panel for OpenWrt routers.**
