@@ -15,7 +15,6 @@ start_service() {
     if [ -f "$CONF_DIR/enabled" ] && [ "$(cat "$CONF_DIR/enabled")" = "0" ]; then
         return 0
     fi
-
     export GOMEMLIMIT=40MiB
     export GOGC=20
 
@@ -23,13 +22,10 @@ start_service() {
     procd_set_param command "$PROG" -d "$CONF_DIR" -f "$CONF_DIR/config.yaml"
     procd_set_param respawn 3600 5 5
     procd_set_param limits nofile="1048576 1048576"
-    procd_set_param stdout 0
-    procd_set_param stderr 1
     procd_set_param pidfile /var/run/mihomo.pid
     procd_close_instance
 
-    sleep 2
-
+    sleep 3
     if [ -f "$CONF_DIR/transparent" ] && [ "$(cat "$CONF_DIR/transparent")" = "1" ]; then
         /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
         /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
@@ -38,13 +34,10 @@ start_service() {
 
 stop_service() {
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     killall -9 mihomo 2>/dev/null || true
     rm -f /var/run/mihomo.pid
 }
 
 service_triggers() {
-    procd_add_reload_trigger "mihomo"
-    procd_add_reload_trigger "network"
-    procd_add_reload_trigger "firewall"
+    procd_add_reload_trigger "mihomo" "network" "firewall"
 }
