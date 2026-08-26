@@ -67,13 +67,8 @@ case "$A" in
     armv7*|arm_cortex-a7*|arm_cortex-a9*|arm_cortex-a15*|arm_cortex-a53*) M="armv7" ;;
     armv6*|arm_arm1176*) M="armv6" ;;
     armv5*|arm_arm926*) M="armv5" ;;
-    mips64el*|mips64le*) M="mips64le" ;;
-    mips64*) M="mips64" ;;
     mipsel*|mipsle*|mipsel_24kc*|mipsel_74kc*) M="mipsle-softfloat" ;;
     mips*|mips_24kc*|mips_4kec*) M="mips-softfloat" ;;
-    riscv64*) M="riscv64" ;;
-    i386*|i686*) M="386" ;;
-    loongarch64*) M="loong64" ;;
     *) M="amd64-compatible" ;;
 esac
 echo "[✓] Selected Core Binary: mihomo-linux-$M-$V"
@@ -92,18 +87,6 @@ mkdir -p $D/ui $D/profiles /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lu
 
 echo "0" > $D/transparent
 echo "0" > $D/enabled
-
-echo "[*] Fetching GeoData & Offline UI..."
-dl "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" $D/geoip.dat
-dl "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" $D/geosite.dat
-dl "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" $D/Country.mmdb
-
-cd /tmp && dl "https://github.com/MetaCubeX/metacubexd/releases/latest/download/compressed-dist.tgz" ui.tgz
-if [ -s ui.tgz ]; then
-    rm -rf $D/ui/*
-    tar -xzf ui.tgz -C $D/ui/ 2>/dev/null && rm -f ui.tgz
-    [ -d "$D/ui/dist" ] && mv $D/ui/dist/* $D/ui/ 2>/dev/null && rm -rf $D/ui/dist
-fi
 
 echo "[*] Injecting Uzumaki Scripts..."
 dl "$REPO/files/mihomo.init" /etc/init.d/mihomo
@@ -134,69 +117,11 @@ if [ -d /usr/share/luci/menu.d ]; then
 JSONEOF
 fi
 
+# বুট এনাবল করা
 /etc/init.d/mihomo enable
 
-# স্টেট-অ্যাওয়ার বুট ও হটপ্লাগ পারসিসটেন্স
-mkdir -p /etc/hotplug.d/iface
-cat << 'HEOF' > /etc/hotplug.d/iface/99-uzumaki
-#!/bin/sh
-if [ "$ACTION" = "ifup" ]; then
-    if [ -f /etc/mihomo/enabled ] && [ "$(cat /etc/mihomo/enabled)" = "1" ]; then
-        sleep 2
-        if ! pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
-            /etc/init.d/mihomo restart >/dev/null 2>&1
-        else
-            /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-            /usr/sbin/nft -f /etc/mihomo/nft.conf 2>/dev/null || true
-        fi
-    fi
-fi
-HEOF
-chmod +x /etc/hotplug.d/iface/99-uzumaki
-
-# MWAN3 ডুয়াল-ওয়ান বন্ডিং টিউনিং (Sticky আনলক)
-if [ -f /etc/config/mwan3 ]; then
-    uci set mwan3.globals.local_source='lan' 2>/dev/null || true
-    for p in $(uci show mwan3 | grep '=policy' | cut -d'.' -f2 | cut -d'=' -f1); do
-        uci set mwan3.$p.sticky='0' 2>/dev/null || true
-    done
-    for r in $(uci show mwan3 | grep '=rule' | cut -d'.' -f2 | cut -d'=' -f1); do
-        uci set mwan3.$r.sticky='0' 2>/dev/null || true
-    done
-    uci -q delete mwan3.direct_http_split 2>/dev/null
-    uci set mwan3.direct_http_split=rule
-    uci set mwan3.direct_http_split.dest_port='80,443'
-    uci set mwan3.direct_http_split.proto='tcp'
-    uci set mwan3.direct_http_split.sticky='0'
-    uci set mwan3.direct_http_split.use_policy='balanced'
-    uci commit mwan3
-    /etc/init.d/mwan3 restart >/dev/null 2>&1 || true
-fi
-
-# কার্নেল টিউনিং
-cat << 'EOF' > /etc/sysctl.d/99-uzumaki-tune.conf
-net.ipv4.tcp_window_scaling = 1
-net.ipv4.tcp_timestamps = 1
-net.ipv4.tcp_sack = 1
-net.ipv4.tcp_no_metrics_save = 1
-net.core.default_qdisc = fq_codel
-EOF
-sysctl -p /etc/sysctl.d/99-uzumaki-tune.conf >/dev/null 2>&1
-
-uci -q delete firewall.uzumaki_rule 2>/dev/null
-uci set firewall.uzumaki_rule=rule
-uci set firewall.uzumaki_rule.name='Allow-UzumakiClash'
-uci set firewall.uzumaki_rule.src='lan'
-uci add_list firewall.uzumaki_rule.proto='tcp'
-uci add_list firewall.uzumaki_rule.proto='udp'
-uci set firewall.uzumaki_rule.dest_port='7890 7892 9595 1053'
-uci set firewall.uzumaki_rule.target='ACCEPT'
-
-for zone in $(uci show firewall | grep '=zone' | cut -d'.' -f2 | cut -d'=' -f1); do
-    uci set firewall.$zone.mtu_fix='1' 2>/dev/null || true
-done
-uci commit firewall
-/etc/init.d/firewall restart >/dev/null 2>&1 || true
+# ক্ল্যাশ রানিং থাকলে রিস্টার্ট করা
+/etc/init.d/mihomo restart >/dev/null 2>&1
 
 rm -rf /tmp/luci-*
 /etc/init.d/rpcd restart >/dev/null 2>&1
@@ -206,10 +131,6 @@ LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
 
 echo ""
 echo "══════════════════════════════════════════════════════════════"
-echo "🌀 UzumakiClash Installed Successfully on OpenWrt ($PKG_TYPE)!"
-echo ""
-echo "   🌐 LuCI Panel: http://$LAN_IP"
-echo "                  ➔ Services ➔ UzumakiClash 🌀"
-echo "   📊 Dashboard:  http://$LAN_IP:9595/ui"
-echo "   🔑 Secret:     flclash123"
+echo "🌀 UzumakiClash Fixed Version Installed Successfully!"
+echo "   🌐 Dashboard: http://$LAN_IP/cgi-bin/luci/admin/services/mihomo"
 echo "══════════════════════════════════════════════════════════════"
