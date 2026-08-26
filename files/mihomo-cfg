@@ -1,68 +1,25 @@
 #!/bin/sh
+# 🌀 UzumakiClash - Smart Config Optimizer (Turbo Edition)
 echo "Content-Type: text/plain"
 echo ""
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
-    TMP="/tmp/user_raw_$$.yaml"
-    TMP_CLEAN="/tmp/user_clean_$$.yaml"
-    TMP_FINAL="/tmp/user_final_$$.yaml"
+    TMP="/tmp/user_raw_$$.yaml"; TMP_CLEAN="/tmp/user_clean_$$.yaml"; TMP_FINAL="/tmp/user_final_$$.yaml"
     trap "rm -f /tmp/user_*_$$.yaml /tmp/uzcfg_err.log" EXIT
-
     tr -d '\r' > "$TMP"
-
     if [ -s "$TMP" ]; then
-        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
-        LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
-
-        awk '
-        BEGIN { skip=0 }
-        /^[a-zA-Z0-9_-]+:/ {
-            key = $1
-            if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns):/) {
-                skip=1
-            } else {
-                skip=0
-            }
-        }
-        { if (!skip) print $0 }
-        ' "$TMP" > "$TMP_CLEAN"
-
-        awk -v lan="$LAN_NET" '
-        BEGIN { added=0 }
-        /^rules:/ {
-            print $0
-            if (!added) {
-                print "  # LAN Safety Direct"
-                print "  - IP-CIDR," lan ",DIRECT,no-resolve"
-                print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
-                print "  - DOMAIN-SUFFIX,local,DIRECT"
-                print "  - DOMAIN-SUFFIX,lan,DIRECT"
-                print "  - DST-PORT,9595,DIRECT"
-                print "  # Riot Games Direct"
-                print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,riotcdn.net,DIRECT"
-                print "  - DOMAIN-KEYWORD,riot,DIRECT"
-                print "  # Microsoft Store Turbo Direct (Fixed)"
-                print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-                print "  - DOMAIN-KEYWORD,windows,DIRECT"
-                print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,msecnd.net,DIRECT"
-                print "  # Bangladesh Apps Direct"
-                print "  - DOMAIN-SUFFIX,bd,DIRECT"
-                print "  - DOMAIN-KEYWORD,bkash,DIRECT"
-                print "  - DOMAIN-KEYWORD,nagad,DIRECT"
+        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1"); LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
+        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key = $1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) { skip=1 } else { skip=0 } } { if (!skip) print $0 }' "$TMP" > "$TMP_CLEAN"
+        awk -v lan="$LAN_NET" 'BEGIN { added=0 } /^rules:/ { print $0; if (!added) {
+                print "  # 1. Local Bypass\n  - IP-CIDR," lan ",DIRECT,no-resolve\n  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve\n  - DOMAIN-SUFFIX,local,DIRECT\n  - DOMAIN-SUFFIX,lan,DIRECT"
+                print "  # 2. Microsoft Turbo (Direct)\n  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,windows,DIRECT\n  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT\n  - DOMAIN-SUFFIX,msecnd.net,DIRECT"
+                print "  # 3. Gaming & BD Apps\n  - DOMAIN-SUFFIX,riotgames.com,DIRECT\n  - DOMAIN-KEYWORD,riot,DIRECT\n  - DOMAIN-KEYWORD,bkash,DIRECT\n  - DOMAIN-KEYWORD,nagad,DIRECT"
                 added=1
-            }
-            next
-        }
-        { print }
-        ' "$TMP_CLEAN" > "$TMP"
-
+            } next } { print }' "$TMP_CLEAN" > "$TMP"
         cat << 'HEOF' > "$TMP_FINAL"
 mixed-port: 7890
 redir-port: 7892
+tproxy-port: 7893
 allow-lan: true
 bind-address: '*'
 mode: rule
@@ -71,8 +28,21 @@ ipv6: false
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
+
+# Turbo Performance Tuning
 tcp-concurrent: true
-unified-delay: true
+unified-delay: false
+global-client-fingerprint: chrome
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  sniff:
+    TLS: {ports: [443, 8443]}
+    HTTP: {ports: [80, 8080-8880], override-destination: true}
 
 dns:
   enable: true
@@ -80,22 +50,14 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  fake-ip-filter:
-    - '+.microsoft.com'
-    - '+.windowsupdate.com'
-    - '+.msecnd.net'
-    - '+.delivery.mp.microsoft.com'
-    - '*.lan'
-    - '*.local'
-  default-nameserver: [1.1.1.1, 8.8.8.8]
+  fake-ip-filter: ['+', '.microsoft.com', '.windowsupdate.com', '.delivery.mp.microsoft.com', '*.lan', '*.local']
   nameserver: [1.1.1.1, 8.8.8.8]
+  proxy-server-nameserver: [1.1.1.1]
+  respect-rules: true
 HEOF
         cat "$TMP" >> "$TMP_FINAL"
-
-        if /usr/bin/mihomo -d /etc/mihomo -f "$TMP_FINAL" -t 2>/tmp/uzcfg_err.log; then
+        if /usr/bin/mihomo -d /etc/mihomo -f "$TMP_FINAL" -t >/dev/null 2>&1; then
             mv "$TMP_FINAL" /etc/mihomo/config.yaml
-            echo "1" > /etc/mihomo/transparent
-            echo "1" > /etc/mihomo/enabled
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
