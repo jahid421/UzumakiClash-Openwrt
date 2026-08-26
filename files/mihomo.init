@@ -22,6 +22,8 @@ start_service() {
     procd_set_param command "$PROG" -d "$CONF_DIR" -f "$CONF_DIR/config.yaml"
     procd_set_param respawn 3600 5 5
     procd_set_param limits nofile="1048576 1048576"
+    procd_set_param stdout 0
+    procd_set_param stderr 1
     procd_set_param pidfile /var/run/mihomo.pid
     procd_close_instance
 
