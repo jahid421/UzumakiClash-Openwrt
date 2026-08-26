@@ -6,8 +6,12 @@ STOP=10
 CONF_DIR="/etc/mihomo"
 PROG="/usr/bin/mihomo"
 
+boot() {
+    sleep 5
+    start
+}
+
 start_service() {
-    # ইউজার যদি Stop করে রাখে (0), তবে রিবুটের পর চালু হবে না
     if [ -f "$CONF_DIR/enabled" ] && [ "$(cat "$CONF_DIR/enabled")" = "0" ]; then
         return 0
     fi
@@ -24,9 +28,8 @@ start_service() {
     procd_set_param pidfile /var/run/mihomo.pid
     procd_close_instance
 
-    sleep 1
+    sleep 2
 
-    # ইউজার যদি Start অবস্থায় রেখে রিবুট দেয়, তবে ফায়ারওয়াল অটো লোড হবে
     if [ -f "$CONF_DIR/transparent" ] && [ "$(cat "$CONF_DIR/transparent")" = "1" ]; then
         /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
         /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
@@ -42,4 +45,6 @@ stop_service() {
 
 service_triggers() {
     procd_add_reload_trigger "mihomo"
+    procd_add_reload_trigger "network"
+    procd_add_reload_trigger "firewall"
 }
