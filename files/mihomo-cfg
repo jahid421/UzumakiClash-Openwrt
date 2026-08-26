@@ -1,6 +1,7 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════
 # 🌀 UzumakiClash - Bulletproof Config Optimizer
+# Fixed: Microsoft Store & High-Speed CDN Bypass
 # ═══════════════════════════════════════════════
 
 echo "Content-Type: text/plain"
@@ -53,19 +54,18 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
                 print "  - DOMAIN-KEYWORD,vanguard,DIRECT"
                 print "  - DOMAIN-KEYWORD,riot,DIRECT"
-                print "  # Microsoft Store CDN Turbo Direct"
-                print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,dl.delivery.mp.microsoft.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,tlu.dl.delivery.mp.microsoft.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,emdl.ws.microsoft.com,DIRECT"
+                print "  # Microsoft Store CDN Turbo Direct (Fixed Speed)"
+                print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
+                print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,update.microsoft.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,download.windowsupdate.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,download.microsoft.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,wustat.windows.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,msecnd.net,DIRECT"
-                print "  - DOMAIN-SUFFIX,store-images.s-microsoft.com,DIRECT"
-                print "  - DOMAIN-KEYWORD,windowsupdate,DIRECT"
+                print "  - DOMAIN-SUFFIX,microsoft.com.edgesuite.net,DIRECT"
+                print "  - DOMAIN-SUFFIX,azureedge.net,DIRECT"
+                print "  - DOMAIN-SUFFIX,msedge.net,DIRECT"
+                print "  # Microsoft Store Speed Fix for IPv4/UDP"
+                print "  - IP-CIDR,20.190.128.0/18,DIRECT,no-resolve"
+                print "  - IP-CIDR,40.126.0.0/18,DIRECT,no-resolve"
                 print "  # Remote Desktop Direct"
                 print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
                 print "  - DOMAIN-SUFFIX,ultraviewer.net,DIRECT"
@@ -113,6 +113,11 @@ dns:
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
+    - '+.microsoft.com'
+    - '+.windowsupdate.com'
+    - '+.msecnd.net'
+    - '+.edgesuite.net'
+    - '+.delivery.mp.microsoft.com'
   default-nameserver:
     - 1.1.1.1
     - 8.8.8.8
