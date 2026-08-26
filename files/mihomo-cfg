@@ -1,9 +1,4 @@
 #!/bin/sh
-# ═══════════════════════════════════════════════
-# 🌀 UzumakiClash - Bulletproof Config Optimizer
-# Fixed: Microsoft Store & High-Speed CDN Bypass
-# ═══════════════════════════════════════════════
-
 echo "Content-Type: text/plain"
 echo ""
 
@@ -40,46 +35,24 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 print "  # LAN Safety Direct"
                 print "  - IP-CIDR," lan ",DIRECT,no-resolve"
                 print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
-                print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
-                print "  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
-                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
                 print "  - DOMAIN-SUFFIX,local,DIRECT"
                 print "  - DOMAIN-SUFFIX,lan,DIRECT"
                 print "  - DST-PORT,9595,DIRECT"
-                print "  # Riot Games Instant Direct"
+                print "  # Riot Games Direct"
                 print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,riotcdn.net,DIRECT"
-                print "  - DOMAIN-SUFFIX,playvalorant.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,leagueoflegends.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-                print "  - DOMAIN-KEYWORD,vanguard,DIRECT"
                 print "  - DOMAIN-KEYWORD,riot,DIRECT"
-                print "  # Microsoft Store CDN Turbo Direct (Fixed Speed)"
+                print "  # Microsoft Store Turbo Direct (Fixed)"
                 print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
+                print "  - DOMAIN-KEYWORD,windows,DIRECT"
                 print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,msecnd.net,DIRECT"
-                print "  - DOMAIN-SUFFIX,microsoft.com.edgesuite.net,DIRECT"
-                print "  - DOMAIN-SUFFIX,azureedge.net,DIRECT"
-                print "  - DOMAIN-SUFFIX,msedge.net,DIRECT"
-                print "  # Microsoft Store Speed Fix for IPv4/UDP"
-                print "  - IP-CIDR,20.190.128.0/18,DIRECT,no-resolve"
-                print "  - IP-CIDR,40.126.0.0/18,DIRECT,no-resolve"
-                print "  # Remote Desktop Direct"
-                print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
-                print "  - DOMAIN-SUFFIX,ultraviewer.net,DIRECT"
-                print "  - DOMAIN-KEYWORD,anydesk,DIRECT"
-                print "  - DOMAIN-SUFFIX,anydesk.com,DIRECT"
-                print "  - DOMAIN-KEYWORD,teamviewer,DIRECT"
-                print "  - DOMAIN-KEYWORD,rustdesk,DIRECT"
                 print "  # Bangladesh Apps Direct"
                 print "  - DOMAIN-SUFFIX,bd,DIRECT"
                 print "  - DOMAIN-KEYWORD,bkash,DIRECT"
                 print "  - DOMAIN-KEYWORD,nagad,DIRECT"
-                print "  - DOMAIN-KEYWORD,rocket,DIRECT"
-                print "  - DOMAIN-KEYWORD,daraz,DIRECT"
-                print "  - DOMAIN-KEYWORD,chorki,DIRECT"
                 added=1
             }
             next
@@ -108,24 +81,14 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
-    - '*.lan'
-    - '*.local'
-    - 'time.*.com'
-    - 'ntp.*.com'
-    - '+.pool.ntp.org'
     - '+.microsoft.com'
     - '+.windowsupdate.com'
     - '+.msecnd.net'
-    - '+.edgesuite.net'
     - '+.delivery.mp.microsoft.com'
-  default-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-  nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-    - 1.0.0.1
-
+    - '*.lan'
+    - '*.local'
+  default-nameserver: [1.1.1.1, 8.8.8.8]
+  nameserver: [1.1.1.1, 8.8.8.8]
 HEOF
         cat "$TMP" >> "$TMP_FINAL"
 
@@ -136,11 +99,8 @@ HEOF
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
-            ERR=$(head -n 3 /tmp/uzcfg_err.log 2>/dev/null)
-            echo "INVALID YAML: $ERR"
+            echo "INVALID YAML"
         fi
-    else
-        echo "EMPTY"
     fi
 else
     cat /etc/mihomo/config.yaml 2>/dev/null
