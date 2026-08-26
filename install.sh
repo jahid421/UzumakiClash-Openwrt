@@ -1,6 +1,6 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════════════
-# 🌀 UzumakiClash - Master Installer (Sharingan Edition v2)
+# 🌀 UzumakiClash - Master Installer (Sharingan Edition)
 # Developed by: Jahid Hasan Shuvo (@crazy_boy_jahid)
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -8,16 +8,13 @@ REPO="https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main"
 V="v1.18.10"
 D="/etc/mihomo"
 
-# 🌀 Advanced Sharingan Spinner Logic
+# 🌀 Sharingan Spinner Logic
 sharingan_eye() {
     local pid=$!
     local delay=0.1
-    # শারিঙ্গান তোমোই ঘোরার উন্নত সিকোয়েন্স
     local frames='◜ ◠ ◝ ◞ ◡ ◟'
-    
     while [ "$(ps | awk '{print $1}' | grep $pid)" ]; do
         for frame in $frames; do
-            # লাল রঙে শারিঙ্গান ইফেক্ট
             printf "\r \e[31m🌀 Connecting... $frame \e[0m"
             sleep $delay
         done
@@ -39,7 +36,6 @@ type_fast() {
 }
 
 clear
-# তোমার নাম এবং ব্রান্ডিংয়ের আকর্ষণীয় ব্যানার
 echo -e "\e[31m"
 echo "  __  _ _____ _   _ __  __  _   _  _  ___ _      ___ _      _   ___ _  _ "
 echo " |  || |__  /| | | |  \/  |/_\ | |/ /|_ _| |    / __| |    /_\ / __| || |"
@@ -51,7 +47,6 @@ echo " -----------------------------------------------------------------------"
 type_fast ">>> Awakening the Sharingan... System Check Initialized..."
 sleep 1
 
-# আর্কিটেকচার ডিটেকশন
 A="${DISTRIB_ARCH:-$(uname -m)}"
 case "$A" in
     x86_64*|amd64*) M="amd64-compatible" ;;
@@ -62,7 +57,6 @@ case "$A" in
     *) M="amd64-compatible" ;;
 esac
 
-# ডিপেন্ডেন্সি ইন্সটল
 echo -n "Installing System Dependencies... "
 (
     if command -v apk >/dev/null 2>&1; then
@@ -72,14 +66,12 @@ echo -n "Installing System Dependencies... "
     fi
 ) >/dev/null 2>&1 & sharingan_eye
 
-# কোর ইঞ্জিন ডাউনলোড
 echo -n "Downloading Uzumaki Core Engine ($M)... "
 (
     cd /tmp && curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz"
     gunzip -f mihomo.gz && chmod +x mihomo && mv mihomo /usr/bin/mihomo
 ) >/dev/null 2>&1 & sharingan_eye
 
-# স্ক্রিপ্ট ও এসেট ডাউনলোড
 echo -n "Injecting Uzumaki Scripts & Rules... "
 (
     mkdir -p $D/ui /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
@@ -93,7 +85,6 @@ echo -n "Injecting Uzumaki Scripts & Rules... "
     curl -sL -o /usr/lib/lua/luci/view/mihomo/main.htm "$REPO/files/main.htm"
 ) >/dev/null 2>&1 & sharingan_eye
 
-# ফাইনাল টিউনিং
 echo -n "Optimizing Network & Activating Genjutsu... "
 (
     /etc/init.d/mihomo enable && /etc/init.d/mihomo restart
