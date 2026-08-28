@@ -1,6 +1,8 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════════════
-# 🌀 UzumakiClash - Master Installer (Final Precision Architecture)
+# 🌀 UzumakiClash - Universal Master Installer (Architecture Fixed)
+# Repo: https://github.com/jahid421/UzumakiClash-Openwrt
+# Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
 # ═══════════════════════════════════════════════════════════════════════
 
 REPO="https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main"
@@ -8,7 +10,6 @@ V="v1.18.10"; D="/etc/mihomo"
 
 echo "🌀 Installing UzumakiClash Ultimate..."
 
-# ওএস এবং প্যাকেজ ম্যানেজার ডিটেকশন
 if command -v apk >/dev/null 2>&1; then
     PKG="apk"; apk update; pkg_ins() { apk add "$@"; }
 else
@@ -16,48 +17,25 @@ else
 fi
 
 pkg_ins curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup gunzip tar hexdump
+command -v nft >/dev/null 2>&1 && pkg_ins kmod-nft-tproxy || pkg_ins iptables-mod-tproxy
 
-# ⚡ নিখুঁত আর্কিটেকচার ডিটেকশন লজিক (Fix for "unexpected (" error)
-OS_ARCH=$(uname -m)
-case "$OS_ARCH" in
+# ⚡ Bulletproof Architecture Detection
+RAW_ARCH=$(opkg print-architecture | awk 'NR==1{print $2}' 2>/dev/null || apk arch 2>/dev/null || uname -m)
+case "$RAW_ARCH" in
     x86_64) M="amd64-compatible" ;;
     aarch64) M="arm64" ;;
-    armv7*) M="armv7" ;;
-    mips*) 
-        # MIPS এর এন্ডিয়াননেস এবং ভাসমান পয়েন্ট চেক করা
-        if echo -n I | hexdump -o | grep -q '0000002'; then 
-            M="mipsle-softfloat"
-        else 
-            M="mips-softfloat"
-        fi
-        ;;
-    *) 
-        # যদি ডিটেকশন ফেইল করে তবে রাউটারের ওএস রিলিজ ফাইল থেকে সরাসরি চেক
-        . /etc/openwrt_release
-        ARCH_FALLBACK=$DISTRIB_ARCH
-        case "$ARCH_FALLBACK" in
-            mipsel*) M="mipsle-softfloat" ;;
-            mips*) M="mips-softfloat" ;;
-            aarch64*) M="arm64" ;;
-            *) M="amd64-compatible" ;;
-        esac
-        ;;
+    arm_v7*|armv7*) M="armv7" ;;
+    mipsel*|mipsle*) M="mipsle-softfloat" ;;
+    mips*) M="mips-softfloat" ;;
+    *) M="amd64-compatible" ;;
 esac
 
-echo "[✓] Core Selected: mihomo-linux-$M-$V"
+echo "[✓] Architecture Detected: $RAW_ARCH -> Binary: $M"
 
-# কোর ডাউনলোড এবং চেক
 cd /tmp && rm -f mihomo.gz mihomo
 curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz"
-
-if [ ! -s mihomo.gz ]; then
-    echo "❌ Download failed! Connection issues."
-    exit 1
-fi
-
 gunzip -f mihomo.gz && chmod +x mihomo && mv mihomo /usr/bin/mihomo
 
-# ডিরেক্টরি এবং ফাইল ডাউনলোড
 mkdir -p $D/ui /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
 curl -sL -o /etc/init.d/mihomo "$REPO/files/mihomo.init" && chmod +x /etc/init.d/mihomo
 curl -sL -o /www/cgi-bin/mihomo-api "$REPO/files/mihomo-api" && chmod +x /www/cgi-bin/mihomo-api
@@ -68,7 +46,6 @@ curl -sL -o $D/config.yaml "$REPO/files/config.default.yaml"
 curl -sL -o /usr/lib/lua/luci/controller/mihomo.lua "$REPO/files/mihomo.lua"
 curl -sL -o /usr/lib/lua/luci/view/mihomo/main.htm "$REPO/files/main.htm"
 
-# ড্যাশবোর্ড রিস্টোর
 cd /tmp && curl -sL -o ui.tgz "https://github.com/MetaCubeX/metacubexd/releases/latest/download/compressed-dist.tgz"
 tar -xzf ui.tgz -C $D/ui/ && [ -d "$D/ui/dist" ] && mv $D/ui/dist/* $D/ui/ && rm -rf $D/ui/dist
 
@@ -78,4 +55,4 @@ EOF
 
 /etc/init.d/mihomo enable && /etc/init.d/mihomo restart
 rm -rf /tmp/luci-* && /etc/init.d/rpcd restart
-echo "✅ UzumakiClash Precision Fixed! Upload YAML now."
+echo "✅ UzumakiClash Fixed Successfully!"
