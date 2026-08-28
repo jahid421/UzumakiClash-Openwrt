@@ -1,8 +1,6 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════════════
-# 🌀 UzumakiClash - Master Installer (Ultimate Stable & Dependency Fixed)
-# Repo: https://github.com/jahid421/UzumakiClash-Openwrt
-# Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
+# 🌀 UzumakiClash - Master Installer (mt7621 / mipsel_24kc Fix)
 # ═══════════════════════════════════════════════════════════════════════
 
 REPO="https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main"
@@ -10,53 +8,46 @@ V="v1.18.10"; D="/etc/mihomo"
 
 echo "🌀 Installing UzumakiClash Ultimate..."
 
-# ওএস এবং প্যাকেজ ম্যানেজার ডিটেকশন
 if command -v apk >/dev/null 2>&1; then
     PKG="apk"; apk update; pkg_ins() { apk add "$@"; }
 else
     PKG="opkg"; opkg update; pkg_ins() { opkg install "$@"; }
 fi
 
-# মূল ডিপেন্ডেন্সি ইন্সটল (gunzip ও hexdump নিশ্চিত করা)
+# gunzip এর বদলে gzip এবং coreutils-gunzip ব্যবহার করা হয়েছে
 echo "[*] Installing core dependencies..."
-pkg_ins curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup gunzip tar 
-[ "$PKG" = "opkg" ] && pkg_ins luci-compat luci-lib-ipkg busybox # hexdump সাধারণত busybox এর ভেতর থাকে
+pkg_ins curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup gzip tar busybox
+[ "$PKG" = "opkg" ] && pkg_ins luci-compat luci-lib-ipkg
 
 command -v nft >/dev/null 2>&1 && pkg_ins kmod-nft-tproxy || pkg_ins iptables-mod-tproxy
 
-# ⚡ নিখুঁত আর্কিটেকচার ডিটেকশন লজিক
-RAW_ARCH=$(opkg print-architecture | awk 'NR==1{print $2}' 2>/dev/null || apk arch 2>/dev/null || uname -m)
+# ⚡ mt7621 / mipsel_24kc এর জন্য সঠিক ডিটেকশন
+RAW_ARCH=$(opkg print-architecture | grep -E "mipsel_24kc|mipsel" | awk '{print $2}' | head -n 1)
+[ -z "$RAW_ARCH" ] && RAW_ARCH=$(uname -m)
 
 case "$RAW_ARCH" in
-    mipsel*|mipsle*|mipsel_24kc*) M="mipsle-softfloat" ;;
-    mips*|mips_24kc*) M="mips-softfloat" ;;
+    mipsel*|mipsle*) M="mipsle-softfloat" ;;
+    mips*) M="mips-softfloat" ;;
     aarch64*|arm64*) M="arm64" ;;
     x86_64*|amd64*) M="amd64-compatible" ;;
-    armv7*) M="armv7" ;;
-    *) 
-        # ফেইলসেফ ডিটেকশন
-        if uname -a | grep -qi "mipsel"; then M="mipsle-softfloat";
-        elif uname -a | grep -qi "mips"; then M="mips-softfloat";
-        else M="mipsle-softfloat"; fi # বাংলাদেশের জন্য মোস্ট কমন
-        ;;
+    *) M="mipsle-softfloat" ;; # mt7621 এর জন্য এটিই সেফ
 esac
 
-echo "[✓] Architecture Detected: $RAW_ARCH -> Using Binary: $M"
+echo "[✓] Precise Architecture: $RAW_ARCH -> Binary: $M"
 
-# কোর ডাউনলোড এবং এক্সট্রাক্ট
 cd /tmp && rm -f mihomo.gz mihomo
 curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz"
 
 if [ -f "mihomo.gz" ]; then
-    # gunzip এরর এড়াতে বিকল্প মেথড
-    gzip -d mihomo.gz 2>/dev/null || gunzip mihomo.gz 2>/dev/null || zcat mihomo.gz > mihomo
+    gzip -d -f mihomo.gz 2>/dev/null || gunzip -f mihomo.gz
     chmod +x mihomo && mv mihomo /usr/bin/mihomo
+    echo "[✓] Engine installed to /usr/bin/mihomo"
 else
-    echo "❌ Download failed! Please check your internet."
+    echo "❌ Download failed!"
     exit 1
 fi
 
-# ডিরেক্টরি এবং ফাইল ডাউনলোড
+# ফাইল ডাউনলোড এবং ডিরেক্টরি সেটআপ
 mkdir -p $D/ui /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
 curl -sL -o /etc/init.d/mihomo "$REPO/files/mihomo.init" && chmod +x /etc/init.d/mihomo
 curl -sL -o /www/cgi-bin/mihomo-api "$REPO/files/mihomo-api" && chmod +x /www/cgi-bin/mihomo-api
@@ -67,7 +58,6 @@ curl -sL -o $D/config.yaml "$REPO/files/config.default.yaml"
 curl -sL -o /usr/lib/lua/luci/controller/mihomo.lua "$REPO/files/mihomo.lua"
 curl -sL -o /usr/lib/lua/luci/view/mihomo/main.htm "$REPO/files/main.htm"
 
-# ড্যাশবোর্ড রিস্টোর
 cd /tmp && curl -sL -o ui.tgz "https://github.com/MetaCubeX/metacubexd/releases/latest/download/compressed-dist.tgz"
 tar -xzf ui.tgz -C $D/ui/ && [ -d "$D/ui/dist" ] && mv $D/ui/dist/* $D/ui/ && rm -rf $D/ui/dist
 
@@ -77,4 +67,4 @@ EOF
 
 /etc/init.d/mihomo enable && /etc/init.d/mihomo restart
 rm -rf /tmp/luci-* && /etc/init.d/rpcd restart
-echo "✅ UzumakiClash Fixed & Installed Successfully!"
+echo "✅ UzumakiClash Fixed Successfully for mt7621!"
