@@ -117,12 +117,9 @@ if [ -d /usr/share/luci/menu.d ]; then
 JSONEOF
 fi
 
-# বুট এনাবল করা
+# বুট এনাবল করা ও ক্যাশ ক্লিন
 /etc/init.d/mihomo enable
-
-# ক্ল্যাশ রানিং থাকলে রিস্টার্ট করা
 /etc/init.d/mihomo restart >/dev/null 2>&1
-
 rm -rf /tmp/luci-*
 /etc/init.d/rpcd restart >/dev/null 2>&1
 /etc/init.d/uhttpd restart >/dev/null 2>&1
