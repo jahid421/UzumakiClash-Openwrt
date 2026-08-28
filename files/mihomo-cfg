@@ -14,7 +14,6 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         cat << HEOF > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
-tproxy-port: 7893
 allow-lan: true
 mode: rule
 log-level: error
@@ -22,22 +21,17 @@ ipv6: false
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
+
+# ⚡ Performance Tuning (Zero Delay)
 tcp-concurrent: true
 unified-delay: false
 global-client-fingerprint: chrome
-profile: { store-selected: true, store-fake-ip: true }
-sniffer:
-  enable: true
-  sniff:
-    TLS: {ports: [443, 8443]}
-    HTTP: {ports: [80, 8080-8880], override-destination: true}
+
 dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: false
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  fake-ip-filter: ['+', '.microsoft.com', '.windowsupdate.com', '.delivery.mp.microsoft.com', '.ultraviewer.net', '*.lan', '*.local']
+  enhanced-mode: redir-host
   nameserver: [1.1.1.1, 8.8.8.8, 1.0.0.1]
   proxy-server-nameserver: [1.1.1.1]
   respect-rules: true
