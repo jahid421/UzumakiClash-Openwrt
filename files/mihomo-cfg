@@ -1,62 +1,24 @@
 #!/bin/sh
+# 🌀 UzumakiClash - Smart Config Optimizer (Riot & Turbo Fix)
 echo "Content-Type: text/plain"
 echo ""
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
-    TMP="/tmp/user_raw_$$.yaml"
-    TMP_CLEAN="/tmp/user_clean_$$.yaml"
-    TMP_FINAL="/tmp/user_final_$$.yaml"
+    TMP="/tmp/user_raw_$$.yaml"; TMP_CLEAN="/tmp/user_clean_$$.yaml"; TMP_FINAL="/tmp/user_final_$$.yaml"
     trap "rm -f /tmp/user_*_$$.yaml /tmp/uzcfg_err.log" EXIT
-
     tr -d '\r' > "$TMP"
-
     if [ -s "$TMP" ]; then
-        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
-        LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
-
-        awk '
-        BEGIN { skip=0 }
-        /^[a-zA-Z0-9_-]+:/ {
-            key = $1
-            if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns):/) {
-                skip=1
-            } else {
-                skip=0
-            }
-        }
-        { if (!skip) print $0 }
-        ' "$TMP" > "$TMP_CLEAN"
-
-        awk -v lan="$LAN_NET" '
-        BEGIN { added=0 }
-        /^rules:/ {
-            print $0
-            if (!added) {
-                print "  # LAN Safety Direct"
-                print "  - IP-CIDR," lan ",DIRECT,no-resolve"
-                print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
-                print "  - DOMAIN-SUFFIX,local,DIRECT"
-                print "  - DOMAIN-SUFFIX,lan,DIRECT"
-                print "  - DST-PORT,9595,DIRECT"
-                print "  # Microsoft & Ultraviewer Turbo Direct"
-                print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-                print "  - DOMAIN-KEYWORD,windows,DIRECT"
-                print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
-                print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
-                print "  # Riot Games Direct"
-                print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
-                print "  - DOMAIN-KEYWORD,riot,DIRECT"
-                print "  # Bangladesh Apps Direct"
-                print "  - DOMAIN-SUFFIX,bd,DIRECT"
-                print "  - DOMAIN-KEYWORD,bkash,DIRECT"
-                print "  - DOMAIN-KEYWORD,nagad,DIRECT"
+        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1"); LAN_NET=$(echo "$LAN_IP" | awk -F. '{print $1"."$2"."$3".0/24"}')
+        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key = $1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns):/) { skip=1 } else { skip=0 } } { if (!skip) print $0 }' "$TMP" > "$TMP_CLEAN"
+        
+        awk -v lan="$LAN_NET" 'BEGIN { added=0 } /^rules:/ { print $0; if (!added) {
+                print "  - IP-CIDR," lan ",DIRECT,no-resolve\n  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve\n  - DOMAIN-SUFFIX,local,DIRECT\n  - DOMAIN-SUFFIX,lan,DIRECT"
+                print "  # Riot Games & Valorant Fix\n  - DOMAIN-KEYWORD,riotgames,DIRECT\n  - DOMAIN-KEYWORD,playvalorant,DIRECT\n  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+                print "  # Microsoft, Ultraviewer & Speed Fix\n  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,windows,DIRECT\n  - DOMAIN-KEYWORD,ultraviewer,DIRECT\n  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
+                print "  # Bangladesh Apps Direct\n  - DOMAIN-SUFFIX,bd,DIRECT\n  - DOMAIN-KEYWORD,bkash,DIRECT"
                 added=1
-            }
-            next
-        }
-        { print }
-        ' "$TMP_CLEAN" > "$TMP"
-
+            } next } { print }' "$TMP_CLEAN" > "$TMP"
+        
         cat << 'HEOF' > "$TMP_FINAL"
 mixed-port: 7890
 redir-port: 7892
@@ -76,10 +38,10 @@ dns:
   listen: 0.0.0.0:1053
   ipv6: false
   enhanced-mode: redir-host
+  fake-ip-filter: ['+.riotgames.com', '+.playvalorant.com', '+.pvp.net', '+.microsoft.com']
   nameserver: [1.1.1.1, 8.8.8.8]
 HEOF
         cat "$TMP" >> "$TMP_FINAL"
-
         if /usr/bin/mihomo -d /etc/mihomo -f "$TMP_FINAL" -t >/dev/null 2>&1; then
             mv "$TMP_FINAL" /etc/mihomo/config.yaml
             /etc/init.d/mihomo restart >/dev/null 2>&1
