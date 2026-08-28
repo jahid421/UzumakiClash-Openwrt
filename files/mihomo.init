@@ -6,6 +6,7 @@ STOP=10
 CONF_DIR="/etc/mihomo"
 PROG="/usr/bin/mihomo"
 
+# রিবুটের পর কাজ নিশ্চিত করতে ডিলে
 boot() {
     sleep 5
     start
