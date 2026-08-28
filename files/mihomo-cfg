@@ -22,7 +22,7 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
-# ⚡ Performance Tuning (Zero Delay)
+# ⚡ Performance Tuning
 tcp-concurrent: true
 unified-delay: false
 global-client-fingerprint: chrome
@@ -32,16 +32,23 @@ dns:
   listen: 0.0.0.0:1053
   ipv6: false
   enhanced-mode: redir-host
-  nameserver: [1.1.1.1, 8.8.8.8, 1.0.0.1]
-  proxy-server-nameserver: [1.1.1.1]
-  respect-rules: true
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+    - 1.0.0.1
+  proxy-server-nameserver:
+    - 1.1.1.1
 HEOF
 
         awk -v lan="$LAN_IP" '/^rules:/ {
             print $0
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+            print "  # 🌀 Gaming & Riot Direct Bypass"
             print "  - DOMAIN-KEYWORD,riotgames,DIRECT\n  - DOMAIN-KEYWORD,playvalorant,DIRECT\n  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-            print "  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,windows,DIRECT\n  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
+            print "  - DOMAIN-KEYWORD,vanguard,DIRECT\n  - DOMAIN-KEYWORD,anticheat,DIRECT"
+            print "  # 🌀 Microsoft & Ultraviewer"
+            print "  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,ultraviewer,DIRECT\n  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
+            print "  # 🌀 Bangladesh Apps"
             print "  - DOMAIN-SUFFIX,bd,DIRECT\n  - DOMAIN-KEYWORD,bkash,DIRECT"
             next
         } { print }' "$CLEAN" >> "$FINAL"
