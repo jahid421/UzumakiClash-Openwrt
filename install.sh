@@ -17,10 +17,10 @@ else
     PKG="opkg"; opkg update; pkg_ins() { opkg install "$@"; }
 fi
 
-# মূল ডিপেন্ডেন্সি ইন্সটল (gunzip বাদ দেওয়া হয়েছে)
+# মূল ডিপেন্ডেন্সি ইন্সটল (gunzip ও hexdump নিশ্চিত করা)
 echo "[*] Installing core dependencies..."
-pkg_ins curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup tar 
-[ "$PKG" = "opkg" ] && pkg_ins luci-compat luci-lib-ipkg busybox
+pkg_ins curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup gunzip tar 
+[ "$PKG" = "opkg" ] && pkg_ins luci-compat luci-lib-ipkg busybox # hexdump সাধারণত busybox এর ভেতর থাকে
 
 command -v nft >/dev/null 2>&1 && pkg_ins kmod-nft-tproxy || pkg_ins iptables-mod-tproxy
 
@@ -37,20 +37,20 @@ case "$RAW_ARCH" in
         # ফেইলসেফ ডিটেকশন
         if uname -a | grep -qi "mipsel"; then M="mipsle-softfloat";
         elif uname -a | grep -qi "mips"; then M="mips-softfloat";
-        else M="mipsle-softfloat"; fi
+        else M="mipsle-softfloat"; fi # বাংলাদেশের জন্য মোস্ট কমন
         ;;
 esac
 
 echo "[✓] Architecture Detected: $RAW_ARCH -> Using Binary: $M"
 
-# কোর ডাউনলোড এবং এক্সট্রাক্ট (zcat ব্যবহার করে gunzip এরর এড়ানো হয়েছে)
+# কোর ডাউনলোড এবং এক্সট্রাক্ট
 cd /tmp && rm -f mihomo.gz mihomo
 curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz"
 
 if [ -f "mihomo.gz" ]; then
-    zcat mihomo.gz > mihomo
+    # gunzip এরর এড়াতে বিকল্প মেথড
+    gzip -d mihomo.gz 2>/dev/null || gunzip mihomo.gz 2>/dev/null || zcat mihomo.gz > mihomo
     chmod +x mihomo && mv mihomo /usr/bin/mihomo
-    rm -f mihomo.gz
 else
     echo "❌ Download failed! Please check your internet."
     exit 1
