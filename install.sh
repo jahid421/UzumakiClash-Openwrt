@@ -1,8 +1,6 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════════════
-# 🌀 UzumakiClash - Universal Master Installer (Architecture Fixed)
-# Repo: https://github.com/jahid421/UzumakiClash-Openwrt
-# Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
+# 🌀 UzumakiClash - Master Installer (Ultimate Stable)
 # ═══════════════════════════════════════════════════════════════════════
 
 REPO="https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main"
@@ -22,19 +20,17 @@ command -v nft >/dev/null 2>&1 && pkg_ins kmod-nft-tproxy || pkg_ins iptables-mo
 # ⚡ Bulletproof Architecture Detection
 RAW_ARCH=$(opkg print-architecture | awk 'NR==1{print $2}' 2>/dev/null || apk arch 2>/dev/null || uname -m)
 case "$RAW_ARCH" in
-    x86_64) M="amd64-compatible" ;;
-    aarch64) M="arm64" ;;
-    arm_v7*|armv7*) M="armv7" ;;
     mipsel*|mipsle*) M="mipsle-softfloat" ;;
     mips*) M="mips-softfloat" ;;
-    *) M="amd64-compatible" ;;
+    aarch64*) M="arm64" ;;
+    x86_64) M="amd64-compatible" ;;
+    armv7*) M="armv7" ;;
+    *) M="mipsle-softfloat" ;;
 esac
-
-echo "[✓] Architecture Detected: $RAW_ARCH -> Binary: $M"
 
 cd /tmp && rm -f mihomo.gz mihomo
 curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz"
-gunzip -f mihomo.gz && chmod +x mihomo && mv mihomo /usr/bin/mihomo
+gunzip -f mihomo.gz && mv /tmp/mihomo /usr/bin/mihomo && chmod +x /usr/bin/mihomo
 
 mkdir -p $D/ui /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
 curl -sL -o /etc/init.d/mihomo "$REPO/files/mihomo.init" && chmod +x /etc/init.d/mihomo
@@ -49,10 +45,6 @@ curl -sL -o /usr/lib/lua/luci/view/mihomo/main.htm "$REPO/files/main.htm"
 cd /tmp && curl -sL -o ui.tgz "https://github.com/MetaCubeX/metacubexd/releases/latest/download/compressed-dist.tgz"
 tar -xzf ui.tgz -C $D/ui/ && [ -d "$D/ui/dist" ] && mv $D/ui/dist/* $D/ui/ && rm -rf $D/ui/dist
 
-cat > /usr/share/luci/menu.d/luci-app-uzumakiclash.json << EOF
-{"admin/services/mihomo":{"title":"UzumakiClash 🌀","order":60,"action":{"type":"template","path":"mihomo/main"}}}
-EOF
-
 /etc/init.d/mihomo enable && /etc/init.d/mihomo restart
 rm -rf /tmp/luci-* && /etc/init.d/rpcd restart
-echo "✅ UzumakiClash Fixed Successfully!"
+echo "✅ UzumakiClash Ultimate Fixed! Restart PC and Gaming."
