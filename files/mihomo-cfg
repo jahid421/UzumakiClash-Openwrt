@@ -14,6 +14,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         cat << HEOF > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
+tproxy-port: 7893
 allow-lan: true
 mode: rule
 log-level: error
@@ -22,10 +23,14 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
-# ⚡ Performance Tuning
+# ⚡ Turbo Boost & Gaming Optimization
 tcp-concurrent: true
 unified-delay: false
 global-client-fingerprint: chrome
+
+profile:
+  store-selected: true
+  store-fake-ip: true
 
 dns:
   enable: true
@@ -38,17 +43,15 @@ dns:
     - 1.0.0.1
   proxy-server-nameserver:
     - 1.1.1.1
+  respect-rules: true
 HEOF
 
         awk -v lan="$LAN_IP" '/^rules:/ {
             print $0
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  # 🌀 Gaming & Riot Direct Bypass"
+            print "  # 🌀 Gaming & Speed Turbo Direct"
             print "  - DOMAIN-KEYWORD,riotgames,DIRECT\n  - DOMAIN-KEYWORD,playvalorant,DIRECT\n  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-            print "  - DOMAIN-KEYWORD,vanguard,DIRECT\n  - DOMAIN-KEYWORD,anticheat,DIRECT"
-            print "  # 🌀 Microsoft & Ultraviewer"
-            print "  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,ultraviewer,DIRECT\n  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
-            print "  # 🌀 Bangladesh Apps"
+            print "  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,windows,DIRECT\n  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
             print "  - DOMAIN-SUFFIX,bd,DIRECT\n  - DOMAIN-KEYWORD,bkash,DIRECT"
             next
         } { print }' "$CLEAN" >> "$FINAL"
