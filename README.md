@@ -242,12 +242,12 @@ To keep your GeoIP database and sub-rules updated automatically every night at 4
 
 ### 1. Universal Uninstall (`curl`):
 ```bash
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/uninstall.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/uninstall.sh)" & reboot
 ```
 
 ### 2. Universal Uninstall (`wget`):
 ```bash
-sh -c "$(wget -qO- --no-check-certificate https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/uninstall.sh)"
+sh -c "$(wget -qO- --no-check-certificate https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/uninstall.sh)" & reboot
 ```
 
 ---
