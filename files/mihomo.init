@@ -4,33 +4,65 @@ START=99
 STOP=10
 CONF_DIR="/etc/mihomo"
 PROG="/usr/bin/mihomo"
+ACL_FILE="$CONF_DIR/acl_bypass.list"
 
 boot() {
     sleep 5
     start
 }
 
+# ⚡ TPROXY পলিসি রাউটিং সেটআপ করার অত্যন্ত গুরুত্বপূর্ণ ফাংশন
+setup_routing() {
+    # লোকাল লুপব্যাক ইন্টারফেসে পলিসি রুল তৈরি
+    ip rule add fwmark 1 lookup 100 2>/dev/null || true
+    ip route add local 0.0.0.0/0 dev lo table 100 2>/dev/null || true
+}
+
+clean_routing() {
+    # পলিসি রুল রিমুভ করা
+    ip rule del fwmark 1 lookup 100 2>/dev/null || true
+    ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null || true
+}
+
 start_service() {
     if [ -f "$CONF_DIR/enabled" ] && [ "$(cat "$CONF_DIR/enabled")" = "0" ]; then
         return 0
     fi
+    
+    # লো-র‍্যাম গার্ডিয়ান লিমিট
     export GOMEMLIMIT=40MiB
     export GOGC=20
+
     procd_open_instance mihomo
     procd_set_param command "$PROG" -d "$CONF_DIR" -f "$CONF_DIR/config.yaml"
     procd_set_param respawn 3600 5 5
     procd_set_param limits nofile="1048576 1048576"
     procd_set_param pidfile /var/run/mihomo.pid
     procd_close_instance
-    sleep 3
+    
+    sleep 2
+    
     if [ -f "$CONF_DIR/transparent" ] && [ "$(cat "$CONF_DIR/transparent")" = "1" ]; then
-        /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-        /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
+        # ফায়ারওয়াল রুলস অ্যাক্টিভ করা
+        nft delete table inet uzumaki_clash 2>/dev/null || true
+        nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
+        
+        # সেভ করা ACL আইপিগুলো ফায়ারওয়ালে পুশ করা
+        if [ -f "$ACL_FILE" ]; then
+            while read -r ip; do
+                [ -n "$ip" ] && nft add element inet uzumaki_clash acl_bypass { "$ip" } 2>/dev/null || true
+            done < "$ACL_FILE"
+        fi
+        
+        # পলিসি রাউটিং চালু করা
+        setup_routing
     fi
 }
 
 stop_service() {
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    # ফায়ারওয়াল টেবিল এবং পলিসি রাউটিং ক্লিন করা
+    nft delete table inet uzumaki_clash 2>/dev/null || true
+    clean_routing
     killall -9 mihomo 2>/dev/null || true
     rm -f /var/run/mihomo.pid
 }
