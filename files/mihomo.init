@@ -1,40 +1,106 @@
 #!/bin/sh /etc/rc.common
+
 USE_PROCD=1
+
 START=99
 STOP=10
+
 CONF_DIR="/etc/mihomo"
 PROG="/usr/bin/mihomo"
 
-boot() {
-    sleep 5
-    start
+# Dedicated policy-routing table for Mihomo TPROXY
+TPROXY_TABLE="24680"
+TPROXY_MARK="0x1"
+
+setup_tproxy_route() {
+
+    # Remove stale rules/routes first
+    ip rule del fwmark "$TPROXY_MARK" table "$TPROXY_TABLE" 2>/dev/null || true
+    ip route flush table "$TPROXY_TABLE" 2>/dev/null || true
+
+    # Policy routing for packets marked by nft TPROXY
+    ip rule add fwmark "$TPROXY_MARK" table "$TPROXY_TABLE" 2>/dev/null || true
+
+    # Deliver intercepted IPv4 packets locally
+    ip route add local 0.0.0.0/0 dev lo table "$TPROXY_TABLE" 2>/dev/null || true
+}
+
+clear_tproxy_route() {
+
+    ip rule del fwmark "$TPROXY_MARK" table "$TPROXY_TABLE" 2>/dev/null || true
+    ip route flush table "$TPROXY_TABLE" 2>/dev/null || true
 }
 
 start_service() {
-    if [ -f "$CONF_DIR/enabled" ] && [ "$(cat "$CONF_DIR/enabled")" = "0" ]; then
+
+    [ -x "$PROG" ] || return 1
+    [ -f "$CONF_DIR/config.yaml" ] || return 1
+
+    # User explicitly disabled service
+    if [ -f "$CONF_DIR/enabled" ] &&
+       [ "$(cat "$CONF_DIR/enabled" 2>/dev/null)" = "0" ]; then
         return 0
     fi
-    export GOMEMLIMIT=40MiB
-    export GOGC=20
+
+    # Low-RAM friendly setting.
+    # Do not force an extremely aggressive GOGC value.
+    export GOMEMLIMIT=64MiB
+
+    setup_tproxy_route
+
     procd_open_instance mihomo
-    procd_set_param command "$PROG" -d "$CONF_DIR" -f "$CONF_DIR/config.yaml"
+
+    procd_set_param command \
+        "$PROG" \
+        -d "$CONF_DIR" \
+        -f "$CONF_DIR/config.yaml"
+
     procd_set_param respawn 3600 5 5
-    procd_set_param limits nofile="1048576 1048576"
+
+    # Keep connections reasonably high without requesting
+    # an unnecessarily huge descriptor limit.
+    procd_set_param limits nofile="65535 65535"
+
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+
     procd_set_param pidfile /var/run/mihomo.pid
+
     procd_close_instance
-    sleep 3
-    if [ -f "$CONF_DIR/transparent" ] && [ "$(cat "$CONF_DIR/transparent")" = "1" ]; then
+
+    # Apply transparent firewall after service definition
+    sleep 1
+
+    if [ -f "$CONF_DIR/transparent" ] &&
+       [ "$(cat "$CONF_DIR/transparent" 2>/dev/null)" = "1" ]; then
+
         /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
         /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     fi
 }
 
 stop_service() {
+
+    # Remove nft interception
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+
+    # Remove policy routing
+    clear_tproxy_route
+
+    # Let procd normally terminate the process.
+    # Force kill only any stale/manual process.
     killall -9 mihomo 2>/dev/null || true
+
     rm -f /var/run/mihomo.pid
 }
 
+boot() {
+
+    sleep 5
+    start
+}
+
 service_triggers() {
-    procd_add_reload_trigger "mihomo" "network" "firewall"
+
+    procd_add_reload_trigger network firewall
 }
