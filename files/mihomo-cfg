@@ -1,31 +1,77 @@
 #!/bin/sh
+
 echo "Content-Type: text/plain"
 echo ""
-CONF_DIR="/etc/mihomo"; CORE="/usr/bin/mihomo"
+
+CONF_DIR="/etc/mihomo"
+CORE="/usr/bin/mihomo"
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
-    TMP="/tmp/raw_$$.yaml"; CLEAN="/tmp/clean_$$.yaml"; FINAL="/tmp/final_$$.yaml"
-    trap "rm -f /tmp/*_$$.yaml /tmp/cfg_err.log" EXIT
-    tr -d '\r' > "$TMP"
-    if [ -s "$TMP" ]; then
-        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
-        # পুরনো গ্লোবাল সেটিংস ফিল্টার
-        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
-        cat << HEOF > "$FINAL"
+    TMP="/tmp/raw_$$.yaml"
+    CLEAN="/tmp/clean_$$.yaml"
+    FINAL="/tmp/final_$$.yaml"
+    ERR="/tmp/cfg_err_$$.log"
+
+    cleanup() {
+        rm -f "$TMP" "$CLEAN" "$FINAL" "$ERR"
+    }
+
+    trap cleanup EXIT
+
+    # Read uploaded YAML
+    tr -d '\r' > "$TMP"
+
+    if [ ! -s "$TMP" ]; then
+        echo "EMPTY_CONFIG"
+        exit 1
+    fi
+
+    # ======================================================
+    # Remove only gateway-level settings that Uzumaki owns.
+    # User proxy definitions / proxy-groups / rules remain.
+    # ======================================================
+    awk '
+    BEGIN {
+        skip = 0
+    }
+
+    /^[a-zA-Z0-9_-]+:/ {
+        key = $1
+        sub(/:$/, "", key)
+
+        if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|tcp-concurrent|unified-delay|global-client-fingerprint|profile|dns|sniffer)$/) {
+            skip = 1
+            next
+        }
+
+        skip = 0
+    }
+
+    skip == 0 {
+        print
+    }
+    ' "$TMP" > "$CLEAN"
+
+    # ======================================================
+    # Uzumaki gateway configuration
+    # ======================================================
+    cat <<'EOF' > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
 tproxy-port: 7893
+
 allow-lan: true
 bind-address: '*'
+
 mode: rule
-log-level: error
+log-level: warning
 ipv6: false
+
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
-# ⚡ Performance Boost (Fixed IDM & Speed delay)
 tcp-concurrent: true
 unified-delay: false
 global-client-fingerprint: chrome
@@ -34,34 +80,131 @@ profile:
   store-selected: true
   store-fake-ip: true
 
+sniffer:
+  enable: true
+  override-destination: true
+  sniff:
+    HTTP:
+      ports:
+        - 80
+        - 8080-8880
+    TLS:
+      ports:
+        - 443
+        - 8443
+    QUIC:
+      ports:
+        - 443
+        - 8443
+
 dns:
   enable: true
   listen: 0.0.0.0:1053
-  enhanced-mode: redir-host
-  nameserver: [1.1.1.1, 8.8.8.8, 1.0.0.1]
-  proxy-server-nameserver: [1.1.1.1]
-  respect-rules: true
-HEOF
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
 
-        awk -v lan="$LAN_IP" '/^rules:/ {
-            print $0
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - 'localhost'
+    - 'time.*.com'
+    - 'ntp.*.com'
+    - '+.pool.ntp.org'
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
+    - '+.microsoft.com'
+    - '+.microsoftonline.com'
+    - '+.windows.com'
+    - '+.windows.net'
+    - '+.windowsupdate.com'
+    - '+.live.com'
+    - '+.riotgames.com'
+    - '+.riotcdn.net'
+    - '+.playvalorant.com'
+    - '+.pvp.net'
+    - '+.leagueoflegends.com'
+
+  default-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+
+  proxy-server-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+    - 1.0.0.1
+
+EOF
+
+    # ======================================================
+    # Build final config.
+    # Preserve user's imported YAML content.
+    # ======================================================
+    if grep -q '^rules:' "$CLEAN"; then
+
+        awk '
+        /^rules:/ {
+            print
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  # 🌀 Gaming & CDN Bypass (Fixed MS Store & Riot)"
-            print "  - DOMAIN-KEYWORD,riotgames,DIRECT\n  - DOMAIN-KEYWORD,playvalorant,DIRECT\n  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-            print "  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,windows,DIRECT\n  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
-            print "  - DOMAIN-SUFFIX,bd,DIRECT\n  - DOMAIN-KEYWORD,bkash,DIRECT"
+            print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
+            print "  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
+            print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
+            print "  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve"
+            print "  - DOMAIN-SUFFIX,lan,DIRECT"
+            print "  - DOMAIN-SUFFIX,local,DIRECT"
             next
-        } { print }' "$CLEAN" >> "$FINAL"
+        }
 
-        $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
-        if ! grep -qi "level=fatal\|level=error" /tmp/cfg_err.log; then
-            mv "$FINAL" $CONF_DIR/config.yaml
-            /etc/init.d/mihomo restart >/dev/null 2>&1
-            echo "SAVED"
-        else
-            echo "INVALID YAML: $(head -n 2 /tmp/cfg_err.log)"
-        fi
+        {
+            print
+        }
+        ' "$CLEAN" >> "$FINAL"
+
+    else
+
+        cat <<'EOF' >> "$FINAL"
+
+rules:
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+  - DOMAIN-SUFFIX,lan,DIRECT
+  - DOMAIN-SUFFIX,local,DIRECT
+  - MATCH,🌀 Uzumaki-Auto
+EOF
+
     fi
+
+    # ======================================================
+    # Validate with Mihomo itself.
+    # Do NOT rely only on log text.
+    # ======================================================
+    "$CORE" -d "$CONF_DIR" -f "$FINAL" -t >"$ERR" 2>&1
+
+    RET=$?
+
+    if [ "$RET" -ne 0 ]; then
+        echo "INVALID YAML"
+        head -n 8 "$ERR"
+        exit 1
+    fi
+
+    # Atomic-ish replacement
+    cp "$FINAL" "$CONF_DIR/config.yaml"
+
+    # Reload through procd
+    /etc/init.d/mihomo restart >/dev/null 2>&1
+
+    echo "SAVED"
+
 else
-    cat $CONF_DIR/config.yaml 2>/dev/null
+
+    cat "$CONF_DIR/config.yaml" 2>/dev/null
+
 fi
