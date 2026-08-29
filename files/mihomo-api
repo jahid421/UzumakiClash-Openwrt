@@ -1,89 +1,138 @@
 #!/bin/sh
+
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
+
 echo "Content-Type: application/json"
 echo ""
 
 ACTION=$(echo "$QUERY_STRING" | sed -n 's/.*action=\([a-z_]*\).*/\1/p')
+
 CONF_DIR="/etc/mihomo"
 TRANSPARENT_FILE="$CONF_DIR/transparent"
 ENABLED_FILE="$CONF_DIR/enabled"
 
 case "$ACTION" in
-  status)
-    ENABLED="1"; [ -f "$ENABLED_FILE" ] && ENABLED=$(cat "$ENABLED_FILE")
-    TP="0"; [ -f "$TRANSPARENT_FILE" ] && TP=$(cat "$TRANSPARENT_FILE")
 
-    if pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
-      PID=$(pgrep -f "/usr/bin/mihomo" | head -n 1)
-      MEM=$(awk '/VmRSS/{print $2}' /proc/$PID/status 2>/dev/null || echo 0)
-      echo "{\"running\":true,\"pid\":$PID,\"memory\":\"${MEM} kB\",\"transparent\":$TP,\"enabled\":$ENABLED}"
-    else
-      echo "{\"running\":false,\"transparent\":$TP,\"enabled\":$ENABLED}"
-    fi
-    ;;
+    status)
 
-  start)
-    echo "1" > "$ENABLED_FILE"
-    echo "1" > "$TRANSPARENT_FILE"
-    rm -f /var/run/mihomo.pid
-    /etc/init.d/mihomo restart >/dev/null 2>&1
-    sleep 1
-    if ! pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
-        /usr/bin/mihomo -d "$CONF_DIR" -f "$CONF_DIR/config.yaml" >/dev/null 2>&1 &
-    fi
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
-    echo "{\"ok\":true}"
-    ;;
+        ENABLED="1"
+        [ -f "$ENABLED_FILE" ] &&
+            ENABLED=$(cat "$ENABLED_FILE" 2>/dev/null)
 
-  stop)
-    echo "0" > "$ENABLED_FILE"
-    echo "0" > "$TRANSPARENT_FILE"
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
-    /etc/init.d/mihomo stop >/dev/null 2>&1
-    killall -9 mihomo 2>/dev/null || true
-    rm -f /var/run/mihomo.pid
-    echo "{\"ok\":true}"
-    ;;
+        TP="0"
+        [ -f "$TRANSPARENT_FILE" ] &&
+            TP=$(cat "$TRANSPARENT_FILE" 2>/dev/null)
 
-  restart)
-    echo "1" > "$ENABLED_FILE"
-    /etc/init.d/mihomo restart >/dev/null 2>&1
-    echo "{\"ok\":true}"
-    ;;
+        if pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
 
-  enable_tp)
-    echo "1" > "$TRANSPARENT_FILE"
-    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
-    echo "{\"ok\":true}"
-    ;;
+            PID=$(pgrep -f "/usr/bin/mihomo" | head -n 1)
 
-  disable_tp)
-    echo "0" > "$TRANSPARENT_FILE"
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    echo "{\"ok\":true}"
-    ;;
+            MEM=$(awk '/VmRSS/{print $2}' \
+                "/proc/$PID/status" 2>/dev/null)
 
-  flush_fakeip)
-    curl -s -X POST "http://127.0.0.1:9595/cache/fakeip/flush" -H "Authorization: Bearer flclash123" >/dev/null 2>&1
-    echo "{\"ok\":true}"
-    ;;
+            [ -z "$MEM" ] && MEM="0"
 
-  update_geo)
-    (
-      cd /etc/mihomo
-      curl -sL -o geoip.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" &
-      curl -sL -o geosite.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" &
-      curl -sL -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" &
-      wait
-    ) &
-    echo "{\"ok\":true,\"message\":\"Updating in background\"}"
-    ;;
+            echo "{\"running\":true,\"pid\":$PID,\"memory\":\"${MEM} kB\",\"transparent\":$TP,\"enabled\":$ENABLED}"
 
-  *)
-    echo "{\"ok\":false,\"error\":\"invalid_action\"}"
-    ;;
+        else
+
+            echo "{\"running\":false,\"transparent\":$TP,\"enabled\":$ENABLED}"
+
+        fi
+        ;;
+
+    start)
+
+        echo "1" > "$ENABLED_FILE"
+        echo "1" > "$TRANSPARENT_FILE"
+
+        # Procd is the only process supervisor.
+        /etc/init.d/mihomo restart >/dev/null 2>&1
+
+        echo "{\"ok\":true}"
+        ;;
+
+    stop)
+
+        echo "0" > "$ENABLED_FILE"
+        echo "0" > "$TRANSPARENT_FILE"
+
+        /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+
+        /etc/init.d/mihomo stop >/dev/null 2>&1
+
+        killall -9 mihomo 2>/dev/null || true
+
+        rm -f /var/run/mihomo.pid
+
+        echo "{\"ok\":true}"
+        ;;
+
+    restart)
+
+        echo "1" > "$ENABLED_FILE"
+
+        /etc/init.d/mihomo restart >/dev/null 2>&1
+
+        echo "{\"ok\":true}"
+        ;;
+
+    enable_tp)
+
+        echo "1" > "$TRANSPARENT_FILE"
+
+        # Rebuild policy route + nft rules through service.
+        /etc/init.d/mihomo restart >/dev/null 2>&1
+
+        echo "{\"ok\":true}"
+        ;;
+
+    disable_tp)
+
+        echo "0" > "$TRANSPARENT_FILE"
+
+        /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+
+        echo "{\"ok\":true}"
+        ;;
+
+    flush_fakeip)
+
+        curl -s \
+            -X POST \
+            "http://127.0.0.1:9595/cache/fakeip/flush" \
+            -H "Authorization: Bearer flclash123" \
+            >/dev/null 2>&1
+
+        echo "{\"ok\":true}"
+        ;;
+
+    update_geo)
+
+        (
+            cd "$CONF_DIR" || exit 1
+
+            curl -sL \
+                -o geoip.dat \
+                "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" &
+
+            curl -sL \
+                -o geosite.dat \
+                "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" &
+
+            curl -sL \
+                -o Country.mmdb \
+                "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" &
+
+            wait
+        ) &
+
+        echo "{\"ok\":true,\"message\":\"Updating in background\"}"
+        ;;
+
+    *)
+
+        echo "{\"ok\":false,\"error\":\"invalid_action\"}"
+        ;;
+
 esac
-EOF
-chmod +x /www/cgi-bin/mihomo-api
