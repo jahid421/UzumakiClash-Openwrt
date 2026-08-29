@@ -1,54 +1,166 @@
 mixed-port: 7890
 redir-port: 7892
+tproxy-port: 7893
+
 allow-lan: true
 bind-address: '*'
+
 mode: rule
-log-level: error
+log-level: warning
 ipv6: false
+
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
-tcp-concurrent: true
-unified-delay: true
 
+tcp-concurrent: true
+unified-delay: false
+global-client-fingerprint: chrome
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+# ==========================================================
+# SNI / TLS / QUIC SNIFFER
+# Helps applications whose traffic is IP-based or
+# whose domain is otherwise invisible to normal rules.
+# ==========================================================
+sniffer:
+  enable: true
+  override-destination: true
+  sniff:
+    HTTP:
+      ports:
+        - 80
+        - 8080-8880
+    TLS:
+      ports:
+        - 443
+        - 8443
+    QUIC:
+      ports:
+        - 443
+        - 8443
+
+# ==========================================================
+# DNS
+# ==========================================================
 dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: false
+
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+
   fake-ip-filter:
     - '*.lan'
     - '*.local'
+    - 'localhost'
+
+    # NTP / time
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
+
+    # Microsoft connectivity checks
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
+
+    # Microsoft services that can be sensitive to fake-IP
+    - '+.microsoft.com'
+    - '+.microsoftonline.com'
+    - '+.windows.com'
+    - '+.windows.net'
+    - '+.windowsupdate.com'
+    - '+.live.com'
+
+    # Riot / Valorant compatibility
+    - '+.riotgames.com'
+    - '+.riotcdn.net'
+    - '+.playvalorant.com'
+    - '+.pvp.net'
+    - '+.leagueoflegends.com'
+
   default-nameserver:
     - 1.1.1.1
     - 8.8.8.8
+
+  proxy-server-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
     - 1.0.0.1
 
+# ==========================================================
+# PROXIES
+# ==========================================================
 proxies: []
 
+# ==========================================================
+# DEFAULT GROUP
+# ==========================================================
 proxy-groups:
   - name: "🌀 Uzumaki-Auto"
     type: url-test
     proxies:
       - DIRECT
     url: http://www.gstatic.com/generate_204
-    interval: 120
-    tolerance: 20
+    interval: 300
+    tolerance: 30
     lazy: true
 
+# ==========================================================
+# ROUTING
+# ==========================================================
 rules:
-  - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
+
+  # --------------------------------------------------------
+  # LOCAL / PRIVATE NETWORK
+  # --------------------------------------------------------
+  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
-  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
+  - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
+  - 'IP-CIDR,169.254.0.0/16,DIRECT,no-resolve'
+
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
-  - 'DST-PORT,9595,DIRECT'
+
+  # --------------------------------------------------------
+  # MICROSOFT / WINDOWS
+  # Keep native/direct routing for maximum local speed.
+  # Fake-IP filter above improves compatibility.
+  # --------------------------------------------------------
+  - 'DOMAIN-SUFFIX,microsoft.com,DIRECT'
+  - 'DOMAIN-SUFFIX,microsoftonline.com,DIRECT'
+  - 'DOMAIN-SUFFIX,windows.com,DIRECT'
+  - 'DOMAIN-SUFFIX,windows.net,DIRECT'
+  - 'DOMAIN-SUFFIX,windowsupdate.com,DIRECT'
+  - 'DOMAIN-SUFFIX,live.com,DIRECT'
+  - 'DOMAIN-SUFFIX,msftconnecttest.com,DIRECT'
+  - 'DOMAIN-SUFFIX,msftncsi.com,DIRECT'
+
+  # --------------------------------------------------------
+  # RIOT / VALORANT
+  # Use the active Uzumaki group rather than forcing
+  # everything to DIRECT. If the user's imported config
+  # contains real proxy nodes, these can use them.
+  # --------------------------------------------------------
+  - 'DOMAIN-SUFFIX,riotgames.com,🌀 Uzumaki-Auto'
+  - 'DOMAIN-SUFFIX,riotcdn.net,🌀 Uzumaki-Auto'
+  - 'DOMAIN-SUFFIX,playvalorant.com,🌀 Uzumaki-Auto'
+  - 'DOMAIN-SUFFIX,pvp.net,🌀 Uzumaki-Auto'
+  - 'DOMAIN-SUFFIX,leagueoflegends.com,🌀 Uzumaki-Auto'
+
+  # --------------------------------------------------------
+  # BANGLADESH
+  # --------------------------------------------------------
+  - 'DOMAIN-SUFFIX,bd,DIRECT'
+
+  # Everything else
   - 'MATCH,🌀 Uzumaki-Auto'
