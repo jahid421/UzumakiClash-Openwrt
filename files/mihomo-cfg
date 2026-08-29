@@ -9,8 +9,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     tr -d '\r' > "$TMP"
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
-        
-        # অপ্রয়োজনীয় গ্লোবাল অপশন ফিল্টার
+        # পুরনো গ্লোবাল সেটিংস ফিল্টার
         awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
         cat << HEOF > "$FINAL"
@@ -26,6 +25,7 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
+# ⚡ Performance Boost (Fixed IDM & Speed delay)
 tcp-concurrent: true
 unified-delay: false
 global-client-fingerprint: chrome
@@ -37,30 +37,22 @@ profile:
 dns:
   enable: true
   listen: 0.0.0.0:1053
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
+  enhanced-mode: redir-host
   nameserver: [1.1.1.1, 8.8.8.8, 1.0.0.1]
   proxy-server-nameserver: [1.1.1.1]
   respect-rules: true
 HEOF
 
-        # কাস্টম গেমিং ও সিডিএন বাইপাস রুল ইনজেক্ট করা
         awk -v lan="$LAN_IP" '/^rules:/ {
             print $0
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
             print "  # 🌀 Gaming & CDN Bypass (Fixed MS Store & Riot)"
-            print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
-            print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
-            print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-            print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-            print "  - DOMAIN-KEYWORD,windows,DIRECT"
-            print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
-            print "  - DOMAIN-SUFFIX,bd,DIRECT"
-            print "  - DOMAIN-KEYWORD,bkash,DIRECT"
+            print "  - DOMAIN-KEYWORD,riotgames,DIRECT\n  - DOMAIN-KEYWORD,playvalorant,DIRECT\n  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+            print "  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,windows,DIRECT\n  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
+            print "  - DOMAIN-SUFFIX,bd,DIRECT\n  - DOMAIN-KEYWORD,bkash,DIRECT"
             next
         } { print }' "$CLEAN" >> "$FINAL"
 
-        # ভ্যালিডেশন টেস্ট
         $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
         if ! grep -qi "level=fatal\|level=error" /tmp/cfg_err.log; then
             mv "$FINAL" $CONF_DIR/config.yaml
