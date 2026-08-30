@@ -1,3 +1,4 @@
+```sh
 #!/bin/sh
 
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
@@ -5,174 +6,63 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 echo "Content-Type: application/json"
 echo ""
 
-ACTION=$(echo "$QUERY_STRING" |
-    sed -n 's/.*action=\([a-z_]*\).*/\1/p')
-
 CONF_DIR="/etc/mihomo"
-
 TRANSPARENT_FILE="$CONF_DIR/transparent"
 ENABLED_FILE="$CONF_DIR/enabled"
-ACL_FILE="$CONF_DIR/acl-bypass"
-
-TPROXY_TABLE="24680"
-TPROXY_MARK="0x1/0x1"
-TPROXY_PRIORITY="10000"
-
-json_ok() {
-    echo '{"ok":true}'
-}
+NFT_FILE="$CONF_DIR/nft.conf"
+API="http://127.0.0.1:9595"
+TOKEN="flclash123"
 
 json_error() {
     echo "{\"ok\":false,\"error\":\"$1\"}"
 }
 
-is_running() {
-    pidof mihomo >/dev/null 2>&1
+json_ok() {
+    echo "{\"ok\":true}"
 }
 
-wait_running() {
+apply_nft() {
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
 
-    I=0
-
-    while [ "$I" -lt 15 ]; do
-
-        if is_running; then
-            return 0
-        fi
-
-        sleep 1
-
-        I=$((I + 1))
-
-    done
+    if [ -f "$NFT_FILE" ]; then
+        /usr/sbin/nft -f "$NFT_FILE" 2>/dev/null
+        return $?
+    fi
 
     return 1
 }
 
-setup_tproxy_route() {
-
-    ip rule del \
-        pref "$TPROXY_PRIORITY" \
-        fwmark "$TPROXY_MARK" \
-        lookup "$TPROXY_TABLE" \
-        2>/dev/null || true
-
-    ip route flush \
-        table "$TPROXY_TABLE" \
-        2>/dev/null || true
-
-    if ! ip rule add \
-        pref "$TPROXY_PRIORITY" \
-        fwmark "$TPROXY_MARK" \
-        lookup "$TPROXY_TABLE" \
-        2>/dev/null
-    then
-        return 1
-    fi
-
-    if ! ip route replace \
-        local 0.0.0.0/0 \
-        dev lo \
-        table "$TPROXY_TABLE" \
-        2>/dev/null
-    then
-        return 1
-    fi
-
-    return 0
+remove_nft() {
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
 }
 
-clear_tproxy_route() {
-
-    ip rule del \
-        pref "$TPROXY_PRIORITY" \
-        fwmark "$TPROXY_MARK" \
-        lookup "$TPROXY_TABLE" \
-        2>/dev/null || true
-
-    ip route flush \
-        table "$TPROXY_TABLE" \
-        2>/dev/null || true
+restart_mihomo() {
+    /etc/init.d/mihomo restart >/dev/null 2>&1
+    sleep 2
 }
 
-apply_nft() {
-
-    [ -f "$CONF_DIR/nft.conf" ] || return 1
-
-    if ! nft -c -f "$CONF_DIR/nft.conf" \
-        >/tmp/uzumaki-nft-test.log 2>&1
-    then
-        return 1
-    fi
-
-    nft delete table ip uzumaki 2>/dev/null || true
-    nft delete table inet uzumaki 2>/dev/null || true
-
-    nft -f "$CONF_DIR/nft.conf" \
-        >/tmp/uzumaki-nft.log 2>&1
-}
-
-restore_acl() {
-
-    [ -f "$ACL_FILE" ] || return 0
-
-    while IFS= read -r IP; do
-
-        [ -z "$IP" ] && continue
-
-        nft add element ip uzumaki acl_ips \
-            "{ $IP }" \
-            2>/dev/null || true
-
-    done < "$ACL_FILE"
-}
-
-valid_ipv4() {
-
-    echo "$1" |
-        grep -Eq \
-        '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
-}
-
-decode_param() {
-
-    printf '%b' \
-        "$(echo "$1" |
-        sed 's/+/ /g; s/%/\\x/g')"
-}
+ACTION=$(printf '%s' "$QUERY_STRING" |
+    sed -n 's/.*\(^\|&\)action=\([^&]*\).*/\2/p')
 
 case "$ACTION" in
 
     status)
 
         ENABLED="1"
-
         [ -f "$ENABLED_FILE" ] &&
             ENABLED=$(cat "$ENABLED_FILE" 2>/dev/null)
 
         TP="0"
-
         [ -f "$TRANSPARENT_FILE" ] &&
             TP=$(cat "$TRANSPARENT_FILE" 2>/dev/null)
 
-        PID=""
-        MEM="0"
+        PID=$(pgrep -f "^/usr/bin/mihomo" 2>/dev/null | head -n 1)
 
-        if is_running; then
+        if [ -n "$PID" ] && [ -d "/proc/$PID" ]; then
 
-            PID=$(pidof mihomo |
-                awk '{print $1}')
-
-            if [ -n "$PID" ] &&
-               [ -r "/proc/$PID/status" ]; then
-
-                MEM=$(
-                    awk '/VmRSS/{print $2}' \
-                    "/proc/$PID/status" \
-                    2>/dev/null
-                )
-
-            fi
+            MEM=$(awk '/VmRSS:/ {print $2}' \
+                "/proc/$PID/status" 2>/dev/null)
 
             [ -z "$MEM" ] && MEM="0"
 
@@ -191,27 +81,11 @@ case "$ACTION" in
         echo "1" > "$ENABLED_FILE"
         echo "1" > "$TRANSPARENT_FILE"
 
-        setup_tproxy_route
+        restart_mihomo
 
-        if [ "$?" -ne 0 ]; then
-            json_error "tproxy_route_failed"
-            exit 1
+        if [ -f "$NFT_FILE" ]; then
+            apply_nft
         fi
-
-        /etc/init.d/mihomo start \
-            >/tmp/uzumaki-start.log 2>&1
-
-        if ! wait_running; then
-            json_error "mihomo_failed_to_start"
-            exit 1
-        fi
-
-        if ! apply_nft; then
-            json_error "nft_apply_failed"
-            exit 1
-        fi
-
-        restore_acl
 
         json_ok
 
@@ -222,16 +96,10 @@ case "$ACTION" in
         echo "0" > "$ENABLED_FILE"
         echo "0" > "$TRANSPARENT_FILE"
 
-        nft delete table ip uzumaki 2>/dev/null || true
-        nft delete table inet uzumaki 2>/dev/null || true
+        remove_nft
 
-        clear_tproxy_route
-
-        /etc/init.d/mihomo stop \
-            >/dev/null 2>&1
-
-        killall -9 mihomo \
-            >/dev/null 2>&1 || true
+        /etc/init.d/mihomo stop >/dev/null 2>&1
+        killall -9 mihomo 2>/dev/null || true
 
         rm -f /var/run/mihomo.pid
 
@@ -243,31 +111,12 @@ case "$ACTION" in
 
         echo "1" > "$ENABLED_FILE"
 
-        setup_tproxy_route
+        restart_mihomo
 
-        if [ "$?" -ne 0 ]; then
-            json_error "tproxy_route_failed"
-            exit 1
-        fi
-
-        /etc/init.d/mihomo restart \
-            >/tmp/uzumaki-restart.log 2>&1
-
-        if ! wait_running; then
-            json_error "mihomo_failed_to_restart"
-            exit 1
-        fi
-
-        if [ ! -f "$TRANSPARENT_FILE" ] ||
+        if [ -f "$TRANSPARENT_FILE" ] &&
            [ "$(cat "$TRANSPARENT_FILE" 2>/dev/null)" = "1" ]; then
 
-            if ! apply_nft; then
-                json_error "nft_apply_failed"
-                exit 1
-            fi
-
-            restore_acl
-
+            apply_nft
         fi
 
         json_ok
@@ -278,35 +127,11 @@ case "$ACTION" in
 
         echo "1" > "$TRANSPARENT_FILE"
 
-        setup_tproxy_route
-
-        if [ "$?" -ne 0 ]; then
-            json_error "tproxy_route_failed"
-            exit 1
+        if apply_nft; then
+            json_ok
+        else
+            json_error "NFT_APPLY_FAILED"
         fi
-
-        if ! is_running; then
-
-            echo "1" > "$ENABLED_FILE"
-
-            /etc/init.d/mihomo start \
-                >/dev/null 2>&1
-
-            if ! wait_running; then
-                json_error "mihomo_failed_to_start"
-                exit 1
-            fi
-
-        fi
-
-        if ! apply_nft; then
-            json_error "nft_apply_failed"
-            exit 1
-        fi
-
-        restore_acl
-
-        json_ok
 
         ;;
 
@@ -314,80 +139,25 @@ case "$ACTION" in
 
         echo "0" > "$TRANSPARENT_FILE"
 
-        nft delete table ip uzumaki \
-            2>/dev/null || true
-
-        nft delete table inet uzumaki \
-            2>/dev/null || true
-
-        clear_tproxy_route
+        remove_nft
 
         json_ok
-
-        ;;
-
-    add_acl_bypass)
-
-        RAW_IP=$(
-            echo "$QUERY_STRING" |
-            sed -n 's/.*[?&]ip=\([^&]*\).*/\1/p'
-        )
-
-        IP=$(decode_param "$RAW_IP")
-
-        if ! valid_ipv4 "$IP"; then
-            json_error "invalid_ipv4"
-            exit 1
-        fi
-
-        mkdir -p "$CONF_DIR"
-
-        touch "$ACL_FILE"
-
-        if ! grep -qxF "$IP" "$ACL_FILE" 2>/dev/null; then
-            echo "$IP" >> "$ACL_FILE"
-        fi
-
-        if ! is_running; then
-            json_error "mihomo_not_running"
-            exit 1
-        fi
-
-        if ! nft list table ip uzumaki \
-            >/dev/null 2>&1
-        then
-
-            if ! apply_nft; then
-                json_error "nft_apply_failed"
-                exit 1
-            fi
-
-        fi
-
-        if nft add element ip uzumaki acl_ips \
-            "{ $IP }" \
-            2>/dev/null
-        then
-
-            json_ok
-
-        else
-
-            json_error "acl_apply_failed"
-
-        fi
 
         ;;
 
     flush_fakeip)
 
-        curl -s \
+        curl -fsS \
             -X POST \
-            "http://127.0.0.1:9595/cache/fakeip/flush" \
-            -H "Authorization: Bearer flclash123" \
+            "$API/cache/fakeip/flush" \
+            -H "Authorization: Bearer $TOKEN" \
             >/dev/null 2>&1
 
-        json_ok
+        if [ $? -eq 0 ]; then
+            json_ok
+        else
+            json_error "FAKEIP_FLUSH_FAILED"
+        fi
 
         ;;
 
@@ -396,30 +166,69 @@ case "$ACTION" in
         (
             cd "$CONF_DIR" || exit 1
 
-            curl -sL \
+            curl -fsSL \
                 -o geoip.dat \
-                "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" &
+                "https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/geoip-lite.dat"
 
-            curl -sL \
+            curl -fsSL \
                 -o geosite.dat \
-                "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" &
+                "https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/geosite.dat"
 
-            curl -sL \
+            curl -fsSL \
                 -o Country.mmdb \
-                "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" &
+                "https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/country-lite.mmdb"
+        ) >/dev/null 2>&1 &
 
-            wait
+        echo "{\"ok\":true,\"message\":\"Updating in background\"}"
 
-        ) &
+        ;;
 
-        echo '{"ok":true,"message":"Updating in background"}'
+    add_acl_bypass)
+
+        IP=$(printf '%s' "$QUERY_STRING" |
+            sed -n 's/.*\(^\|&\)ip=\([^&]*\).*/\2/p')
+
+        IP=$(printf '%b' \
+            "$(printf '%s' "$IP" | sed 's/+/ /g;s/%/\\x/g')")
+
+        if ! printf '%s' "$IP" |
+            grep -Eq \
+            '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+
+            json_error "INVALID_IP"
+            exit 1
+        fi
+
+        # Validate IPv4 octets
+        OLDIFS="$IFS"
+        IFS=.
+        set -- $IP
+        IFS="$OLDIFS"
+
+        for OCTET in "$@"; do
+            [ "$OCTET" -le 255 ] 2>/dev/null || {
+                json_error "INVALID_IP"
+                exit 1
+            }
+        done
+
+        ACL_FILE="$CONF_DIR/acl_ips"
+
+        touch "$ACL_FILE"
+
+        if ! grep -qxF "$IP" "$ACL_FILE" 2>/dev/null; then
+            echo "$IP" >> "$ACL_FILE"
+        fi
+
+        json_ok
 
         ;;
 
     *)
 
-        json_error "invalid_action"
+        json_error "INVALID_ACTION"
 
         ;;
 
 esac
+```
