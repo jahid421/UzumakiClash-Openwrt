@@ -1,61 +1,101 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════════════
-# 🌀 UzumakiClash - Universal Uninstaller (opkg & apk Clean Purge)
+# 🌀 UzumakiClash - Universal Uninstaller
 # Repo: https://github.com/jahid421/UzumakiClash-Openwrt
 # Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
 # ═══════════════════════════════════════════════════════════════════════
 
+TPROXY_TABLE="24680"
+TPROXY_MARK="1"
+
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  🌀 UzumakiClash Universal Uninstaller                        ║"
-echo "║  Safely Reverting Network, Firewall & System Changes         ║"
+echo "║  🌀 UzumakiClash Universal Uninstaller                     ║"
+echo "║  Safely Reverting Network, Firewall & System Changes       ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
-# ১. সার্ভিস বন্ধ করা
+# ==============================================================
+# STOP SERVICE
+# ==============================================================
 if [ -f /etc/init.d/mihomo ]; then
-    echo "[*] Stopping UzumakiClash daemon..."
+
+    echo "[*] Stopping UzumakiClash..."
+
     /etc/init.d/mihomo stop >/dev/null 2>&1
     /etc/init.d/mihomo disable >/dev/null 2>&1
+
     killall -9 mihomo >/dev/null 2>&1 || true
+
     rm -f /etc/init.d/mihomo
 fi
 
-# ২. ফায়ারওয়াল টেবিল ও টিউনিং ক্লিনআপ
-echo "[*] Flushing firewall tables..."
-/usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-/usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
-rm -f /etc/sysctl.d/99-uzumaki-tune.conf
+# ==============================================================
+# NFT CLEANUP
+# ==============================================================
+echo "[*] Cleaning firewall..."
 
-# ৩. হটপ্লাগ ও বাইনারি রিমুভ
+nft delete table ip uzumaki 2>/dev/null || true
+nft delete table inet uzumaki 2>/dev/null || true
+
+# ==============================================================
+# POLICY ROUTING CLEANUP
+# ==============================================================
+ip rule del \
+    fwmark "$TPROXY_MARK" \
+    table "$TPROXY_TABLE" \
+    2>/dev/null || true
+
+ip route flush \
+    table "$TPROXY_TABLE" \
+    2>/dev/null || true
+
+# ==============================================================
+# EXTRA FILES
+# ==============================================================
+rm -f /etc/sysctl.d/99-uzumaki-tune.conf
 rm -f /etc/hotplug.d/iface/99-uzumaki
+
+# ==============================================================
+# CORE + DATA
+# ==============================================================
 rm -f /usr/bin/mihomo
 rm -rf /etc/mihomo
 
-# ৪. CGI স্ক্রিপ্টস রিমুভ
+# ==============================================================
+# CGI
+# ==============================================================
 rm -f /www/cgi-bin/mihomo-api
 rm -f /www/cgi-bin/mihomo-cfg
 rm -f /www/cgi-bin/mihomo-sub
 
-# ৫. LuCI মেনু ক্লিনআপ
+# ==============================================================
+# LUCI
+# ==============================================================
 rm -f /usr/lib/lua/luci/controller/mihomo.lua
 rm -rf /usr/lib/lua/luci/view/mihomo
 rm -f /usr/share/luci/menu.d/luci-app-uzumakiclash.json
 
-# ৬. ফায়ারওয়াল UCI রুলস রিমুভ
+# ==============================================================
+# UCI FIREWALL
+# ==============================================================
 uci -q delete firewall.uzumaki_rule 2>/dev/null
 uci -q delete firewall.mihomo_proxy 2>/dev/null
 uci commit firewall
+
 /etc/init.d/firewall restart >/dev/null 2>&1 || true
 
-# ৭. LuCI ও ওয়েব সার্ভার ক্যাশ রিলোড
+# ==============================================================
+# CACHE
+# ==============================================================
 rm -rf /tmp/luci-*
-/etc/init.d/rpcd restart >/dev/null 2>&1
-/etc/init.d/uhttpd restart >/dev/null 2>&1
+
+/etc/init.d/rpcd restart >/dev/null 2>&1 || true
+/etc/init.d/uhttpd restart >/dev/null 2>&1 || true
 
 echo ""
 echo "══════════════════════════════════════════════════════════════"
 echo "✅ UzumakiClash has been completely removed!"
-echo "   Your router's native network has been fully restored."
+echo "   Your native network configuration has been restored."
 echo "══════════════════════════════════════════════════════════════"
 echo ""
