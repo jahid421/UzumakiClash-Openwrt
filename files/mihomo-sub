@@ -1,3 +1,4 @@
+```sh
 #!/bin/sh
 # ═══════════════════════════════════════════════
 # 🌀 UzumakiClash - Subscription Parser
@@ -6,69 +7,98 @@
 echo "Content-Type: text/plain"
 echo ""
 
-RAW=$(
-    echo "$QUERY_STRING" |
-    sed -n 's/.*url=\(.*\)$/\1/p'
-)
-
-URL=$(
-    printf '%b' \
-    "$(echo "$RAW" |
-      sed 's/+/ /g; s/%/\\x/g')"
-)
-
+CONF_DIR="/etc/mihomo"
 TMP="/tmp/uzsub_$$.yaml"
+URLTMP="/tmp/uzsub_url_$$"
 
-trap 'rm -f "${TMP}"* /tmp/uzsub_err.log' EXIT
+trap 'rm -f "$TMP" "$URLTMP"' EXIT
+
+# Extract URL
+RAW=$(printf '%s' "$QUERY_STRING" | sed -n 's/.*url=\(.*\)$/\1/p')
+
+if [ -z "$RAW" ]; then
+    echo "NO_URL"
+    exit 1
+fi
+
+# URL decode
+printf '%b' "$(printf '%s' "$RAW" | sed 's/+/ /g; s/%/\\x/g')" > "$URLTMP"
+URL=$(cat "$URLTMP")
 
 if [ -z "$URL" ]; then
-
     echo "NO_URL"
-    exit 0
-
+    exit 1
 fi
 
-SUB_CONV="https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=true&url="
+# Basic URL validation
+case "$URL" in
+    http://*|https://*)
+        ;;
+    *)
+        echo "INVALID_URL"
+        exit 1
+        ;;
+esac
 
-# ==========================================================
-# DIRECT
-# ==========================================================
-curl -sL \
+UA="ClashMeta/1.18.0"
+
+# ─────────────────────────────────────────────
+# 1. Try direct subscription download
+# ─────────────────────────────────────────────
+
+curl -fsSL \
     --connect-timeout 15 \
     --max-time 90 \
-    -H "User-Agent: ClashMeta/1.18.0" \
+    -A "$UA" \
     -o "$TMP" \
-    "$URL" \
-    2>/dev/null
+    "$URL" 2>/dev/null
 
-# ==========================================================
-# FALLBACK CONVERTER
-# ==========================================================
-if [ ! -s "$TMP" ] ||
-   ! grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
+# ─────────────────────────────────────────────
+# 2. If direct response isn't Clash YAML,
+#    try subscription converter
+# ─────────────────────────────────────────────
 
-    curl -sL \
+if [ ! -s "$TMP" ] || \
+   ! grep -qE '^(proxies:|proxy-providers:|proxy-groups:)' "$TMP"; then
+
+    rm -f "$TMP"
+
+    ENCODED_URL=$(printf '%s' "$URL" | sed \
+        's/%/%25/g; s/&/%26/g; s/?/%3F/g; s/=/%3D/g')
+
+    CONVERTER="https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=true&url=${ENCODED_URL}"
+
+    curl -fsSL \
         --connect-timeout 15 \
         --max-time 90 \
+        -A "$UA" \
         -o "$TMP" \
-        "${SUB_CONV}$(echo "$URL" | sed 's/&/%26/g')" \
-        2>/dev/null
-
+        "$CONVERTER" 2>/dev/null
 fi
 
-# ==========================================================
-# APPLY
-# ==========================================================
-if [ -s "$TMP" ] &&
-   grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
+# ─────────────────────────────────────────────
+# 3. Validate downloaded file
+# ─────────────────────────────────────────────
 
-    export REQUEST_METHOD="POST"
-
-    cat "$TMP" |
-        /www/cgi-bin/mihomo-cfg
-
-else
-
-    echo "DOWNLOAD_OR_CONVERSION_FAILED"
-
+if [ ! -s "$TMP" ]; then
+    echo "DOWNLOAD_FAILED"
+    exit 1
 fi
+
+if ! grep -qE '^(proxies:|proxy-providers:|proxy-groups:)' "$TMP"; then
+    echo "NOT_A_CLASH_CONFIG"
+    exit 1
+fi
+
+# ─────────────────────────────────────────────
+# 4. Pass complete YAML to config manager
+# ─────────────────────────────────────────────
+
+export REQUEST_METHOD="POST"
+
+RESULT=$(
+    cat "$TMP" | /www/cgi-bin/mihomo-cfg
+)
+
+printf '%s\n' "$RESULT"
+```
