@@ -1,4 +1,5 @@
 <%+header%>
+
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;padding:0;transition:background .3s,color .3s}
@@ -23,2874 +24,543 @@ body{margin:0;padding:0;transition:background .3s,color .3s}
 }
 
 body{background:var(--bg);color:var(--text)}
-
-.mc{
-  max-width:1200px;
-  margin:0 auto;
-  padding:12px;
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif
-}
-
-.theme-toggle{
-  position:fixed;
-  top:12px;
-  right:12px;
-  z-index:1000;
-  width:44px;
-  height:44px;
-  border-radius:50%;
-  border:none;
-  background:var(--card-bg);
-  color:var(--accent);
-  cursor:pointer;
-  box-shadow:0 2px 10px rgba(0,0,0,0.15);
-  font-size:20px
-}
-
-.tabs{
-  display:flex;
-  border:2px solid var(--accent);
-  border-radius:10px;
-  overflow-x:auto;
-  margin-bottom:16px;
-  background:var(--tab-bg)
-}
-
-.tabs button{
-  flex:1;
-  min-width:90px;
-  padding:12px 8px;
-  border:none;
-  background:var(--tab-bg);
-  color:var(--accent);
-  font-weight:700;
-  font-size:13px;
-  cursor:pointer
-}
-
-.tabs button.ac{
-  background:var(--accent);
-  color:#fff
-}
-
-.card{
-  background:var(--card-bg);
-  border:1px solid var(--card-border);
-  border-radius:14px;
-  padding:16px;
-  margin-bottom:14px;
-  box-shadow:var(--shadow)
-}
-
-.title{
-  font-size:14px;
-  font-weight:700;
-  margin-bottom:14px;
-  color:var(--text-heading);
-  padding-bottom:10px;
-  border-bottom:1px solid var(--divider);
-  display:flex;
-  align-items:center;
-  gap:6px
-}
-
-.dot{
-  width:12px;
-  height:12px;
-  border-radius:50%;
-  display:inline-block;
-  margin-right:8px
-}
-
-.on{
-  background:#22c55e;
-  box-shadow:0 0 8px #22c55e
-}
-
-.off{
-  background:#ef4444;
-  box-shadow:0 0 8px #ef4444
-}
-
-.btns{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap
-}
-
-.btn{
-  border:none;
-  border-radius:10px;
-  padding:11px 18px;
-  font-size:13px;
-  font-weight:600;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  min-height:42px;
-  color:#fff
-}
-
-.btn:disabled{
-  opacity:.55;
-  cursor:not-allowed
-}
-
-.b1{background:#22c55e}
-.b2{background:#ef4444}
-.b3{background:#f59e0b}
-.b4{background:var(--accent)}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-  gap:10px;
-  margin-bottom:14px
-}
-
-.stat{
-  background:var(--card-bg);
-  border:1px solid var(--card-border);
-  border-radius:12px;
-  padding:14px
-}
-
-.stat .l{
-  font-size:10px;
-  color:var(--text-muted);
-  text-transform:uppercase;
-  margin-bottom:6px;
-  font-weight:600
-}
-
-.stat .v{
-  font-size:20px;
-  font-weight:700;
-  color:var(--text)
-}
-
-.upbox{
-  border:2px dashed var(--accent);
-  border-radius:12px;
-  padding:24px 16px;
-  text-align:center;
-  background:var(--upbox-bg);
-  cursor:pointer
-}
-
-.mode{
-  display:flex;
-  border:2px solid var(--accent);
-  border-radius:10px;
-  overflow:hidden
-}
-
-.mode button{
-  flex:1;
-  padding:11px 8px;
-  border:none;
-  background:var(--card-bg);
-  color:var(--accent);
-  font-weight:700;
-  cursor:pointer
-}
-
-.mode button.ac{
-  background:var(--accent);
-  color:#fff
-}
-
-.ir{
-  display:flex;
-  justify-content:space-between;
-  padding:10px 0;
-  border-bottom:1px solid var(--divider);
-  font-size:13px
-}
-
-.inp{
-  width:100%;
-  padding:12px;
-  border:1px solid var(--input-border);
-  border-radius:10px;
-  font-size:13px;
-  background:var(--input-bg);
-  color:var(--text);
-  margin-bottom:10px
-}
-
-.ta{
-  width:100%;
-  height:320px;
-  padding:12px;
-  border:1px solid var(--input-border);
-  border-radius:10px;
-  font-family:monospace;
-  background:var(--textarea-bg);
-  color:var(--text)
-}
-
-.gp{
-  background:var(--card-bg);
-  border:1px solid var(--card-border);
-  border-radius:12px;
-  padding:16px;
-  margin-bottom:12px
-}
-
-.nd{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
-  gap:8px
-}
-
-.ni{
-  padding:10px 8px;
-  border:2px solid var(--card-border);
-  border-radius:8px;
-  cursor:pointer;
-  text-align:center;
-  background:var(--card-bg)
-}
-
-.ni.ac{
-  border-color:var(--accent);
-  background:var(--accent-light)
-}
-
-.tbl-wrap{
-  overflow-x:auto
-}
-
-table{
-  width:100%;
-  border-collapse:collapse
-}
-
-th,td{
-  padding:10px 8px;
-  border-bottom:1px solid var(--divider);
-  font-size:12px;
-  text-align:left
-}
-
-.lb{
-  background:var(--log-bg);
-  color:var(--log-text);
-  border-radius:12px;
-  padding:14px;
-  height:350px;
-  overflow-y:auto;
-  font-family:monospace;
-  font-size:11px
-}
-
-.pg{
-  display:none
-}
-
-.pg.show{
-  display:block
-}
-
-.warn{
-  background:var(--warn-bg);
-  border:1px solid var(--warn-border);
-  color:var(--warn-text);
-  padding:12px;
-  border-radius:10px;
-  font-size:12px;
-  margin-top:12px
-}
-
-.credit-card{
-  background:linear-gradient(135deg,#8b5cf6 0%,#d946ef 100%);
-  color:#fff;
-  border-radius:14px;
-  padding:24px;
-  margin-top:24px;
-  text-align:center
-}
+.mc{max-width:1200px;margin:0 auto;padding:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.theme-toggle{position:fixed;top:12px;right:12px;z-index:1000;width:44px;height:44px;border-radius:50%;border:none;background:var(--card-bg);color:var(--accent);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.15);font-size:20px}
+.tabs{display:flex;border:2px solid var(--accent);border-radius:10px;overflow-x:auto;margin-bottom:16px;background:var(--tab-bg)}
+.tabs button{flex:1;min-width:90px;padding:12px 8px;border:none;background:var(--tab-bg);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer}
+.tabs button.ac{background:var(--accent);color:#fff}
+.card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.title{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text-heading);padding-bottom:10px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:8px}
+.on{background:#22c55e;box-shadow:0 0 8px #22c55e}
+.off{background:#ef4444;box-shadow:0 0 8px #ef4444}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:none;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;color:#fff}
+.b1{background:#22c55e}.b2{background:#ef4444}.b3{background:#f59e0b}.b4{background:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px}
+.stat .l{font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;font-weight:600}
+.stat .v{font-size:20px;font-weight:700;color:var(--text)}
+.upbox{border:2px dashed var(--accent);border-radius:12px;padding:24px 16px;text-align:center;background:var(--upbox-bg);cursor:pointer}
+.mode{display:flex;border:2px solid var(--accent);border-radius:10px;overflow:hidden}
+.mode button{flex:1;padding:11px 8px;border:none;background:var(--card-bg);color:var(--accent);font-weight:700;cursor:pointer}
+.mode button.ac{background:var(--accent);color:#fff}
+.ir{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--divider);font-size:13px}
+.inp{width:100%;padding:12px;border:1px solid var(--input-border);border-radius:10px;font-size:13px;background:var(--input-bg);color:var(--text);margin-bottom:10px}
+.ta{width:100%;height:320px;padding:12px;border:1px solid var(--input-border);border-radius:10px;font-family:monospace;background:var(--textarea-bg);color:var(--text)}
+.gp{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:16px;margin-bottom:12px}
+.nd{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.ni{padding:10px 8px;border:2px solid var(--card-border);border-radius:8px;cursor:pointer;text-align:center;background:var(--card-bg)}
+.ni.ac{border-color:var(--accent);background:var(--accent-light)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 8px;border-bottom:1px solid var(--divider);font-size:12px;text-align:left}
+.lb{background:var(--log-bg);color:var(--log-text);border-radius:12px;padding:14px;height:350px;overflow-y:auto;font-family:monospace;font-size:11px}
+.pg{display:none}.pg.show{display:block}
+.warn{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-text);padding:12px;border-radius:10px;font-size:12px;margin-top:12px}
+.credit-card{background:linear-gradient(135deg,#8b5cf6 0%,#d946ef 100%);color:#fff;border-radius:14px;padding:24px;margin-top:24px;text-align:center}
 </style>
 
 <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
 
 <div class="mc">
-
-  <div class="tabs">
-
-    <button
-      class="ac"
-      onclick="sp('overview',this)"
-    >
-      Overview
-    </button>
-
-    <button
-      onclick="sp('proxy',this)"
-    >
-      Proxy Nodes
-    </button>
-
-    <button
-      onclick="sp('acl',this)"
-    >
-      ACL / Devices
-    </button>
-
-    <button
-      onclick="sp('config',this)"
-    >
-      Config Manager
-    </button>
-
-    <button
-      onclick="sp('conn',this)"
-    >
-      Connections
-    </button>
-
-    <button
-      onclick="sp('log',this)"
-    >
-      Live Logs
-    </button>
-
-  </div>
-
-  <div
-    class="pg show"
-    id="pg-overview"
-  >
-
-    <div class="card">
-
-      <div
-        style="
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          flex-wrap:wrap;
-          gap:10px
-        "
-      >
-
-        <div>
-
-          <div
-            style="
-              font-size:17px;
-              font-weight:700;
-              display:flex;
-              align-items:center
-            "
-          >
-
-            <span
-              class="dot off"
-              id="dot"
-            ></span>
-
-            <span id="stxt">
-              Checking...
-            </span>
-
-          </div>
-
-          <div
-            style="
-              font-size:12px;
-              color:var(--text-muted);
-              margin-top:4px
-            "
-            id="ssub"
-          ></div>
-
-        </div>
-
-        <div class="btns">
-
-          <button
-            class="btn b1"
-            onclick="svc('start')"
-          >
-            Fast Start
-          </button>
-
-          <button
-            class="btn b2"
-            onclick="svc('stop')"
-          >
-            Instant Kill
-          </button>
-
-          <button
-            class="btn b3"
-            onclick="svc('restart')"
-          >
-            Restart
-          </button>
-
-          <button
-            class="btn b4"
-            onclick="
-              window.open(
-                'http://'+location.hostname+':9595/ui',
-                '_blank'
-              )
-            "
-          >
-            Dashboard
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="card">
-
-      <div class="title">
-        🌀 Uzumaki Transparent Proxy (Full UDP Gaming & Fake-IP)
-      </div>
-
-      <div
-        style="
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          flex-wrap:wrap;
-          gap:10px
-        "
-      >
-
-        <div
-          style="
-            font-size:13px;
-            color:var(--text-muted);
-            max-width:500px
-          "
-        >
-          Zero-Lag router routing. All connected devices auto-bypass local sites and tunnel blocked traffic.
-        </div>
-
-        <button
-          class="btn b3"
-          id="tpbtn"
-          onclick="toggleTP()"
-        >
-          Checking...
-        </button>
-
-      </div>
-
-      <div class="warn">
-        ⚡ Ultra-Low RAM Core is active. Actual memory usage depends on traffic, nodes and rules.
-      </div>
-
-    </div>
-
-    <div class="card">
-
-      <div class="title">
-        ⚙️ Proxy Routing Mode
-      </div>
-
-      <div class="mode">
-
-        <button
-          id="m-rule"
-          onclick="sm('rule')"
-        >
-          Smart Rule
-        </button>
-
-        <button
-          id="m-global"
-          onclick="sm('global')"
-        >
-          Global Proxy
-        </button>
-
-        <button
-          id="m-direct"
-          onclick="sm('direct')"
-        >
-          Direct Bypass
-        </button>
-
-      </div>
-
-    </div>
-
-    <div class="grid">
-
-      <div class="stat">
-
-        <div class="l">
-          Upload Speed
-        </div>
-
-        <div
-          class="v"
-          id="up"
-        >
-          0 B/s
-        </div>
-
-      </div>
-
-      <div class="stat">
-
-        <div class="l">
-          Download Speed
-        </div>
-
-        <div
-          class="v"
-          id="dn"
-        >
-          0 B/s
-        </div>
-
-      </div>
-
-      <div class="stat">
-
-        <div class="l">
-          Active Sockets
-        </div>
-
-        <div
-          class="v"
-          id="cc"
-        >
-          0
-        </div>
-
-      </div>
-
-      <div class="stat">
-
-        <div class="l">
-          RAM Consumed
-        </div>
-
-        <div
-          class="v"
-          id="mem"
-        >
-          -
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="card">
-
-      <div class="title">
-        📊 Traffic Realtime Monitor
-      </div>
-
-      <canvas
-        id="cv"
-        style="height:120px;width:100%"
-      ></canvas>
-
-    </div>
-
-    <div class="card">
-
-      <div class="title">
-        ⚡ Cache & Maintenance
-      </div>
-
-      <div class="btns">
-
-        <button
-          class="btn b4"
-          onclick="ug()"
-        >
-          Update GeoData
-        </button>
-
-        <button
-          class="btn b4"
-          onclick="fd()"
-        >
-          Flush Fake-IP Pool
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <div
-    class="pg"
-    id="pg-acl"
-  >
-
-    <div class="card">
-
-      <div class="title">
-        🛡️ Client Access Control (Bypass Specific Devices)
-      </div>
-
-      <div
-        style="
-          font-size:13px;
-          color:var(--text-muted);
-          margin-bottom:12px
-        "
-      >
-        Enter device IP address (e.g. Smart TV or Work PC) that should directly bypass proxy without routing.
-      </div>
-
-      <div
-        style="
-          display:flex;
-          gap:8px
-        "
-      >
-
-        <input
-          class="inp"
-          id="aclip"
-          placeholder="Device IP (e.g. 192.168.1.50)"
-          style="margin:0"
-        >
-
-        <button
-          class="btn b1"
-          onclick="addACL()"
-        >
-          Add Bypass
-        </button>
-
-      </div>
-
-      <div
-        id="aclmsg"
-        style="
-          margin-top:10px;
-          font-size:12px
-        "
-      ></div>
-
-    </div>
-
-  </div>
-
-  <div
-    class="pg"
-    id="pg-proxy"
-  >
-
-    <div class="card">
-
-      <div
-        style="
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          flex-wrap:wrap;
-          gap:10px
-        "
-      >
-
-        <span
-          class="title"
-          style="
-            border:0;
-            margin:0;
-            padding:0
-          "
-        >
-          🌐 Outbound Nodes
-        </span>
-
-        <div
-          style="
-            display:flex;
-            gap:8px
-          "
-        >
-
-          <input
-            class="inp"
-            id="pq"
-            placeholder="Search node..."
-            oninput="pft()"
-            style="
-              width:200px;
-              margin:0
-            "
-          >
-
-          <button
-            class="btn b4"
-            onclick="pt()"
-          >
-            Ping Test All
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-
-    <div id="pgs">
-      Loading...
-    </div>
-
-  </div>
-
-  <div
-    class="pg"
-    id="pg-config"
-  >
-
-    <div class="card">
-
-      <div class="title">
-        📤 Import YAML or Subscription
-      </div>
-
-      <div
-        class="upbox"
-        onclick="
-          document
-            .getElementById('yf')
-            .click()
-        "
-      >
-
-        <div
-          style="
-            font-size:36px;
-            margin-bottom:6px
-          "
-        >
-          🌀
-        </div>
-
-        <div
-          style="
-            font-weight:700;
-            color:var(--accent)
-          "
-        >
-          Select YAML Config
-        </div>
-
-        <div
-          id="fname"
-          style="
-            margin-top:10px;
-            color:#16a34a;
-            font-weight:700;
-            font-size:13px
-          "
-        ></div>
-
-        <input
-          id="yf"
-          type="file"
-          accept=".yaml,.yml,.txt"
-          onchange="pf(this)"
-          style="display:none"
-        >
-
-      </div>
-
-      <div
-        class="btns"
-        style="margin-top:14px"
-      >
-
-        <button
-          class="btn b4"
-          id="ubtn"
-          onclick="dup()"
-          disabled
-        >
-          Apply YAML
-        </button>
-
-      </div>
-
-      <div
-        style="
-          margin-top:18px
-        "
-      >
-
-        <input
-          class="inp"
-          id="suburl"
-          placeholder="Paste Sub Link (Clash / VLESS / Base64)"
-        >
-
-        <button
-          class="btn b4"
-          onclick="dsub()"
-        >
-          Convert & Apply Sub
-        </button>
-
-        <div
-          style="
-            font-size:12px;
-            margin-top:8px
-          "
-          id="submsg"
-        ></div>
-
-      </div>
-
-    </div>
-
-    <div class="card">
-
-      <div class="title">
-        📝 Live Config Editor
-      </div>
-
-      <textarea
-        class="ta"
-        id="ced"
-      ></textarea>
-
-      <div
-        class="btns"
-        style="
-          margin-top:12px
-        "
-      >
-
-        <button
-          class="btn b4"
-          onclick="cl()"
-        >
-          Reload
-        </button>
-
-        <button
-          class="btn b1"
-          onclick="cs()"
-        >
-          Save & Apply
-        </button>
-
-      </div>
-
-      <div
-        id="cmsg"
-        style="
-          margin-top:10px
-        "
-      ></div>
-
-    </div>
-
-  </div>
-
-  <div
-    class="pg"
-    id="pg-conn"
-  >
-
-    <div class="card">
-
-      <div
-        style="
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          flex-wrap:wrap;
-          gap:10px
-        "
-      >
-
-        <span
-          class="title"
-          style="
-            border:0;
-            margin:0;
-            padding:0
-          "
-        >
-          🔗 Active Sockets (<span id="cnc">0</span>)
-        </span>
-
-        <button
-          class="btn b2"
-          onclick="cna()"
-        >
-          Close All
-        </button>
-
-      </div>
-
-    </div>
-
-    <div class="card">
-
-      <div class="tbl-wrap">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Target</th>
-              <th>Net</th>
-              <th>Route</th>
-              <th>Rule</th>
-              <th>Up</th>
-              <th>Down</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-          <tbody id="cnb"></tbody>
-
-        </table>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <div
-    class="pg"
-    id="pg-log"
-  >
-
-    <div class="card">
-
-      <div class="title">
-        📋 Live Logs
-      </div>
-
-      <div
-        class="lb"
-        id="llb"
-      ></div>
-
-    </div>
-
-  </div>
-
-  <div class="credit-card">
-
-    <div
-      style="
-        font-size:42px;
-        margin-bottom:6px
-      "
-    >
-      🌀
-    </div>
-
-    <div
-      style="
-        font-size:24px;
-        font-weight:800;
-        margin-bottom:4px
-      "
-    >
-      UzumakiClash
-    </div>
-
-    <div
-      style="
-        font-size:13px;
-        opacity:.9
-      "
-    >
-      Ultra Lightweight & High Performance Gateway
-    </div>
-
-    <div
-      style="
-        font-size:14px;
-        font-weight:700;
-        margin-top:10px
-      "
-    >
-      Created with ❤️ by Jahid Hasan Shuvo
-    </div>
-
-  </div>
-
+<div class="tabs">
+<button class="ac" onclick="sp('overview',this)">Overview</button>
+<button onclick="sp('proxy',this)">Proxy Nodes</button>
+<button onclick="sp('acl',this)">ACL / Devices</button>
+<button onclick="sp('config',this)">Config Manager</button>
+<button onclick="sp('conn',this)">Connections</button>
+<button onclick="sp('log',this)">Live Logs</button>
+</div>
+
+<div class="pg show" id="pg-overview">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:17px;font-weight:700;display:flex;align-items:center">
+<span class="dot off" id="dot"></span><span id="stxt">Checking...</span>
+</div>
+<div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="ssub"></div>
+</div>
+<div class="btns">
+<button class="btn b1" onclick="svc('start')">Fast Start</button>
+<button class="btn b2" onclick="svc('stop')">Instant Kill</button>
+<button class="btn b3" onclick="svc('restart')">Restart</button>
+<button class="btn b4" onclick="dash()">Dashboard</button>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="title">🌀 Uzumaki Transparent Proxy (Full UDP Gaming & Fake-IP)</div>
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:13px;color:var(--text-muted);max-width:500px">
+Zero-Lag router routing. All connected devices auto-bypass local sites and tunnel blocked traffic.
+</div>
+<button class="btn b3" id="tpbtn" onclick="toggleTP()">Checking...</button>
+</div>
+<div class="warn">⚡ Ultra-Low RAM Core is active.</div>
+</div>
+
+<div class="card">
+<div class="title">⚙️ Proxy Routing Mode</div>
+<div class="mode">
+<button id="m-rule" onclick="sm('rule')">Smart Rule</button>
+<button id="m-global" onclick="sm('global')">Global Proxy</button>
+<button id="m-direct" onclick="sm('direct')">Direct Bypass</button>
+</div>
+</div>
+
+<div class="grid">
+<div class="stat"><div class="l">Upload Speed</div><div class="v" id="up">0 B/s</div></div>
+<div class="stat"><div class="l">Download Speed</div><div class="v" id="dn">0 B/s</div></div>
+<div class="stat"><div class="l">Active Sockets</div><div class="v" id="cc">0</div></div>
+<div class="stat"><div class="l">RAM Consumed</div><div class="v" id="mem">-</div></div>
+</div>
+
+<div class="card"><div class="title">📊 Traffic Realtime Monitor</div><canvas id="cv" style="height:120px;width:100%"></canvas></div>
+
+<div class="card">
+<div class="title">⚡ Cache & Maintenance</div>
+<div class="btns">
+<button class="btn b4" onclick="ug()">Update GeoData</button>
+<button class="btn b4" onclick="fd()">Flush Fake-IP Pool</button>
+</div>
+</div>
+</div>
+
+<div class="pg" id="pg-acl">
+<div class="card">
+<div class="title">🛡️ Client Access Control (Bypass Specific Devices)</div>
+<div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">
+Enter device IP address that should directly bypass proxy.
+</div>
+<div style="display:flex;gap:8px">
+<input class="inp" id="aclip" placeholder="Device IP (e.g. 192.168.1.50)" style="margin:0">
+<button class="btn b1" onclick="addACL()">Add Bypass</button>
+</div>
+<div id="aclmsg" style="margin-top:10px;font-size:12px"></div>
+</div>
+</div>
+
+<div class="pg" id="pg-proxy">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<span class="title" style="border:0;margin:0;padding:0">🌐 Outbound Nodes</span>
+<div style="display:flex;gap:8px">
+<input class="inp" id="pq" placeholder="Search node..." oninput="pft()" style="width:200px;margin:0">
+<button class="btn b4" onclick="pt()">Ping Test All</button>
+</div>
+</div>
+</div>
+<div id="pgs">Loading...</div>
+</div>
+
+<div class="pg" id="pg-config">
+<div class="card">
+<div class="title">📤 Import YAML or Subscription</div>
+<div class="upbox" onclick="document.getElementById('yf').click()">
+<div style="font-size:36px;margin-bottom:6px">🌀</div>
+<div style="font-weight:700;color:var(--accent)">Select YAML Config</div>
+<div id="fname" style="margin-top:10px;color:#16a34a;font-weight:700;font-size:13px"></div>
+<input id="yf" type="file" accept=".yaml,.yml,.txt" onchange="pf(this)" style="display:none">
+</div>
+<div class="btns" style="margin-top:14px">
+<button class="btn b4" id="ubtn" onclick="dup()" disabled>Apply YAML</button>
+</div>
+<div style="margin-top:18px">
+<input class="inp" id="suburl" placeholder="Paste Sub Link (Clash / VLESS / Base64)">
+<button class="btn b4" onclick="dsub()">Convert & Apply Sub</button>
+<div style="font-size:12px;margin-top:8px" id="submsg"></div>
+</div>
+</div>
+
+<div class="card">
+<div class="title">📝 Live Config Editor</div>
+<textarea class="ta" id="ced"></textarea>
+<div class="btns" style="margin-top:12px">
+<button class="btn b4" onclick="cl()">Reload</button>
+<button class="btn b1" onclick="cs()">Save & Apply</button>
+</div>
+<div id="cmsg" style="margin-top:10px"></div>
+</div>
+</div>
+
+<div class="pg" id="pg-conn">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<span class="title" style="border:0;margin:0;padding:0">🔗 Active Sockets (<span id="cnc">0</span>)</span>
+<button class="btn b2" onclick="cna()">Close All</button>
+</div>
+</div>
+<div class="card">
+<div class="tbl-wrap">
+<table>
+<thead><tr><th>Target</th><th>Net</th><th>Route</th><th>Rule</th><th>Up</th><th>Down</th><th>Action</th></tr></thead>
+<tbody id="cnb"></tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div class="pg" id="pg-log">
+<div class="card">
+<div class="title">📋 Live Logs</div>
+<div class="lb" id="llb"></div>
+</div>
+</div>
+
+<div class="credit-card">
+<div style="font-size:42px;margin-bottom:6px">🌀</div>
+<div style="font-size:24px;font-weight:800;margin-bottom:4px">UzumakiClash</div>
+<div style="font-size:13px;opacity:.9">Ultra Lightweight & High Performance Gateway</div>
+<div style="font-size:14px;font-weight:700;margin-top:10px">Created with ❤️ by Jahid Hasan Shuvo</div>
+</div>
 </div>
 
 <script>
+var A='http://'+location.hostname+':9595';
+var S='flclash123';
+var H={'Authorization':'Bearer '+S,'Content-Type':'application/json'};
+var yc='',ua=[],da=[];
 
-var A =
-  'http://'+
-  location.hostname+
-  ':9595';
-
-var S =
-  'flclash123';
-
-var H = {
-  'Authorization':
-    'Bearer '+S,
-  'Content-Type':
-    'application/json'
-};
-
-var yc='';
-var ua=[];
-var da=[];
-
-/* ==========================================================
-   THEME
-   ========================================================== */
-
-function loadTheme(){
-
-  var s =
-    localStorage.getItem('uz-theme') ||
-    'light';
-
-  document
-    .documentElement
-    .setAttribute(
-      'data-theme',
-      s
-    );
-
-  var b =
-    document.getElementById(
-      'themeBtn'
-    );
-
-  if(b){
-    b.innerHTML =
-      s==='dark'
-        ? '☀️'
-        : '🌙';
-  }
-}
-
-function toggleTheme(){
-
-  var c =
-    document
-      .documentElement
-      .getAttribute(
-        'data-theme'
-      ) ||
-    'light';
-
-  var n =
-    c==='dark'
-      ? 'light'
-      : 'dark';
-
-  document
-    .documentElement
-    .setAttribute(
-      'data-theme',
-      n
-    );
-
-  localStorage.setItem(
-    'uz-theme',
-    n
-  );
-
-  var b =
-    document.getElementById(
-      'themeBtn'
-    );
-
-  if(b){
-    b.innerHTML =
-      n==='dark'
-        ? '☀️'
-        : '🌙';
-  }
-
-  setTimeout(
-    dr,
-    100
-  );
-}
-
-loadTheme();
-
-/* ==========================================================
-   FORMAT
-   ========================================================== */
-
-function fb(b){
-
-  if(!b || b===0){
-    return '0 B';
-  }
-
-  var k=1024;
-
-  var s=[
-    'B',
-    'KB',
-    'MB',
-    'GB',
-    'TB'
-  ];
-
-  var i =
-    Math.floor(
-      Math.log(b)/
-      Math.log(k)
-    );
-
-  i=Math.max(
-    0,
-    Math.min(
-      i,
-      s.length-1
-    )
-  );
-
-  return parseFloat(
-    (
-      b/
-      Math.pow(k,i)
-    ).toFixed(1)
-  )+
-  ' '+
-  s[i];
-}
-
-/* ==========================================================
-   API
-   ========================================================== */
-
-function af(p,o){
-
-  o=o||{};
-  o.headers=H;
-
-  return fetch(
-    A+p,
-    o
-  )
-  .then(
-    function(r){
-      return r.json();
-    }
-  )
-  .catch(
-    function(){
-      return null;
-    }
-  );
-}
-
-/* ==========================================================
-   TABS
-   ========================================================== */
-
-function sp(n,b){
-
-  document
-    .querySelectorAll('.pg')
-    .forEach(
-      function(p){
-        p.classList.remove('show');
-      }
-    );
-
-  var page =
-    document.getElementById(
-      'pg-'+n
-    );
-
-  if(page){
-    page.classList.add('show');
-  }
-
-  document
-    .querySelectorAll('.tabs button')
-    .forEach(
-      function(x){
-        x.classList.remove('ac');
-      }
-    );
-
-  b.classList.add('ac');
-
-  if(n==='proxy'){
-    pl();
-  }
-
-  if(n==='config'){
-    cl();
-  }
-
-  if(n==='conn'){
-    cnl();
-  }
-
-  window.scrollTo({
-    top:0,
-    behavior:'smooth'
+function api(path,opt){
+  opt=opt||{};
+  opt.headers=Object.assign({},H,opt.headers||{});
+  return fetch(A+path,opt).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
   });
 }
 
-/* ==========================================================
-   YAML UPLOAD
-   ========================================================== */
+function dash(){window.open(A+'/ui','_blank')}
+
+function loadTheme(){
+ var s=localStorage.getItem('uz-theme')||'light';
+ document.documentElement.setAttribute('data-theme',s);
+ var b=document.getElementById('themeBtn');
+ if(b)b.innerHTML=s==='dark'?'☀️':'🌙';
+}
+function toggleTheme(){
+ var c=document.documentElement.getAttribute('data-theme')||'light';
+ var n=c==='dark'?'light':'dark';
+ document.documentElement.setAttribute('data-theme',n);
+ localStorage.setItem('uz-theme',n);
+ document.getElementById('themeBtn').innerHTML=n==='dark'?'☀️':'🌙';
+ setTimeout(dr,100);
+}
+loadTheme();
+
+function fb(b){
+ if(!b||b===0)return'0 B';
+ var k=1024,s=['B','KB','MB','GB','TB'];
+ var i=Math.floor(Math.log(b)/Math.log(k));
+ return parseFloat((b/Math.pow(k,i)).toFixed(1))+' '+s[i];
+}
+
+function sp(n,b){
+ document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('show')});
+ var p=document.getElementById('pg-'+n);
+ if(p)p.classList.add('show');
+ document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('ac')});
+ if(b)b.classList.add('ac');
+ if(n==='proxy')pl();
+ if(n==='config')cl();
+ if(n==='conn')cnl();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
 
 function pf(el){
-
-  if(!el.files.length){
-    return;
-  }
-
-  document
-    .getElementById('fname')
-    .innerText =
-      'File: '+
-      el.files[0].name;
-
-  var r =
-    new FileReader();
-
-  r.onload =
-    function(e){
-
-      yc =
-        e.target.result ||
-        '';
-
-      document
-        .getElementById('ubtn')
-        .disabled =
-          yc.length<5;
-
-    };
-
-  r.readAsText(
-    el.files[0]
-  );
+ if(!el.files.length)return;
+ document.getElementById('fname').innerText='File: '+el.files[0].name;
+ var r=new FileReader();
+ r.onload=function(e){
+  yc=e.target.result||'';
+  document.getElementById('ubtn').disabled=yc.length<5;
+ };
+ r.readAsText(el.files[0]);
 }
 
 function dup(){
-
-  if(!yc){
-
-    alert(
-      'Select file'
-    );
-
-    return;
-  }
-
-  fetch(
-    '/cgi-bin/mihomo-cfg',
-    {
-      method:'POST',
-      body:yc,
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-      return r.text();
-    }
-  )
-  .then(
-    function(t){
-
-      alert(
-        t.indexOf('SAVED')>=0
-          ? 'Applied Successfully!'
-          : 'Error: '+t
-      );
-
-      setTimeout(
-        chk,
-        1500
-      );
-
-    }
-  )
-  .catch(
-    function(){
-      alert(
-        'Upload Failed'
-      );
-    }
-  );
+ if(!yc){alert('Select file');return}
+ fetch('/cgi-bin/mihomo-cfg',{
+  method:'POST',
+  headers:{'Content-Type':'text/plain'},
+  body:yc
+ }).then(function(r){return r.text()})
+ .then(function(t){
+  alert(t.indexOf('SAVED')>=0?'Applied Successfully!':'Error: '+t);
+  if(t.indexOf('SAVED')>=0)setTimeout(chk,1500);
+ }).catch(function(){alert('Upload Failed')});
 }
-
-/* ==========================================================
-   SUBSCRIPTION
-   ========================================================== */
 
 function dsub(){
-
-  var u =
-    document
-      .getElementById('suburl')
-      .value
-      .trim();
-
-  if(!u){
-
-    alert(
-      'Enter Subscription URL'
-    );
-
-    return;
-  }
-
-  document
-    .getElementById('submsg')
-    .innerText =
-      'Converting & Downloading...';
-
-  fetch(
-    '/cgi-bin/mihomo-sub?url='+
-    encodeURIComponent(u),
-    {
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-      return r.text();
-    }
-  )
-  .then(
-    function(t){
-
-      document
-        .getElementById('submsg')
-        .innerText =
-          t.indexOf('SAVED')>=0
-            ? 'Subscribed Successfully!'
-            : 'Failed: '+t;
-
-      setTimeout(
-        chk,
-        1500
-      );
-
-    }
-  )
-  .catch(
-    function(){
-
-      document
-        .getElementById('submsg')
-        .innerText =
-          'Error downloading sub';
-
-    }
-  );
+ var u=document.getElementById('suburl').value.trim();
+ if(!u){alert('Enter Subscription URL');return}
+ document.getElementById('submsg').innerText='Converting & Downloading...';
+ fetch('/cgi-bin/mihomo-sub?url='+encodeURIComponent(u))
+ .then(function(r){return r.text()})
+ .then(function(t){
+  document.getElementById('submsg').innerText=t.indexOf('SAVED')>=0?'Subscribed Successfully!':'Failed: '+t;
+  if(t.indexOf('SAVED')>=0)setTimeout(chk,1500);
+ })
+ .catch(function(){document.getElementById('submsg').innerText='Error downloading sub'});
 }
-
-/* ==========================================================
-   STATUS
-   ========================================================== */
 
 function chk(){
-
-  fetch(
-    '/cgi-bin/mihomo-api?action=status',
-    {
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-      return r.json();
-    }
-  )
-  .then(
-    function(d){
-
-      if(!d){
-        return;
-      }
-
-      if(d.running){
-
-        document
-          .getElementById('dot')
-          .className =
-            'dot on';
-
-        document
-          .getElementById('stxt')
-          .innerText =
-            'Engine Active';
-
-        document
-          .getElementById('ssub')
-          .innerText =
-            'PID: '+
-            d.pid+
-            ' | RAM: '+
-            d.memory;
-
-        document
-          .getElementById('mem')
-          .innerText =
-            d.memory;
-
-        updateTPBtn(
-          d.transparent
-        );
-
-      }else{
-
-        document
-          .getElementById('dot')
-          .className =
-            'dot off';
-
-        document
-          .getElementById('stxt')
-          .innerText =
-            'Engine Offline';
-
-        document
-          .getElementById('ssub')
-          .innerText =
-            'PID: - | RAM: -';
-
-        document
-          .getElementById('mem')
-          .innerText =
-            '-';
-
-        updateTPBtn(
-          d.transparent
-        );
-
-      }
-
-    }
-  )
-  .catch(
-    function(){
-
-      document
-        .getElementById('stxt')
-        .innerText =
-          'API Offline';
-
-    }
-  );
+ fetch('/cgi-bin/mihomo-api?action=status')
+ .then(function(r){return r.json()})
+ .then(function(d){
+  var running=!!(d&&d.running);
+  document.getElementById('dot').className='dot '+(running?'on':'off');
+  document.getElementById('stxt').innerText=running?'Engine Active':'Engine Offline';
+  document.getElementById('ssub').innerText=running?'PID: '+d.pid+' | RAM: '+d.memory:'PID: - | RAM: -';
+  document.getElementById('mem').innerText=running?(d.memory||'-'):'-';
+  updateTPBtn(d?d.transparent:0);
+ })
+ .catch(function(){
+  document.getElementById('dot').className='dot off';
+  document.getElementById('stxt').innerText='API Error';
+ });
 }
 
-/* ==========================================================
-   TPROXY
-   ========================================================== */
-
 function updateTPBtn(tp){
-
-  var btn =
-    document.getElementById(
-      'tpbtn'
-    );
-
-  if(!btn){
-    return;
-  }
-
-  if(
-    String(tp)==='1'
-  ){
-
-    btn.innerText =
-      'TPROXY: ACTIVE';
-
-    btn.className =
-      'btn b1';
-
-  }else{
-
-    btn.innerText =
-      'TPROXY: DISABLED';
-
-    btn.className =
-      'btn b3';
-
-  }
+ var btn=document.getElementById('tpbtn');
+ if(!btn)return;
+ if(String(tp)==='1'){
+  btn.innerText='TPROXY: ACTIVE';
+  btn.className='btn b1';
+ }else{
+  btn.innerText='TPROXY: DISABLED';
+  btn.className='btn b3';
+ }
 }
 
 function toggleTP(){
-
-  var btn =
-    document.getElementById(
-      'tpbtn'
-    );
-
-  if(!btn){
-    return;
-  }
-
-  var isOn =
-    btn.innerText
-      .indexOf(
-        'ACTIVE'
-      )>=0;
-
-  var act =
-    isOn
-      ? 'disable_tp'
-      : 'enable_tp';
-
-  btn.innerText =
-    'Switching...';
-
-  fetch(
-    '/cgi-bin/mihomo-api?action='+
-    act,
-    {
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-      return r.json();
-    }
-  )
-  .then(
-    function(d){
-
-      if(
-        !d ||
-        d.ok!==true
-      ){
-
-        alert(
-          'TPROXY failed: '+
-          (
-            d &&
-            d.error
-              ? d.error
-              : 'unknown error'
-          )
-        );
-
-      }
-
-      setTimeout(
-        chk,
-        500
-      );
-
-    }
-  )
-  .catch(
-    function(){
-
-      alert(
-        'TPROXY API failed'
-      );
-
-      setTimeout(
-        chk,
-        500
-      );
-
-    }
-  );
+ var btn=document.getElementById('tpbtn');
+ var isOn=btn.innerText.indexOf('ACTIVE')>=0;
+ var act=isOn?'disable_tp':'enable_tp';
+ btn.innerText='Switching...';
+ fetch('/cgi-bin/mihomo-api?action='+act)
+ .then(function(r){return r.json()})
+ .then(function(){setTimeout(chk,1000)})
+ .catch(function(){setTimeout(chk,500)});
 }
 
-/* ==========================================================
-   MODE
-   ========================================================== */
-
 function sm(m){
-
-  af(
-    '/configs',
-    {
-      method:'PATCH',
-      body:
-        JSON.stringify({
-          mode:m
-        })
-    }
-  )
-  .then(
-    gc
-  );
+ api('/configs',{
+  method:'PATCH',
+  body:JSON.stringify({mode:m})
+ }).then(gc).catch(function(){});
 }
 
 function gc(){
-
-  af('/configs')
-    .then(
-      function(d){
-
-        if(!d){
-          return;
-        }
-
-        [
-          'rule',
-          'global',
-          'direct'
-        ]
-        .forEach(
-          function(m){
-
-            var b =
-              document.getElementById(
-                'm-'+m
-              );
-
-            if(b){
-              b.classList.remove(
-                'ac'
-              );
-            }
-
-          }
-        );
-
-        var b =
-          document.getElementById(
-            'm-'+
-            (d.mode||'rule')
-          );
-
-        if(b){
-          b.classList.add(
-            'ac'
-          );
-        }
-
-      }
-    );
+ api('/configs').then(function(d){
+  if(!d)return;
+  ['rule','global','direct'].forEach(function(m){
+   var x=document.getElementById('m-'+m);
+   if(x)x.classList.remove('ac');
+  });
+  var b=document.getElementById('m-'+(d.mode||'rule'));
+  if(b)b.classList.add('ac');
+ }).catch(function(){});
 }
-
-/* ==========================================================
-   SERVICE
-   ========================================================== */
 
 function svc(a){
-
-  var buttons =
-    document.querySelectorAll(
-      '.btn'
-    );
-
-  buttons.forEach(
-    function(b){
-      b.disabled=true;
-    }
-  );
-
-  fetch(
-    '/cgi-bin/mihomo-api?action='+
-    encodeURIComponent(a),
-    {
-      method:'GET',
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-
-      return r.text()
-        .then(
-          function(t){
-
-            var d=null;
-
-            try{
-              d=
-                JSON.parse(t);
-            }
-            catch(e){
-
-              throw new Error(
-                t ||
-                'Invalid API response'
-              );
-
-            }
-
-            if(
-              !r.ok ||
-              !d ||
-              d.ok!==true
-            ){
-
-              throw new Error(
-                d &&
-                d.error
-                  ? d.error
-                  : 'API request failed'
-              );
-
-            }
-
-            return d;
-
-          }
-        );
-
-    }
-  )
-  .then(
-    function(){
-
-      setTimeout(
-        function(){
-
-          chk();
-          gc();
-
-        },
-        400
-      );
-
-    }
-  )
-  .catch(
-    function(e){
-
-      alert(
-        'UzumakiClash: '+
-        e.message
-      );
-
-      setTimeout(
-        chk,
-        500
-      );
-
-    }
-  )
-  .finally(
-    function(){
-
-      setTimeout(
-        function(){
-
-          buttons.forEach(
-            function(b){
-              b.disabled=false;
-            }
-          );
-
-        },
-        700
-      );
-
-    }
-  );
+ fetch('/cgi-bin/mihomo-api?action='+a)
+ .then(function(){setTimeout(chk,1200)})
+ .catch(function(){setTimeout(chk,1200)});
 }
 
-/* ==========================================================
-   MAINTENANCE
-   ========================================================== */
-
 function ug(){
-
-  fetch(
-    '/cgi-bin/mihomo-api?action=update_geo',
-    {
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(){
-
-      alert(
-        'GeoData Update Triggered!'
-      );
-
-    }
-  );
+ fetch('/cgi-bin/mihomo-api?action=update_geo')
+ .then(function(){alert('GeoData Update Triggered!')});
 }
 
 function fd(){
-
-  fetch(
-    '/cgi-bin/mihomo-api?action=flush_fakeip',
-    {
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(){
-
-      alert(
-        'Fake-IP Cleared!'
-      );
-
-    }
-  );
+ fetch('/cgi-bin/mihomo-api?action=flush_fakeip')
+ .then(function(){alert('Fake-IP Cleared!')});
 }
-
-/* ==========================================================
-   ACL
-   ========================================================== */
 
 function addACL(){
-
-  var ip =
-    document
-      .getElementById('aclip')
-      .value
-      .trim();
-
-  if(!ip){
-
-    alert(
-      'Enter valid IP'
-    );
-
-    return;
-  }
-
-  fetch(
-    '/cgi-bin/mihomo-api?action=add_acl_bypass&ip='+
-    encodeURIComponent(ip),
-    {
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-      return r.json();
-    }
-  )
-  .then(
-    function(d){
-
-      if(
-        !d ||
-        d.ok!==true
-      ){
-
-        document
-          .getElementById('aclmsg')
-          .innerHTML =
-            '<span style="color:#ef4444">❌ '+
-            (
-              d &&
-              d.error
-                ? d.error
-                : 'ACL operation failed'
-            )+
-            '</span>';
-
-        return;
-      }
-
-      document
-        .getElementById('aclmsg')
-        .innerHTML =
-          '<span style="color:#22c55e">✅ '+
-          ip+
-          ' added to bypass list!</span>';
-
-      document
-        .getElementById('aclip')
-        .value='';
-
-    }
-  )
-  .catch(
-    function(){
-
-      document
-        .getElementById('aclmsg')
-        .innerHTML =
-          '<span style="color:#ef4444">❌ ACL API failed</span>';
-
-    }
-  );
+ var ip=document.getElementById('aclip').value.trim();
+ if(!ip){alert('Enter valid IP');return}
+ fetch('/cgi-bin/mihomo-api?action=add_acl_bypass&ip='+encodeURIComponent(ip))
+ .then(function(r){return r.json()})
+ .then(function(){
+  document.getElementById('aclmsg').innerHTML='<span style="color:#22c55e">✅ '+ip+' added to bypass list!</span>';
+  document.getElementById('aclip').value='';
+ });
 }
-
-/* ==========================================================
-   TRAFFIC
-   ========================================================== */
 
 function sw(){
-
-  try{
-
-    var ws =
-      new WebSocket(
-        'ws://'+
-        location.hostname+
-        ':9595/traffic?token='+
-        encodeURIComponent(S)
-      );
-
-    ws.onmessage =
-      function(e){
-
-        var d;
-
-        try{
-
-          d =
-            JSON.parse(
-              e.data
-            );
-
-        }
-        catch(err){
-
-          return;
-
-        }
-
-        if(!d){
-          return;
-        }
-
-        document
-          .getElementById('up')
-          .innerText =
-            fb(d.up)+'/s';
-
-        document
-          .getElementById('dn')
-          .innerText =
-            fb(d.down)+'/s';
-
-        ua.push(
-          Number(d.up)||0
-        );
-
-        da.push(
-          Number(d.down)||0
-        );
-
-        if(ua.length>60){
-          ua.shift();
-        }
-
-        if(da.length>60){
-          da.shift();
-        }
-
-        dr();
-
-      };
-
-    ws.onclose =
-      function(){
-
-        setTimeout(
-          sw,
-          2000
-        );
-
-      };
-
-    ws.onerror =
-      function(){
-
-        try{
-          ws.close();
-        }
-        catch(e){}
-
-      };
-
-  }
-  catch(x){
-
-    setTimeout(
-      sw,
-      4000
-    );
-
-  }
+ try{
+  var ws=new WebSocket('ws://'+location.hostname+':9595/traffic?token='+encodeURIComponent(S));
+  ws.onmessage=function(e){
+   try{
+    var d=JSON.parse(e.data);
+    document.getElementById('up').innerText=fb(d.up)+'/s';
+    document.getElementById('dn').innerText=fb(d.down)+'/s';
+    ua.push(Number(d.up)||0);da.push(Number(d.down)||0);
+    if(ua.length>60)ua.shift();
+    if(da.length>60)da.shift();
+    dr();
+   }catch(x){}
+  };
+  ws.onclose=function(){setTimeout(sw,3000)};
+  ws.onerror=function(){try{ws.close()}catch(e){}};
+ }catch(x){setTimeout(sw,5000)}
 }
-
-/* ==========================================================
-   GRAPH
-   ========================================================== */
 
 function dr(){
-
-  var c =
-    document.getElementById(
-      'cv'
-    );
-
-  if(!c){
-    return;
+ var c=document.getElementById('cv');
+ if(!c)return;
+ var x=c.getContext('2d');
+ var dpr=window.devicePixelRatio||1;
+ var w=c.offsetWidth,h=c.offsetHeight||120;
+ if(c.width!==w*dpr||c.height!==h*dpr){
+  c.width=w*dpr;c.height=h*dpr;
+  x.setTransform(dpr,0,0,dpr,0,0);
+ }
+ x.clearRect(0,0,w,h);
+ var all=ua.concat(da,[1]);
+ var mx=Math.max.apply(null,all);
+ function ln(a,col){
+  if(a.length<2)return;
+  x.beginPath();x.strokeStyle=col;x.lineWidth=2;
+  for(var i=0;i<a.length;i++){
+   var px=(i/59)*w;
+   var py=h-(a[i]/mx)*(h-8)-4;
+   if(i===0)x.moveTo(px,py);else x.lineTo(px,py);
   }
-
-  var x =
-    c.getContext(
-      '2d'
-    );
-
-  var dpr =
-    window.devicePixelRatio||
-    1;
-
-  if(
-    c.width !==
-    c.offsetWidth*dpr
-  ){
-
-    c.width =
-      c.offsetWidth*dpr;
-
-    c.height =
-      c.offsetHeight*dpr;
-
-    x.scale(
-      dpr,
-      dpr
-    );
-  }
-
-  var w =
-    c.offsetWidth;
-
-  var h =
-    c.offsetHeight;
-
-  x.clearRect(
-    0,
-    0,
-    w,
-    h
-  );
-
-  var mx =
-    Math.max(
-      Math.max.apply(
-        null,
-        ua.concat([1])
-      ),
-      Math.max.apply(
-        null,
-        da.concat([1])
-      )
-    );
-
-  function ln(
-    a,
-    col
-  ){
-
-    if(
-      a.length<2
-    ){
-      return;
-    }
-
-    x.beginPath();
-
-    x.strokeStyle =
-      col;
-
-    x.lineWidth =
-      2;
-
-    for(
-      var i=0;
-      i<a.length;
-      i++
-    ){
-
-      var px =
-        (i/59)*w;
-
-      var py =
-        h-
-        (a[i]/mx)*
-        (h-8)-
-        4;
-
-      if(i===0){
-
-        x.moveTo(
-          px,
-          py
-        );
-
-      }else{
-
-        x.lineTo(
-          px,
-          py
-        );
-
-      }
-
-    }
-
-    x.stroke();
-
-  }
-
-  ln(
-    ua,
-    '#8b5cf6'
-  );
-
-  ln(
-    da,
-    '#22c55e'
-  );
+  x.stroke();
+ }
+ ln(ua,'#8b5cf6');ln(da,'#22c55e');
 }
-
-/* ==========================================================
-   PROXY
-   ========================================================== */
 
 function pl(){
-
-  fetch(
-    A+'/proxies',
-    {
-      headers:H,
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-      return r.json();
-    }
-  )
-  .then(
-    function(d){
-
-      var p =
-        d.proxies ||
-        {};
-
-      var h='';
-
-      var gn =
-        Object.keys(p)
-          .filter(
-            function(n){
-
-              return [
-                'Selector',
-                'URLTest',
-                'Fallback',
-                'LoadBalance'
-              ].indexOf(
-                p[n].type
-              )>=0;
-
-            }
-          );
-
-      gn.forEach(
-        function(g){
-
-          var gr =
-            p[g];
-
-          h +=
-            '<div class="gp">';
-
-          h +=
-            '<div style="font-weight:700;margin-bottom:4px">'+
-            escapeHtml(g)+
-            '</div>';
-
-          h +=
-            '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">'+
-            escapeHtml(
-              gr.type||''
-            )+
-            ' | Active: <b>'+
-            escapeHtml(
-              gr.now||'-'
-            )+
-            '</b></div>';
-
-          h +=
-            '<div class="nd">';
-
-          if(gr.all){
-
-            gr.all.forEach(
-              function(n){
-
-                var nd =
-                  p[n];
-
-                var dl =
-                  nd &&
-                  nd.history &&
-                  nd.history.length
-                    ? nd.history[
-                        nd.history.length-1
-                      ].delay
-                    : 0;
-
-                var group =
-                  encodeURIComponent(
-                    g
-                  );
-
-                var node =
-                  encodeURIComponent(
-                    n
-                  );
-
-                h +=
-                  '<div class="ni '+
-                  (
-                    gr.now===n
-                      ? 'ac'
-                      : ''
-                  )+
-                  '" onclick="ps(\''+
-                  group+
-                  '\',\''+
-                  node+
-                  '\')">';
-
-                h +=
-                  '<div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
-                  escapeHtml(n)+
-                  '</div>';
-
-                var color =
-                  dl>0
-                    ? (
-                      dl<200
-                        ? '#22c55e'
-                        : '#f59e0b'
-                    )
-                    : 'var(--text-muted)';
-
-                h +=
-                  '<div style="font-size:11px;font-weight:700;color:'+
-                  color+
-                  '">'+
-                  (
-                    dl>0
-                      ? dl+'ms'
-                      : '-'
-                  )+
-                  '</div>';
-
-                h +=
-                  '</div>';
-
-              }
-            );
-
-          }
-
-          h +=
-            '</div></div>';
-
-        }
-      );
-
-      document
-        .getElementById('pgs')
-        .innerHTML =
-          h ||
-          '<div class="card">No node groups found. Upload config first.</div>';
-
-    }
-  )
-  .catch(
-    function(){
-
-      document
-        .getElementById('pgs')
-        .innerHTML =
-          '<div class="card" style="color:red">API Offline</div>';
-
-    }
-  );
+ api('/proxies').then(function(d){
+  var p=d.proxies||{},h='';
+  var gn=Object.keys(p).filter(function(n){
+   return ['Selector','URLTest','Fallback','LoadBalance'].indexOf(p[n].type)>=0;
+  });
+  gn.forEach(function(g){
+   var gr=p[g];
+   h+='<div class="gp"><div style="font-weight:700;margin-bottom:4px">'+g+'</div>';
+   h+='<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">'+gr.type+' | Active: <b>'+(gr.now||'-')+'</b></div>';
+   h+='<div class="nd">';
+   (gr.all||[]).forEach(function(n){
+    var nd=p[n],dl=0;
+    if(nd&&nd.history&&nd.history.length)dl=nd.history[nd.history.length-1].delay||0;
+    var safe=String(n).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    h+='<div class="ni'+(gr.now===n?' ac':'')+'" onclick="ps(\''+encodeURIComponent(g)+'\',\''+encodeURIComponent(n)+'\')">';
+    h+='<div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+safe+'</div>';
+    h+='<div style="font-size:11px;font-weight:700;color:'+(dl>0?(dl<200?'#22c55e':'#f59e0b'):'var(--text-muted)')+'">'+(dl>0?dl+'ms':'-')+'</div>';
+    h+='</div>';
+   });
+   h+='</div></div>';
+  });
+  document.getElementById('pgs').innerHTML=h||'<div class="card">No proxy groups found. Upload a valid Mihomo config first.</div>';
+ }).catch(function(){
+  document.getElementById('pgs').innerHTML='<div class="card" style="color:red">Mihomo API Offline / Unauthorized</div>';
+ });
 }
 
-/* ==========================================================
-   HTML ESCAPE
-   ========================================================== */
-
-function escapeHtml(v){
-
-  return String(
-    v==null
-      ? ''
-      : v
-  )
-  .replace(
-    /&/g,
-    '&amp;'
-  )
-  .replace(
-    /</g,
-    '&lt;'
-  )
-  .replace(
-    />/g,
-    '&gt;'
-  )
-  .replace(
-    /"/g,
-    '&quot;'
-  )
-  .replace(
-    /'/g,
-    '&#039;'
-  );
+function ps(g,n){
+ api('/proxies/'+decodeURIComponent(g),{
+  method:'PUT',
+  body:JSON.stringify({name:decodeURIComponent(n)})
+ }).then(pl).catch(function(){});
 }
-
-/* ==========================================================
-   SELECT NODE
-   ========================================================== */
-
-function ps(
-  g,
-  n
-){
-
-  fetch(
-    A+
-    '/proxies/'+
-    g,
-    {
-      method:'PUT',
-      headers:H,
-      body:
-        JSON.stringify({
-          name:
-            decodeURIComponent(n)
-        }),
-      cache:'no-store'
-    }
-  )
-  .then(
-    pl
-  )
-  .catch(
-    function(){
-
-      alert(
-        'Proxy selection failed'
-      );
-
-    }
-  );
-}
-
-/* ==========================================================
-   PING ALL
-   ========================================================== */
 
 function pt(){
-
-  fetch(
-    A+'/proxies',
-    {
-      headers:H,
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-      return r.json();
-    }
-  )
-  .then(
-    function(d){
-
-      Object.keys(
-        d.proxies||{}
-      ).forEach(
-        function(n){
-
-          var t =
-            d.proxies[n].type;
-
-          if(
-            [
-              'Selector',
-              'URLTest',
-              'Fallback',
-              'LoadBalance',
-              'Direct',
-              'Reject'
-            ].indexOf(t)<0
-          ){
-
-            fetch(
-              A+
-              '/proxies/'+
-              encodeURIComponent(n)+
-              '/delay?timeout=5000&url='+
-              encodeURIComponent(
-                'http://www.gstatic.com/generate_204'
-              ),
-              {
-                headers:H,
-                cache:'no-store'
-              }
-            ).catch(
-              function(){}
-            );
-
-          }
-
-        }
-      );
-
-      setTimeout(
-        pl,
-        3500
-      );
-
-    }
-  );
+ api('/proxies').then(function(d){
+  Object.keys(d.proxies||{}).forEach(function(n){
+   var t=d.proxies[n].type;
+   if(['Selector','URLTest','Fallback','LoadBalance','Direct','Reject'].indexOf(t)<0){
+    api('/proxies/'+encodeURIComponent(n)+'/delay?timeout=5000&url=http://www.gstatic.com/generate_204').catch(function(){});
+   }
+  });
+  setTimeout(pl,3500);
+ }).catch(function(){});
 }
-
-/* ==========================================================
-   FILTER
-   ========================================================== */
 
 function pft(){
-
-  var q =
-    document
-      .getElementById('pq')
-      .value
-      .toLowerCase();
-
-  document
-    .querySelectorAll('.ni')
-    .forEach(
-      function(n){
-
-        n.style.display =
-          n.innerText
-            .toLowerCase()
-            .indexOf(q)>=0
-              ? ''
-              : 'none';
-
-      }
-    );
+ var q=document.getElementById('pq').value.toLowerCase();
+ document.querySelectorAll('.ni').forEach(function(n){
+  n.style.display=n.innerText.toLowerCase().indexOf(q)>=0?'':'none';
+ });
 }
-
-/* ==========================================================
-   CONFIG LOAD
-   ========================================================== */
 
 function cl(){
-
-  fetch(
-    '/cgi-bin/mihomo-cfg',
-    {
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-      return r.text();
-    }
-  )
-  .then(
-    function(t){
-
-      document
-        .getElementById('ced')
-        .value =
-          t;
-
-    }
-  )
-  .catch(
-    function(){
-
-      document
-        .getElementById('cmsg')
-        .innerText =
-          'Config load failed';
-
-    }
-  );
+ fetch('/cgi-bin/mihomo-cfg')
+ .then(function(r){return r.text()})
+ .then(function(t){document.getElementById('ced').value=t});
 }
-
-/* ==========================================================
-   CONFIG SAVE
-   ========================================================== */
 
 function cs(){
-
-  fetch(
-    '/cgi-bin/mihomo-cfg',
-    {
-      method:'POST',
-      body:
-        document
-          .getElementById('ced')
-          .value,
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-      return r.text();
-    }
-  )
-  .then(
-    function(t){
-
-      document
-        .getElementById('cmsg')
-        .innerHTML =
-          t.indexOf('SAVED')>=0
-            ? '<span style="color:#22c55e">Saved & Hot-Reloaded!</span>'
-            : '<span style="color:#ef4444">Error Saving: '+escapeHtml(t)+'</span>';
-
-      setTimeout(
-        function(){
-
-          document
-            .getElementById('cmsg')
-            .innerHTML='';
-
-        },
-        3000
-      );
-
-    }
-  )
-  .catch(
-    function(){
-
-      document
-        .getElementById('cmsg')
-        .innerHTML =
-          '<span style="color:#ef4444">Error Saving!</span>';
-
-    }
-  );
+ fetch('/cgi-bin/mihomo-cfg',{
+  method:'POST',
+  headers:{'Content-Type':'text/plain'},
+  body:document.getElementById('ced').value
+ })
+ .then(function(r){return r.text()})
+ .then(function(t){
+  document.getElementById('cmsg').innerHTML=t.indexOf('SAVED')>=0?
+  '<span style="color:#22c55e">Saved & Hot-Reloaded!</span>':
+  '<span style="color:#ef4444">Error Saving!</span>';
+  if(t.indexOf('SAVED')>=0)setTimeout(chk,1000);
+  setTimeout(function(){document.getElementById('cmsg').innerHTML=''},4000);
+ });
 }
 
-/* ==========================================================
-   CONNECTIONS
-   ========================================================== */
-
 function cnl(){
-
-  fetch(
-    A+'/connections',
-    {
-      headers:H,
-      cache:'no-store'
-    }
-  )
-  .then(
-    function(r){
-      return r.json();
-    }
-  )
-  .then(
-    function(d){
-
-      var c =
-        d.connections ||
-        [];
-
-      document
-        .getElementById('cnc')
-        .innerText =
-          c.length;
-
-      document
-        .getElementById('cc')
-        .innerText =
-          c.length;
-
-      var h='';
-
-      c.forEach(
-        function(x){
-
-          var md =
-            x.metadata ||
-            {};
-
-          var host =
-            md.host ||
-            md.destinationIP ||
-            '-';
-
-          h +=
-            '<tr>';
-
-          h +=
-            '<td><b>'+
-            escapeHtml(host)+
-            '</b></td>';
-
-          h +=
-            '<td>'+
-            escapeHtml(
-              md.network||'-'
-            )+
-            '</td>';
-
-          h +=
-            '<td>'+
-            escapeHtml(
-              x.chains
-                ? x.chains.join('>')
-                : '-'
-            )+
-            '</td>';
-
-          h +=
-            '<td>'+
-            escapeHtml(
-              x.rule||'-'
-            )+
-            '</td>';
-
-          h +=
-            '<td>'+
-            fb(
-              Number(x.upload)||0
-            )+
-            '</td>';
-
-          h +=
-            '<td>'+
-            fb(
-              Number(x.download)||0
-            )+
-            '</td>';
-
-          h +=
-            '<td>'+
-            '<button class="btn b2" style="padding:4px 8px;font-size:11px;min-height:auto" onclick="cnd(\''+
-            encodeURIComponent(
-              x.id
-            )+
-            '\')">Kill</button>'+
-            '</td>';
-
-          h +=
-            '</tr>';
-
-        }
-      );
-
-      document
-        .getElementById('cnb')
-        .innerHTML =
-          h ||
-          '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No Active Connections</td></tr>';
-
-    }
-  )
-  .catch(
-    function(){}
-  );
+ api('/connections').then(function(d){
+  var c=d.connections||[];
+  document.getElementById('cnc').innerText=c.length;
+  document.getElementById('cc').innerText=c.length;
+  var h='';
+  c.forEach(function(x){
+   var md=x.metadata||{};
+   var host=md.host||md.destinationIP||'-';
+   h+='<tr><td><b>'+host+'</b></td><td>'+(md.network||'-')+'</td>';
+   h+='<td>'+(x.chains?x.chains.join('>'):'-')+'</td>';
+   h+='<td>'+(x.rule||'-')+'</td><td>'+fb(x.upload||0)+'</td><td>'+fb(x.download||0)+'</td>';
+   h+='<td><button class="btn b2" style="padding:4px 8px;font-size:11px;min-height:auto" onclick="cnd(\''+encodeURIComponent(x.id)+'\')">Kill</button></td></tr>';
+  });
+  document.getElementById('cnb').innerHTML=h||'<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No Active Connections</td></tr>';
+ }).catch(function(){});
 }
 
 function cnd(id){
-
-  fetch(
-    A+
-    '/connections/'+
-    encodeURIComponent(
-      decodeURIComponent(id)
-    ),
-    {
-      method:'DELETE',
-      headers:H,
-      cache:'no-store'
-    }
-  )
-  .then(
-    cnl
-  );
+ api('/connections/'+decodeURIComponent(id),{method:'DELETE'}).then(cnl).catch(function(){});
 }
 
 function cna(){
-
-  fetch(
-    A+'/connections',
-    {
-      method:'DELETE',
-      headers:H,
-      cache:'no-store'
-    }
-  )
-  .then(
-    cnl
-  );
+ api('/connections',{method:'DELETE'}).then(cnl).catch(function(){});
 }
-
-/* ==========================================================
-   LOGS
-   ========================================================== */
 
 function lw(){
-
-  try{
-
-    var ws =
-      new WebSocket(
-        'ws://'+
-        location.hostname+
-        ':9595/logs?token='+
-        encodeURIComponent(S)+
-        '&level=info'
-      );
-
-    ws.onmessage =
-      function(e){
-
-        var d;
-
-        try{
-
-          d =
-            JSON.parse(
-              e.data
-            );
-
-        }
-        catch(err){
-
-          return;
-
-        }
-
-        var b =
-          document.getElementById(
-            'llb'
-          );
-
-        if(!b){
-          return;
-        }
-
-        var row =
-          document.createElement(
-            'div'
-          );
-
-        row.textContent =
-          '['+
-          (
-            d.type||''
-          )+
-          '] '+
-          (
-            d.payload||''
-          );
-
-        b.appendChild(
-          row
-        );
-
-        b.scrollTop =
-          b.scrollHeight;
-
-      };
-
-    ws.onclose =
-      function(){
-
-        setTimeout(
-          lw,
-          2000
-        );
-
-      };
-
-    ws.onerror =
-      function(){
-
-        try{
-          ws.close();
-        }
-        catch(e){}
-
-      };
-
-  }
-  catch(e){
-
-    setTimeout(
-      lw,
-      4000
-    );
-
-  }
+ try{
+  var ws=new WebSocket('ws://'+location.hostname+':9595/logs?token='+encodeURIComponent(S)+'&level=info');
+  ws.onmessage=function(e){
+   try{
+    var d=JSON.parse(e.data),b=document.getElementById('llb');
+    b.innerHTML+='<div>['+(d.type||'log')+'] '+(d.payload||'')+'</div>';
+    while(b.children.length>500)b.removeChild(b.firstChild);
+    b.scrollTop=b.scrollHeight;
+   }catch(x){}
+  };
+  ws.onclose=function(){setTimeout(lw,3000)};
+  ws.onerror=function(){try{ws.close()}catch(e){}};
+ }catch(e){setTimeout(lw,5000)}
 }
 
-/* ==========================================================
-   START
-   ========================================================== */
-
-chk();
-gc();
-sw();
-lw();
-
-setInterval(
-  chk,
-  6000
-);
-
-setInterval(
-  function(){
-
-    var conn =
-      document.getElementById(
-        'pg-conn'
-      );
-
-    if(
-      conn &&
-      conn.classList.contains(
-        'show'
-      )
-    ){
-
-      cnl();
-
-    }
-
-  },
-  2500
-);
-
+chk();gc();sw();lw();
+setInterval(chk,6000);
+setInterval(function(){
+ if(document.getElementById('pg-conn').classList.contains('show'))cnl();
+},2500);
 </script>
 
 <%+footer%>
