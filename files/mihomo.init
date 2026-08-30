@@ -10,31 +10,49 @@ PROG="/usr/bin/mihomo"
 
 TPROXY_TABLE="24680"
 TPROXY_MARK="1"
+TPROXY_PRIORITY="10000"
 
-# ==========================================================
-# TPROXY ROUTING
-# ==========================================================
 setup_tproxy_route() {
 
+    # Remove previous rule
     ip rule del \
         fwmark "$TPROXY_MARK" \
         table "$TPROXY_TABLE" \
+        priority "$TPROXY_PRIORITY" \
         2>/dev/null || true
 
+    # Clean previous table
     ip route flush \
         table "$TPROXY_TABLE" \
         2>/dev/null || true
 
+    # Add policy rule
     ip rule add \
         fwmark "$TPROXY_MARK" \
         table "$TPROXY_TABLE" \
-        2>/dev/null || true
+        priority "$TPROXY_PRIORITY" \
+        2>/dev/null
 
+    if [ "$?" -ne 0 ]; then
+        echo "[UzumakiClash] Failed to add TPROXY policy rule" \
+            >/tmp/uzumaki-route-error.log
+        return 1
+    fi
+
+    # Route marked packets locally
     ip route add \
         local 0.0.0.0/0 \
         dev lo \
         table "$TPROXY_TABLE" \
-        2>/dev/null || true
+        2>/dev/null
+
+    if [ "$?" -ne 0 ]; then
+        echo "[UzumakiClash] Failed to add local TPROXY route" \
+            >/tmp/uzumaki-route-error.log
+        return 1
+    fi
+
+    return 0
 }
 
 clear_tproxy_route() {
@@ -42,6 +60,7 @@ clear_tproxy_route() {
     ip rule del \
         fwmark "$TPROXY_MARK" \
         table "$TPROXY_TABLE" \
+        priority "$TPROXY_PRIORITY" \
         2>/dev/null || true
 
     ip route flush \
@@ -49,28 +68,33 @@ clear_tproxy_route() {
         2>/dev/null || true
 }
 
-# ==========================================================
-# START
-# ==========================================================
 start_service() {
 
     [ -x "$PROG" ] || return 1
-
     [ -f "$CONF_DIR/config.yaml" ] || return 1
 
+    # Disabled by user
     if [ -f "$CONF_DIR/enabled" ] &&
        [ "$(cat "$CONF_DIR/enabled" 2>/dev/null)" = "0" ]; then
-
         return 0
     fi
 
-    # Keep memory control, but don't force aggressive GOGC.
+    # Keep memory guard
     export GOMEMLIMIT=64MiB
 
-    # Set policy routing before transparent UDP starts.
+    # ======================================================
+    # TPROXY ROUTING
+    # ======================================================
     setup_tproxy_route
 
-    # Procd is the only process supervisor.
+    if [ "$?" -ne 0 ]; then
+        echo "[UzumakiClash] TPROXY routing setup failed"
+            >/tmp/uzumaki-route-error.log
+    fi
+
+    # ======================================================
+    # MIHOMO
+    # ======================================================
     procd_open_instance mihomo
 
     procd_set_param command \
@@ -92,11 +116,11 @@ start_service() {
 
     procd_close_instance
 
+    # ======================================================
+    # NFT FIREWALL
+    # ======================================================
     sleep 1
 
-    # ======================================================
-    # Transparent proxy
-    # ======================================================
     if [ -f "$CONF_DIR/transparent" ] &&
        [ "$(cat "$CONF_DIR/transparent" 2>/dev/null)" = "1" ]; then
 
@@ -106,14 +130,15 @@ start_service() {
         nft delete table inet uzumaki \
             2>/dev/null || true
 
-        nft -f "$CONF_DIR/nft.conf" \
-            >/tmp/uzumaki-nft.log 2>&1 || true
+        if ! nft -f "$CONF_DIR/nft.conf" \
+            >/tmp/uzumaki-nft.log 2>&1; then
+
+            echo "[UzumakiClash] nft.conf failed to load" \
+                >/tmp/uzumaki-nft-error.log
+        fi
     fi
 }
 
-# ==========================================================
-# STOP
-# ==========================================================
 stop_service() {
 
     nft delete table ip uzumaki \
@@ -130,19 +155,12 @@ stop_service() {
     rm -f /var/run/mihomo.pid
 }
 
-# ==========================================================
-# BOOT
-# ==========================================================
 boot() {
 
     sleep 5
-
     start
 }
 
-# ==========================================================
-# TRIGGERS
-# ==========================================================
 service_triggers() {
 
     procd_add_reload_trigger network firewall
