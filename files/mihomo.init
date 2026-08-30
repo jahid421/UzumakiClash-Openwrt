@@ -9,46 +9,38 @@ CONF_DIR="/etc/mihomo"
 PROG="/usr/bin/mihomo"
 
 TPROXY_TABLE="24680"
-TPROXY_MARK="1"
+TPROXY_MARK="0x1/0x1"
 TPROXY_PRIORITY="10000"
 
 setup_tproxy_route() {
 
-    # Remove previous rule
     ip rule del \
+        pref "$TPROXY_PRIORITY" \
         fwmark "$TPROXY_MARK" \
-        table "$TPROXY_TABLE" \
-        priority "$TPROXY_PRIORITY" \
+        lookup "$TPROXY_TABLE" \
         2>/dev/null || true
 
-    # Clean previous table
     ip route flush \
         table "$TPROXY_TABLE" \
         2>/dev/null || true
 
-    # Add policy rule
     ip rule add \
+        pref "$TPROXY_PRIORITY" \
         fwmark "$TPROXY_MARK" \
-        table "$TPROXY_TABLE" \
-        priority "$TPROXY_PRIORITY" \
-        2>/dev/null
+        lookup "$TPROXY_TABLE" \
+        2>/tmp/uzumaki-route-error.log
 
     if [ "$?" -ne 0 ]; then
-        echo "[UzumakiClash] Failed to add TPROXY policy rule" \
-            >/tmp/uzumaki-route-error.log
         return 1
     fi
 
-    # Route marked packets locally
-    ip route add \
+    ip route replace \
         local 0.0.0.0/0 \
         dev lo \
         table "$TPROXY_TABLE" \
-        2>/dev/null
+        2>>/tmp/uzumaki-route-error.log
 
     if [ "$?" -ne 0 ]; then
-        echo "[UzumakiClash] Failed to add local TPROXY route" \
-            >/tmp/uzumaki-route-error.log
         return 1
     fi
 
@@ -58,9 +50,9 @@ setup_tproxy_route() {
 clear_tproxy_route() {
 
     ip rule del \
+        pref "$TPROXY_PRIORITY" \
         fwmark "$TPROXY_MARK" \
-        table "$TPROXY_TABLE" \
-        priority "$TPROXY_PRIORITY" \
+        lookup "$TPROXY_TABLE" \
         2>/dev/null || true
 
     ip route flush \
@@ -68,28 +60,64 @@ clear_tproxy_route() {
         2>/dev/null || true
 }
 
+apply_nft() {
+
+    [ -f "$CONF_DIR/nft.conf" ] || return 1
+
+    nft -c -f "$CONF_DIR/nft.conf" \
+        >/tmp/uzumaki-nft-test.log 2>&1 || return 1
+
+    nft delete table ip uzumaki \
+        2>/dev/null || true
+
+    nft delete table inet uzumaki \
+        2>/dev/null || true
+
+    nft -f "$CONF_DIR/nft.conf" \
+        >/tmp/uzumaki-nft.log 2>&1
+}
+
+restore_acl() {
+
+    ACL_FILE="$CONF_DIR/acl-bypass"
+
+    [ -f "$ACL_FILE" ] || return 0
+
+    while IFS= read -r IP; do
+
+        [ -z "$IP" ] && continue
+
+        nft add element ip uzumaki acl_ips \
+            "{ $IP }" \
+            2>/dev/null || true
+
+    done < "$ACL_FILE"
+}
+
 start_service() {
 
     [ -x "$PROG" ] || return 1
+
     [ -f "$CONF_DIR/config.yaml" ] || return 1
 
-    # Disabled by user
     if [ -f "$CONF_DIR/enabled" ] &&
        [ "$(cat "$CONF_DIR/enabled" 2>/dev/null)" = "0" ]; then
+
         return 0
+
     fi
 
-    # Keep memory guard
+    # Low-RAM guard.
     export GOMEMLIMIT=64MiB
 
     # ======================================================
-    # TPROXY ROUTING
+    # POLICY ROUTING
     # ======================================================
-    setup_tproxy_route
+    if ! setup_tproxy_route; then
 
-    if [ "$?" -ne 0 ]; then
-        echo "[UzumakiClash] TPROXY routing setup failed"
+        echo "[UzumakiClash] TPROXY route setup failed" \
             >/tmp/uzumaki-route-error.log
+
     fi
 
     # ======================================================
@@ -116,26 +144,25 @@ start_service() {
 
     procd_close_instance
 
-    # ======================================================
-    # NFT FIREWALL
-    # ======================================================
     sleep 1
 
+    # ======================================================
+    # NFT
+    # ======================================================
     if [ -f "$CONF_DIR/transparent" ] &&
        [ "$(cat "$CONF_DIR/transparent" 2>/dev/null)" = "1" ]; then
 
-        nft delete table ip uzumaki \
-            2>/dev/null || true
-
-        nft delete table inet uzumaki \
-            2>/dev/null || true
-
-        if ! nft -f "$CONF_DIR/nft.conf" \
-            >/tmp/uzumaki-nft.log 2>&1; then
+        if ! apply_nft; then
 
             echo "[UzumakiClash] nft.conf failed to load" \
                 >/tmp/uzumaki-nft-error.log
+
+        else
+
+            restore_acl
+
         fi
+
     fi
 }
 
@@ -158,10 +185,13 @@ stop_service() {
 boot() {
 
     sleep 5
+
     start
 }
 
 service_triggers() {
 
-    procd_add_reload_trigger network firewall
+    procd_add_reload_trigger \
+        network \
+        firewall
 }
