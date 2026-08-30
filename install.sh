@@ -20,6 +20,7 @@ echo ""
 # PACKAGE MANAGER
 # ==============================================================
 if command -v apk >/dev/null 2>&1; then
+
     PKG="apk"
 
     apk update >/dev/null 2>&1
@@ -27,7 +28,9 @@ if command -v apk >/dev/null 2>&1; then
     pkg_ins() {
         apk add "$@"
     }
+
 else
+
     PKG="opkg"
 
     opkg update >/dev/null 2>&1
@@ -35,6 +38,7 @@ else
     pkg_ins() {
         opkg install "$@"
     }
+
 fi
 
 echo "[*] Installing dependencies..."
@@ -60,41 +64,56 @@ if [ "$PKG" = "opkg" ]; then
 fi
 
 # ==============================================================
+# LOAD TPROXY MODULES
+# ==============================================================
+modprobe nf_tproxy 2>/dev/null || true
+modprobe nft_tproxy 2>/dev/null || true
+
+# ==============================================================
 # ARCHITECTURE DETECTION
 # ==============================================================
 RAW_ARCH=""
 
 if command -v opkg >/dev/null 2>&1; then
+
     RAW_ARCH=$(
         opkg print-architecture 2>/dev/null |
         grep -E "mipsel_24kc|mipsel" |
         awk '{print $2}' |
         head -n 1
     )
+
 fi
 
 [ -z "$RAW_ARCH" ] && RAW_ARCH=$(uname -m)
 
 case "$RAW_ARCH" in
+
     mipsel*|mipsle*)
         M="mipsle-softfloat"
         ;;
+
     mips*)
         M="mips-softfloat"
         ;;
+
     aarch64*|arm64*)
         M="arm64"
         ;;
+
     armv7*|armhf*)
         M="armv7"
         ;;
+
     x86_64*|amd64*)
         M="amd64-compatible"
         ;;
+
     *)
         echo "[!] Unsupported architecture: $RAW_ARCH"
         exit 1
         ;;
+
 esac
 
 echo "[✓] Architecture: $RAW_ARCH -> $M"
@@ -116,18 +135,24 @@ if ! curl -fLs \
     -o mihomo.gz \
     "$CORE_URL"
 then
+
     echo "[!] Mihomo download failed."
     exit 1
+
 fi
 
 if ! gzip -d -f mihomo.gz; then
+
     echo "[!] Mihomo extraction failed."
     exit 1
+
 fi
 
 if [ ! -s mihomo ]; then
+
     echo "[!] Mihomo binary is missing."
     exit 1
+
 fi
 
 chmod +x mihomo
@@ -160,8 +185,10 @@ download_file() {
         -o "$DST" \
         "$REPO/$SRC"
     then
+
         echo "[!] Failed: $SRC"
         return 1
+
     fi
 
     return 0
@@ -201,12 +228,12 @@ chmod +x \
     /www/cgi-bin/mihomo-sub
 
 # ==============================================================
-# STATE
+# STATE FILES
 # ==============================================================
 [ -f "$D/enabled" ] || echo "1" > "$D/enabled"
 [ -f "$D/transparent" ] || echo "1" > "$D/transparent"
 
-# Do not destroy an existing working config.
+# Keep existing working config.
 if [ ! -f "$D/config.yaml" ]; then
     cp "$D/config.default.yaml" "$D/config.yaml"
 fi
@@ -233,15 +260,20 @@ then
         -C "$D/ui/" 2>/dev/null || true
 
     if [ -d "$D/ui/dist" ]; then
-        cp -a "$D/ui/dist"/. "$D/ui"/
+
+        cp -a "$D/ui/dist"/. \
+            "$D/ui"/
+
         rm -rf "$D/ui/dist"
+
     fi
+
 fi
 
 # ==============================================================
-# BASIC CHECKS
+# SCRIPT VALIDATION
 # ==============================================================
-echo "[*] Checking scripts..."
+echo "[*] Checking shell scripts..."
 
 sh -n /etc/init.d/mihomo || exit 1
 sh -n /www/cgi-bin/mihomo-api || exit 1
@@ -250,6 +282,9 @@ sh -n /www/cgi-bin/mihomo-sub || exit 1
 
 echo "[✓] Shell syntax OK."
 
+# ==============================================================
+# MIHOMO CONFIG VALIDATION
+# ==============================================================
 echo "[*] Checking Mihomo configuration..."
 
 if /usr/bin/mihomo \
@@ -257,29 +292,50 @@ if /usr/bin/mihomo \
     -f "$D/config.yaml" \
     -t >/tmp/uzumaki-config-test.log 2>&1
 then
-    echo "[✓] Configuration test successful."
+
+    echo "[✓] Mihomo configuration OK."
+
 else
-    echo "[!] Current configuration failed validation:"
+
+    echo "[!] Mihomo configuration failed:"
     cat /tmp/uzumaki-config-test.log
+    exit 1
+
 fi
 
+# ==============================================================
+# NFT VALIDATION
+# ==============================================================
 echo "[*] Checking nft.conf..."
 
 if nft -c -f "$D/nft.conf" >/tmp/uzumaki-nft-test.log 2>&1; then
+
     echo "[✓] nft.conf syntax OK."
+
 else
-    echo "[!] nft.conf test failed:"
+
+    echo "[!] nft.conf validation failed:"
     cat /tmp/uzumaki-nft-test.log
+    exit 1
+
 fi
 
 # ==============================================================
-# ENABLE + START
+# ENABLE
 # ==============================================================
 /etc/init.d/mihomo enable >/dev/null 2>&1
 
+# ==============================================================
+# START
+# ==============================================================
 echo "[*] Starting UzumakiClash..."
 
-/etc/init.d/mihomo restart
+if ! /etc/init.d/mihomo restart; then
+
+    echo "[!] Service restart returned an error."
+    echo "[!] Check: logread -e mihomo"
+
+fi
 
 sleep 3
 
