@@ -22,14 +22,16 @@ TMP="/tmp/uzsub_$$.yaml"
 trap 'rm -f "${TMP}"* /tmp/uzsub_err.log' EXIT
 
 if [ -z "$URL" ]; then
+
     echo "NO_URL"
     exit 0
+
 fi
 
 SUB_CONV="https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=true&url="
 
 # ==========================================================
-# Direct subscription
+# DIRECT
 # ==========================================================
 curl -sL \
     --connect-timeout 15 \
@@ -40,7 +42,7 @@ curl -sL \
     2>/dev/null
 
 # ==========================================================
-# Converter fallback
+# FALLBACK CONVERTER
 # ==========================================================
 if [ ! -s "$TMP" ] ||
    ! grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
@@ -51,10 +53,11 @@ if [ ! -s "$TMP" ] ||
         -o "$TMP" \
         "${SUB_CONV}$(echo "$URL" | sed 's/&/%26/g')" \
         2>/dev/null
+
 fi
 
 # ==========================================================
-# Apply
+# APPLY
 # ==========================================================
 if [ -s "$TMP" ] &&
    grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
