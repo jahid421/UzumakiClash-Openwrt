@@ -22,22 +22,23 @@ profile:
   store-fake-ip: true
 
 # ==========================================================
-# SNI / TLS / QUIC SNIFFER
-# Helps applications whose traffic is IP-based or
-# whose domain is otherwise invisible to normal rules.
+# SNIFFER
 # ==========================================================
 sniffer:
   enable: true
   override-destination: true
+
   sniff:
     HTTP:
       ports:
         - 80
         - 8080-8880
+
     TLS:
       ports:
         - 443
         - 8443
+
     QUIC:
       ports:
         - 443
@@ -59,16 +60,14 @@ dns:
     - '*.local'
     - 'localhost'
 
-    # NTP / time
+    # NTP
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
 
-    # Microsoft connectivity checks
+    # Microsoft compatibility
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
-
-    # Microsoft services that can be sensitive to fake-IP
     - '+.microsoft.com'
     - '+.microsoftonline.com'
     - '+.windows.com'
@@ -82,6 +81,10 @@ dns:
     - '+.playvalorant.com'
     - '+.pvp.net'
     - '+.leagueoflegends.com'
+
+    # Remote support
+    - '+.ultraviewer.net'
+    - '+.ultraviewer.com'
 
   default-nameserver:
     - 1.1.1.1
@@ -105,22 +108,25 @@ proxies: []
 # DEFAULT GROUP
 # ==========================================================
 proxy-groups:
+
   - name: "🌀 Uzumaki-Auto"
     type: url-test
+
     proxies:
       - DIRECT
+
     url: http://www.gstatic.com/generate_204
     interval: 300
     tolerance: 30
     lazy: true
 
 # ==========================================================
-# ROUTING
+# RULES
 # ==========================================================
 rules:
 
   # --------------------------------------------------------
-  # LOCAL / PRIVATE NETWORK
+  # LOCAL NETWORK
   # --------------------------------------------------------
   - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
@@ -133,8 +139,6 @@ rules:
 
   # --------------------------------------------------------
   # MICROSOFT / WINDOWS
-  # Keep native/direct routing for maximum local speed.
-  # Fake-IP filter above improves compatibility.
   # --------------------------------------------------------
   - 'DOMAIN-SUFFIX,microsoft.com,DIRECT'
   - 'DOMAIN-SUFFIX,microsoftonline.com,DIRECT'
@@ -146,10 +150,16 @@ rules:
   - 'DOMAIN-SUFFIX,msftncsi.com,DIRECT'
 
   # --------------------------------------------------------
+  # ULTRAVIEWER
+  # --------------------------------------------------------
+  - 'DOMAIN-SUFFIX,ultraviewer.net,DIRECT'
+  - 'DOMAIN-SUFFIX,ultraviewer.com,DIRECT'
+
+  # --------------------------------------------------------
   # RIOT / VALORANT
-  # Use the active Uzumaki group rather than forcing
-  # everything to DIRECT. If the user's imported config
-  # contains real proxy nodes, these can use them.
+  #
+  # Kept through the selected group instead of hard-forcing
+  # every Riot domain to DIRECT.
   # --------------------------------------------------------
   - 'DOMAIN-SUFFIX,riotgames.com,🌀 Uzumaki-Auto'
   - 'DOMAIN-SUFFIX,riotcdn.net,🌀 Uzumaki-Auto'
@@ -162,5 +172,7 @@ rules:
   # --------------------------------------------------------
   - 'DOMAIN-SUFFIX,bd,DIRECT'
 
-  # Everything else
+  # --------------------------------------------------------
+  # DEFAULT
+  # --------------------------------------------------------
   - 'MATCH,🌀 Uzumaki-Auto'
