@@ -8,27 +8,89 @@ echo ""
 ACTION=$(echo "$QUERY_STRING" | sed -n 's/.*action=\([a-z_]*\).*/\1/p')
 
 CONF_DIR="/etc/mihomo"
+
 TRANSPARENT_FILE="$CONF_DIR/transparent"
 ENABLED_FILE="$CONF_DIR/enabled"
+ACL_FILE="$CONF_DIR/acl-bypass"
+
+json_ok() {
+    echo '{"ok":true}'
+}
+
+json_error() {
+    echo "{\"ok\":false,\"error\":\"$1\"}"
+}
+
+is_running() {
+    pgrep -x mihomo >/dev/null 2>&1
+}
+
+wait_running() {
+
+    I=0
+
+    while [ "$I" -lt 15 ]; do
+
+        if is_running; then
+            return 0
+        fi
+
+        sleep 1
+        I=$((I + 1))
+
+    done
+
+    return 1
+}
+
+apply_nft() {
+
+    nft delete table ip uzumaki 2>/dev/null || true
+    nft delete table inet uzumaki 2>/dev/null || true
+
+    [ -f "$CONF_DIR/nft.conf" ] || return 1
+
+    nft -f "$CONF_DIR/nft.conf" \
+        >/tmp/uzumaki-nft.log 2>&1
+}
+
+valid_ipv4() {
+
+    echo "$1" |
+        grep -Eq \
+        '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+}
 
 case "$ACTION" in
 
     status)
 
         ENABLED="1"
+
         [ -f "$ENABLED_FILE" ] &&
             ENABLED=$(cat "$ENABLED_FILE" 2>/dev/null)
 
         TP="0"
+
         [ -f "$TRANSPARENT_FILE" ] &&
             TP=$(cat "$TRANSPARENT_FILE" 2>/dev/null)
 
-        if pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
+        PID=""
+        MEM="0"
 
-            PID=$(pgrep -f "/usr/bin/mihomo" | head -n 1)
+        if is_running; then
 
-            MEM=$(awk '/VmRSS/{print $2}' \
-                "/proc/$PID/status" 2>/dev/null)
+            PID=$(pgrep -x mihomo | head -n 1)
+
+            if [ -n "$PID" ] &&
+               [ -r "/proc/$PID/status" ]; then
+
+                MEM=$(
+                    awk '/VmRSS/{print $2}' \
+                    "/proc/$PID/status" \
+                    2>/dev/null
+                )
+            fi
 
             [ -z "$MEM" ] && MEM="0"
 
@@ -39,6 +101,7 @@ case "$ACTION" in
             echo "{\"running\":false,\"transparent\":$TP,\"enabled\":$ENABLED}"
 
         fi
+
         ;;
 
     start)
@@ -46,10 +109,22 @@ case "$ACTION" in
         echo "1" > "$ENABLED_FILE"
         echo "1" > "$TRANSPARENT_FILE"
 
-        # Procd is the only process supervisor.
-        /etc/init.d/mihomo restart >/dev/null 2>&1
+        # Only procd starts Mihomo.
+        /etc/init.d/mihomo start \
+            >/tmp/uzumaki-start.log 2>&1
 
-        echo "{\"ok\":true}"
+        if ! wait_running; then
+            json_error "mihomo_failed_to_start"
+            exit 1
+        fi
+
+        if ! apply_nft; then
+            json_error "nft_apply_failed"
+            exit 1
+        fi
+
+        json_ok
+
         ;;
 
     stop)
@@ -57,43 +132,110 @@ case "$ACTION" in
         echo "0" > "$ENABLED_FILE"
         echo "0" > "$TRANSPARENT_FILE"
 
-        /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+        nft delete table ip uzumaki 2>/dev/null || true
+        nft delete table inet uzumaki 2>/dev/null || true
 
-        /etc/init.d/mihomo stop >/dev/null 2>&1
+        /etc/init.d/mihomo stop \
+            >/dev/null 2>&1
 
-        killall -9 mihomo 2>/dev/null || true
+        killall -9 mihomo \
+            >/dev/null 2>&1 || true
 
         rm -f /var/run/mihomo.pid
 
-        echo "{\"ok\":true}"
+        json_ok
+
         ;;
 
     restart)
 
         echo "1" > "$ENABLED_FILE"
 
-        /etc/init.d/mihomo restart >/dev/null 2>&1
+        /etc/init.d/mihomo restart \
+            >/tmp/uzumaki-restart.log 2>&1
 
-        echo "{\"ok\":true}"
+        if ! wait_running; then
+            json_error "mihomo_failed_to_restart"
+            exit 1
+        fi
+
+        if [ -f "$TRANSPARENT_FILE" ] &&
+           [ "$(cat "$TRANSPARENT_FILE" 2>/dev/null)" = "1" ]; then
+
+            if ! apply_nft; then
+                json_error "nft_apply_failed"
+                exit 1
+            fi
+
+        fi
+
+        json_ok
+
         ;;
 
     enable_tp)
 
         echo "1" > "$TRANSPARENT_FILE"
+        echo "1" > "$ENABLED_FILE"
 
-        # Rebuild policy route + nft rules through service.
-        /etc/init.d/mihomo restart >/dev/null 2>&1
+        if ! is_running; then
 
-        echo "{\"ok\":true}"
+            /etc/init.d/mihomo start \
+                >/dev/null 2>&1
+
+            if ! wait_running; then
+                json_error "mihomo_failed_to_start"
+                exit 1
+            fi
+
+        fi
+
+        if ! apply_nft; then
+            json_error "nft_apply_failed"
+            exit 1
+        fi
+
+        json_ok
+
         ;;
 
     disable_tp)
 
         echo "0" > "$TRANSPARENT_FILE"
 
-        /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+        nft delete table ip uzumaki 2>/dev/null || true
+        nft delete table inet uzumaki 2>/dev/null || true
 
-        echo "{\"ok\":true}"
+        json_ok
+
+        ;;
+
+    # ==========================================================
+    # ACL BYPASS
+    # ==========================================================
+    add_acl_bypass)
+
+        IP=$(echo "$QUERY_STRING" |
+            sed -n 's/.*[?&]ip=\([^&]*\).*/\1/p')
+
+        # Decode basic URL encoding
+        IP=$(printf '%b' \
+            "$(echo "$IP" |
+              sed 's/+/ /g; s/%/\\x/g')")
+
+        if ! valid_ipv4 "$IP"; then
+            json_error "invalid_ipv4"
+            exit 1
+        fi
+
+        [ -f "$ACL_FILE" ] || touch "$ACL_FILE"
+
+        if ! grep -qxF "$IP" "$ACL_FILE" 2>/dev/null; then
+            echo "$IP" >> "$ACL_FILE"
+        fi
+
+        json_ok
+
         ;;
 
     flush_fakeip)
@@ -104,7 +246,8 @@ case "$ACTION" in
             -H "Authorization: Bearer flclash123" \
             >/dev/null 2>&1
 
-        echo "{\"ok\":true}"
+        json_ok
+
         ;;
 
     update_geo)
@@ -127,12 +270,14 @@ case "$ACTION" in
             wait
         ) &
 
-        echo "{\"ok\":true,\"message\":\"Updating in background\"}"
+        echo '{"ok":true,"message":"Updating in background"}'
+
         ;;
 
     *)
 
-        echo "{\"ok\":false,\"error\":\"invalid_action\"}"
+        json_error "invalid_action"
+
         ;;
 
 esac
