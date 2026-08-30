@@ -56,18 +56,20 @@ dns:
   fake-ip-range: 198.18.0.1/16
 
   fake-ip-filter:
+
     - '*.lan'
     - '*.local'
     - 'localhost'
 
-    # NTP
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
 
-    # Microsoft compatibility
+    # Microsoft connectivity
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
+
+    # Microsoft / Windows
     - '+.microsoft.com'
     - '+.microsoftonline.com'
     - '+.windows.com'
@@ -75,16 +77,33 @@ dns:
     - '+.windowsupdate.com'
     - '+.live.com'
 
-    # Riot / Valorant compatibility
+    # Microsoft Store endpoints
+    - 'storeedgefd.dsx.mp.microsoft.com'
+    - 'livetileedge.dsx.mp.microsoft.com'
+    - 'displaycatalog.mp.microsoft.com'
+    - 'dl.delivery.mp.microsoft.com'
+    - 'delivery.mp.microsoft.com'
+    - 'update.microsoft.com'
+
+    - 'img-prod-cms-rt-microsoft-com.akamaized.net'
+    - 'img-s-msn-com.akamaized.net'
+
+    - '+.wns.windows.com'
+
+    # Riot / Valorant
     - '+.riotgames.com'
     - '+.riotcdn.net'
     - '+.playvalorant.com'
     - '+.pvp.net'
     - '+.leagueoflegends.com'
 
-    # Remote support
+    # Remote desktop
     - '+.ultraviewer.net'
     - '+.ultraviewer.com'
+    - '+.anydesk.com'
+    - '+.teamviewer.com'
+    - '+.rustdesk.com'
+    - '+.parsec.app'
 
   default-nameserver:
     - 1.1.1.1
@@ -105,7 +124,7 @@ dns:
 proxies: []
 
 # ==========================================================
-# DEFAULT GROUP
+# DEFAULT PROXY GROUP
 # ==========================================================
 proxy-groups:
 
@@ -126,7 +145,7 @@ proxy-groups:
 rules:
 
   # --------------------------------------------------------
-  # LOCAL NETWORK
+  # LOCAL
   # --------------------------------------------------------
   - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
@@ -146,26 +165,49 @@ rules:
   - 'DOMAIN-SUFFIX,windows.net,DIRECT'
   - 'DOMAIN-SUFFIX,windowsupdate.com,DIRECT'
   - 'DOMAIN-SUFFIX,live.com,DIRECT'
+
   - 'DOMAIN-SUFFIX,msftconnecttest.com,DIRECT'
   - 'DOMAIN-SUFFIX,msftncsi.com,DIRECT'
 
+  - 'DOMAIN-SUFFIX,storeedgefd.dsx.mp.microsoft.com,DIRECT'
+  - 'DOMAIN-SUFFIX,livetileedge.dsx.mp.microsoft.com,DIRECT'
+  - 'DOMAIN-SUFFIX,displaycatalog.mp.microsoft.com,DIRECT'
+  - 'DOMAIN-SUFFIX,dl.delivery.mp.microsoft.com,DIRECT'
+  - 'DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT'
+  - 'DOMAIN-SUFFIX,update.microsoft.com,DIRECT'
+
+  - 'DOMAIN-SUFFIX,img-prod-cms-rt-microsoft-com.akamaized.net,DIRECT'
+  - 'DOMAIN-SUFFIX,img-s-msn-com.akamaized.net,DIRECT'
+
+  - 'DOMAIN-SUFFIX,wns.windows.com,DIRECT'
+
   # --------------------------------------------------------
-  # ULTRAVIEWER
+  # ULTRAVIEWER / REMOTE DESKTOP
   # --------------------------------------------------------
   - 'DOMAIN-SUFFIX,ultraviewer.net,DIRECT'
   - 'DOMAIN-SUFFIX,ultraviewer.com,DIRECT'
+  - 'DOMAIN-SUFFIX,anydesk.com,DIRECT'
+  - 'DOMAIN-SUFFIX,teamviewer.com,DIRECT'
+  - 'DOMAIN-SUFFIX,rustdesk.com,DIRECT'
+  - 'DOMAIN-SUFFIX,parsec.app,DIRECT'
+
+  - 'DST-PORT,2112,DIRECT'
 
   # --------------------------------------------------------
   # RIOT / VALORANT
-  #
-  # Kept through the selected group instead of hard-forcing
-  # every Riot domain to DIRECT.
   # --------------------------------------------------------
-  - 'DOMAIN-SUFFIX,riotgames.com,🌀 Uzumaki-Auto'
-  - 'DOMAIN-SUFFIX,riotcdn.net,🌀 Uzumaki-Auto'
-  - 'DOMAIN-SUFFIX,playvalorant.com,🌀 Uzumaki-Auto'
-  - 'DOMAIN-SUFFIX,pvp.net,🌀 Uzumaki-Auto'
-  - 'DOMAIN-SUFFIX,leagueoflegends.com,🌀 Uzumaki-Auto'
+  - 'DOMAIN-SUFFIX,riotgames.com,DIRECT'
+  - 'DOMAIN-SUFFIX,riotcdn.net,DIRECT'
+  - 'DOMAIN-SUFFIX,playvalorant.com,DIRECT'
+  - 'DOMAIN-SUFFIX,pvp.net,DIRECT'
+  - 'DOMAIN-SUFFIX,leagueoflegends.com,DIRECT'
+
+  # Riot / League service ports
+  - 'DST-PORT,2099,DIRECT'
+  - 'DST-PORT,5222,DIRECT'
+  - 'DST-PORT,5223,DIRECT'
+  - 'DST-PORT,8088,DIRECT'
+  - 'DST-PORT,8393-8400,DIRECT'
 
   # --------------------------------------------------------
   # BANGLADESH
