@@ -1,128 +1,32 @@
+```sh
 #!/bin/sh /etc/rc.common
 
 USE_PROCD=1
-
 START=99
 STOP=10
 
 CONF_DIR="/etc/mihomo"
 PROG="/usr/bin/mihomo"
 
-TPROXY_TABLE="24680"
-TPROXY_MARK="0x1/0x1"
-TPROXY_PRIORITY="10000"
-
-setup_tproxy_route() {
-
-    ip rule del \
-        pref "$TPROXY_PRIORITY" \
-        fwmark "$TPROXY_MARK" \
-        lookup "$TPROXY_TABLE" \
-        2>/dev/null || true
-
-    ip route flush \
-        table "$TPROXY_TABLE" \
-        2>/dev/null || true
-
-    ip rule add \
-        pref "$TPROXY_PRIORITY" \
-        fwmark "$TPROXY_MARK" \
-        lookup "$TPROXY_TABLE" \
-        2>/tmp/uzumaki-route-error.log
-
-    if [ "$?" -ne 0 ]; then
-        return 1
-    fi
-
-    ip route replace \
-        local 0.0.0.0/0 \
-        dev lo \
-        table "$TPROXY_TABLE" \
-        2>>/tmp/uzumaki-route-error.log
-
-    if [ "$?" -ne 0 ]; then
-        return 1
-    fi
-
-    return 0
-}
-
-clear_tproxy_route() {
-
-    ip rule del \
-        pref "$TPROXY_PRIORITY" \
-        fwmark "$TPROXY_MARK" \
-        lookup "$TPROXY_TABLE" \
-        2>/dev/null || true
-
-    ip route flush \
-        table "$TPROXY_TABLE" \
-        2>/dev/null || true
-}
-
-apply_nft() {
-
-    [ -f "$CONF_DIR/nft.conf" ] || return 1
-
-    nft -c -f "$CONF_DIR/nft.conf" \
-        >/tmp/uzumaki-nft-test.log 2>&1 || return 1
-
-    nft delete table ip uzumaki \
-        2>/dev/null || true
-
-    nft delete table inet uzumaki \
-        2>/dev/null || true
-
-    nft -f "$CONF_DIR/nft.conf" \
-        >/tmp/uzumaki-nft.log 2>&1
-}
-
-restore_acl() {
-
-    ACL_FILE="$CONF_DIR/acl-bypass"
-
-    [ -f "$ACL_FILE" ] || return 0
-
-    while IFS= read -r IP; do
-
-        [ -z "$IP" ] && continue
-
-        nft add element ip uzumaki acl_ips \
-            "{ $IP }" \
-            2>/dev/null || true
-
-    done < "$ACL_FILE"
+boot() {
+    sleep 5
+    start
 }
 
 start_service() {
-
     [ -x "$PROG" ] || return 1
-
     [ -f "$CONF_DIR/config.yaml" ] || return 1
 
-    if [ -f "$CONF_DIR/enabled" ] &&
-       [ "$(cat "$CONF_DIR/enabled" 2>/dev/null)" = "0" ]; then
+    # Default state
+    [ -f "$CONF_DIR/enabled" ] || echo "1" > "$CONF_DIR/enabled"
+    [ -f "$CONF_DIR/transparent" ] || echo "1" > "$CONF_DIR/transparent"
 
-        return 0
+    # Do not start when explicitly disabled
+    [ "$(cat "$CONF_DIR/enabled" 2>/dev/null)" = "0" ] && return 0
 
-    fi
+    export GOMEMLIMIT=40MiB
+    export GOGC=20
 
-    # Low-RAM guard.
-    export GOMEMLIMIT=64MiB
-
-    # ======================================================
-    # POLICY ROUTING
-    # ======================================================
-    if ! setup_tproxy_route; then
-
-        echo "[UzumakiClash] TPROXY route setup failed" \
-            >/tmp/uzumaki-route-error.log
-
-    fi
-
-    # ======================================================
-    # MIHOMO
-    # ======================================================
     procd_open_instance mihomo
 
     procd_set_param command \
@@ -130,68 +34,51 @@ start_service() {
         -d "$CONF_DIR" \
         -f "$CONF_DIR/config.yaml"
 
-    procd_set_param respawn \
-        3600 5 5
+    procd_set_param respawn 3600 5 5
 
     procd_set_param limits \
-        nofile="65535 65535"
+        nofile="1048576 1048576"
 
     procd_set_param stdout 1
     procd_set_param stderr 1
 
-    procd_set_param pidfile \
-        /var/run/mihomo.pid
+    procd_set_param pidfile /var/run/mihomo.pid
 
     procd_close_instance
 
-    sleep 1
+    # Apply transparent routing after Mihomo starts
+    (
+        sleep 3
 
-    # ======================================================
-    # NFT
-    # ======================================================
-    if [ -f "$CONF_DIR/transparent" ] &&
-       [ "$(cat "$CONF_DIR/transparent" 2>/dev/null)" = "1" ]; then
+        if [ -f "$CONF_DIR/transparent" ] && \
+           [ "$(cat "$CONF_DIR/transparent" 2>/dev/null)" = "1" ]; then
 
-        if ! apply_nft; then
-
-            echo "[UzumakiClash] nft.conf failed to load" \
-                >/tmp/uzumaki-nft-error.log
-
-        else
-
-            restore_acl
-
+            /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+            /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
         fi
-
-    fi
+    ) &
 }
 
 stop_service() {
+    # Remove transparent routing first
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
 
-    nft delete table ip uzumaki \
-        2>/dev/null || true
+    # Stop managed process
+    procd_kill mihomo 2>/dev/null || true
 
-    nft delete table inet uzumaki \
-        2>/dev/null || true
-
-    clear_tproxy_route
-
-    killall -9 mihomo \
-        2>/dev/null || true
+    killall -9 mihomo 2>/dev/null || true
 
     rm -f /var/run/mihomo.pid
 }
 
-boot() {
-
-    sleep 5
-
+reload_service() {
+    stop
+    sleep 1
     start
 }
 
 service_triggers() {
-
-    procd_add_reload_trigger \
-        network \
-        firewall
+    procd_add_reload_trigger "mihomo" "network" "firewall"
 }
+```
