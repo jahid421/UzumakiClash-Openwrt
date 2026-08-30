@@ -14,12 +14,18 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     ERR="/tmp/cfg_err_$$.log"
 
     cleanup() {
-        rm -f "$TMP" "$CLEAN" "$FINAL" "$ERR"
+        rm -f \
+            "$TMP" \
+            "$CLEAN" \
+            "$FINAL" \
+            "$ERR"
     }
 
     trap cleanup EXIT
 
-    # Read uploaded YAML
+    # ==========================================================
+    # Read uploaded config
+    # ==========================================================
     tr -d '\r' > "$TMP"
 
     if [ ! -s "$TMP" ]; then
@@ -27,36 +33,81 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         exit 1
     fi
 
-    # ======================================================
-    # Remove only gateway-level settings that Uzumaki owns.
-    # User proxy definitions / proxy-groups / rules remain.
-    # ======================================================
+    # ==========================================================
+    # Strip only top-level gateway blocks that Uzumaki controls.
+    #
+    # Keep:
+    # proxies
+    # proxy-groups
+    # proxy-providers
+    # rules
+    # rule-providers
+    # hosts
+    # hosts-related settings
+    # other user configuration
+    # ==========================================================
     awk '
-    BEGIN {
-        skip = 0
+    function managed(k) {
+
+        return (
+            k == "port" ||
+            k == "socks-port" ||
+            k == "mixed-port" ||
+            k == "redir-port" ||
+            k == "tproxy-port" ||
+            k == "allow-lan" ||
+            k == "bind-address" ||
+            k == "mode" ||
+            k == "log-level" ||
+            k == "ipv6" ||
+            k == "external-controller" ||
+            k == "external-ui" ||
+            k == "secret" ||
+            k == "tcp-concurrent" ||
+            k == "unified-delay" ||
+            k == "global-client-fingerprint" ||
+            k == "profile" ||
+            k == "dns" ||
+            k == "sniffer"
+        )
     }
 
-    /^[a-zA-Z0-9_-]+:/ {
-        key = $1
-        sub(/:$/, "", key)
+    /^[^[:space:]][^:]*:/ {
 
-        if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|tcp-concurrent|unified-delay|global-client-fingerprint|profile|dns|sniffer)$/) {
-            skip = 1
+        key=$0
+        sub(/:.*/, "", key)
+
+        if (managed(key)) {
+            skip=1
             next
         }
 
-        skip = 0
+        skip=0
+        print
+        next
     }
 
-    skip == 0 {
-        print
+    /^[[:space:]]+/ {
+
+        if (skip==0) {
+            print
+        }
+
+        next
+    }
+
+    {
+        if (skip==0) {
+            print
+        }
     }
     ' "$TMP" > "$CLEAN"
 
-    # ======================================================
-    # Uzumaki gateway configuration
-    # ======================================================
-    cat <<'EOF' > "$FINAL"
+    # ==========================================================
+    # Uzumaki controlled base configuration
+    # ==========================================================
+    cat <<'UZ_CONFIG' > "$FINAL"
+
 mixed-port: 7890
 redir-port: 7892
 tproxy-port: 7893
@@ -83,15 +134,18 @@ profile:
 sniffer:
   enable: true
   override-destination: true
+
   sniff:
     HTTP:
       ports:
         - 80
         - 8080-8880
+
     TLS:
       ports:
         - 443
         - 8443
+
     QUIC:
       ports:
         - 443
@@ -101,6 +155,7 @@ dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: false
+
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
 
@@ -108,9 +163,11 @@ dns:
     - '*.lan'
     - '*.local'
     - 'localhost'
+
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
+
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
     - '+.microsoft.com'
@@ -119,11 +176,15 @@ dns:
     - '+.windows.net'
     - '+.windowsupdate.com'
     - '+.live.com'
+
     - '+.riotgames.com'
     - '+.riotcdn.net'
     - '+.playvalorant.com'
     - '+.pvp.net'
     - '+.leagueoflegends.com'
+
+    - '+.ultraviewer.net'
+    - '+.ultraviewer.com'
 
   default-nameserver:
     - 1.1.1.1
@@ -138,68 +199,117 @@ dns:
     - 8.8.8.8
     - 1.0.0.1
 
-EOF
+UZ_CONFIG
 
-    # ======================================================
-    # Build final config.
-    # Preserve user's imported YAML content.
-    # ======================================================
-    if grep -q '^rules:' "$CLEAN"; then
+    # ==========================================================
+    # Preserve user's config
+    # ==========================================================
+    cat "$CLEAN" >> "$FINAL"
 
-        awk '
-        /^rules:/ {
-            print
-            print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
-            print "  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
-            print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
-            print "  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve"
-            print "  - DOMAIN-SUFFIX,lan,DIRECT"
-            print "  - DOMAIN-SUFFIX,local,DIRECT"
-            next
-        }
+    # ==========================================================
+    # Default proxy group only if imported config has none.
+    # ==========================================================
+    if ! grep -q '^proxy-groups:' "$FINAL"; then
 
-        {
-            print
-        }
-        ' "$CLEAN" >> "$FINAL"
+        cat <<'UZ_GROUP' >> "$FINAL"
 
-    else
+proxy-groups:
+  - name: "🌀 Uzumaki-Auto"
+    type: url-test
+    proxies:
+      - DIRECT
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 30
+    lazy: true
 
-        cat <<'EOF' >> "$FINAL"
-
-rules:
-  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
-  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
-  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
-  - DOMAIN-SUFFIX,lan,DIRECT
-  - DOMAIN-SUFFIX,local,DIRECT
-  - MATCH,🌀 Uzumaki-Auto
-EOF
+UZ_GROUP
 
     fi
 
-    # ======================================================
-    # Validate with Mihomo itself.
-    # Do NOT rely only on log text.
-    # ======================================================
-    "$CORE" -d "$CONF_DIR" -f "$FINAL" -t >"$ERR" 2>&1
+    # ==========================================================
+    # Default rules only if imported config has none.
+    # ==========================================================
+    if ! grep -q '^rules:' "$FINAL"; then
+
+        cat <<'UZ_RULES' >> "$FINAL"
+
+rules:
+
+  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
+  - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
+  - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
+  - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
+  - 'IP-CIDR,169.254.0.0/16,DIRECT,no-resolve'
+
+  - 'DOMAIN-SUFFIX,local,DIRECT'
+  - 'DOMAIN-SUFFIX,lan,DIRECT'
+
+  - 'DOMAIN-SUFFIX,microsoft.com,DIRECT'
+  - 'DOMAIN-SUFFIX,microsoftonline.com,DIRECT'
+  - 'DOMAIN-SUFFIX,windows.com,DIRECT'
+  - 'DOMAIN-SUFFIX,windows.net,DIRECT'
+  - 'DOMAIN-SUFFIX,windowsupdate.com,DIRECT'
+  - 'DOMAIN-SUFFIX,live.com,DIRECT'
+  - 'DOMAIN-SUFFIX,msftconnecttest.com,DIRECT'
+  - 'DOMAIN-SUFFIX,msftncsi.com,DIRECT'
+
+  - 'DOMAIN-SUFFIX,ultraviewer.net,DIRECT'
+  - 'DOMAIN-SUFFIX,ultraviewer.com,DIRECT'
+
+  - 'DOMAIN-SUFFIX,riotgames.com,🌀 Uzumaki-Auto'
+  - 'DOMAIN-SUFFIX,riotcdn.net,🌀 Uzumaki-Auto'
+  - 'DOMAIN-SUFFIX,playvalorant.com,🌀 Uzumaki-Auto'
+  - 'DOMAIN-SUFFIX,pvp.net,🌀 Uzumaki-Auto'
+  - 'DOMAIN-SUFFIX,leagueoflegends.com,🌀 Uzumaki-Auto'
+
+  - 'DOMAIN-SUFFIX,bd,DIRECT'
+
+  - 'MATCH,🌀 Uzumaki-Auto'
+
+UZ_RULES
+
+    fi
+
+    # ==========================================================
+    # Validate with Mihomo
+    # ==========================================================
+    "$CORE" \
+        -d "$CONF_DIR" \
+        -f "$FINAL" \
+        -t >"$ERR" 2>&1
 
     RET=$?
 
     if [ "$RET" -ne 0 ]; then
+
         echo "INVALID YAML"
-        head -n 8 "$ERR"
+        head -n 12 "$ERR"
+
         exit 1
     fi
 
-    # Atomic-ish replacement
-    cp "$FINAL" "$CONF_DIR/config.yaml"
+    # ==========================================================
+    # Backup existing working config
+    # ==========================================================
+    if [ -f "$CONF_DIR/config.yaml" ]; then
 
-    # Reload through procd
-    /etc/init.d/mihomo restart >/dev/null 2>&1
+        cp "$CONF_DIR/config.yaml" \
+            "$CONF_DIR/config.yaml.bak"
+
+    fi
+
+    # ==========================================================
+    # Install new config
+    # ==========================================================
+    cp "$FINAL" \
+        "$CONF_DIR/config.yaml"
+
+    # ==========================================================
+    # Restart
+    # ==========================================================
+    /etc/init.d/mihomo restart \
+        >/dev/null 2>&1
 
     echo "SAVED"
 
