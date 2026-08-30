@@ -2,11 +2,11 @@
 # ═══════════════════════════════════════════════════════════════════════
 # 🌀 UzumakiClash - Universal Uninstaller
 # Repo: https://github.com/jahid421/UzumakiClash-Openwrt
-# Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
 # ═══════════════════════════════════════════════════════════════════════
 
 TPROXY_TABLE="24680"
-TPROXY_MARK="1"
+TPROXY_MARK="0x1/0x1"
+TPROXY_PRIORITY="10000"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
@@ -16,7 +16,7 @@ echo "╚═══════════════════════�
 echo ""
 
 # ==============================================================
-# STOP SERVICE
+# SERVICE
 # ==============================================================
 if [ -f /etc/init.d/mihomo ]; then
 
@@ -28,56 +28,47 @@ if [ -f /etc/init.d/mihomo ]; then
     killall -9 mihomo >/dev/null 2>&1 || true
 
     rm -f /etc/init.d/mihomo
+
 fi
 
 # ==============================================================
-# NFT CLEANUP
+# NFT
 # ==============================================================
-echo "[*] Cleaning firewall..."
-
 nft delete table ip uzumaki 2>/dev/null || true
 nft delete table inet uzumaki 2>/dev/null || true
 
 # ==============================================================
-# POLICY ROUTING CLEANUP
+# POLICY ROUTING
 # ==============================================================
 ip rule del \
+    pref "$TPROXY_PRIORITY" \
     fwmark "$TPROXY_MARK" \
-    table "$TPROXY_TABLE" \
+    lookup "$TPROXY_TABLE" \
     2>/dev/null || true
 
-ip route flush \
-    table "$TPROXY_TABLE" \
+ip route flush table "$TPROXY_TABLE" \
     2>/dev/null || true
 
 # ==============================================================
-# EXTRA FILES
+# FILES
 # ==============================================================
 rm -f /etc/sysctl.d/99-uzumaki-tune.conf
 rm -f /etc/hotplug.d/iface/99-uzumaki
 
-# ==============================================================
-# CORE + DATA
-# ==============================================================
 rm -f /usr/bin/mihomo
 rm -rf /etc/mihomo
 
-# ==============================================================
-# CGI
-# ==============================================================
 rm -f /www/cgi-bin/mihomo-api
 rm -f /www/cgi-bin/mihomo-cfg
 rm -f /www/cgi-bin/mihomo-sub
 
-# ==============================================================
-# LUCI
-# ==============================================================
 rm -f /usr/lib/lua/luci/controller/mihomo.lua
 rm -rf /usr/lib/lua/luci/view/mihomo
+
 rm -f /usr/share/luci/menu.d/luci-app-uzumakiclash.json
 
 # ==============================================================
-# UCI FIREWALL
+# UCI
 # ==============================================================
 uci -q delete firewall.uzumaki_rule 2>/dev/null
 uci -q delete firewall.mihomo_proxy 2>/dev/null
@@ -86,7 +77,7 @@ uci commit firewall
 /etc/init.d/firewall restart >/dev/null 2>&1 || true
 
 # ==============================================================
-# CACHE
+# LUCI CACHE
 # ==============================================================
 rm -rf /tmp/luci-*
 
@@ -96,6 +87,5 @@ rm -rf /tmp/luci-*
 echo ""
 echo "══════════════════════════════════════════════════════════════"
 echo "✅ UzumakiClash has been completely removed!"
-echo "   Your native network configuration has been restored."
 echo "══════════════════════════════════════════════════════════════"
 echo ""
