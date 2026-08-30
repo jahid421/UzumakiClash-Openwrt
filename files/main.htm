@@ -23,53 +23,120 @@ body{margin:0;padding:0;transition:background .3s,color .3s}
 }
 
 body{background:var(--bg);color:var(--text)}
-.mc{max-width:1200px;margin:0 auto;padding:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+
+.mc{
+  max-width:1200px;
+  margin:0 auto;
+  padding:12px;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif
+}
 
 .theme-toggle{
-  position:fixed;top:12px;right:12px;z-index:1000;width:44px;height:44px;border-radius:50%;
-  border:none;background:var(--card-bg);color:var(--accent);cursor:pointer;
-  box-shadow:0 2px 10px rgba(0,0,0,0.15);font-size:20px
+  position:fixed;
+  top:12px;
+  right:12px;
+  z-index:1000;
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  border:none;
+  background:var(--card-bg);
+  color:var(--accent);
+  cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,0.15);
+  font-size:20px
 }
 
 .tabs{
-  display:flex;border:2px solid var(--accent);border-radius:10px;overflow-x:auto;
-  margin-bottom:16px;background:var(--tab-bg)
+  display:flex;
+  border:2px solid var(--accent);
+  border-radius:10px;
+  overflow-x:auto;
+  margin-bottom:16px;
+  background:var(--tab-bg)
 }
 
 .tabs button{
-  flex:1;min-width:90px;padding:12px 8px;border:none;background:var(--tab-bg);
-  color:var(--accent);font-weight:700;font-size:13px;cursor:pointer
+  flex:1;
+  min-width:90px;
+  padding:12px 8px;
+  border:none;
+  background:var(--tab-bg);
+  color:var(--accent);
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer
 }
 
-.tabs button.ac{background:var(--accent);color:#fff}
+.tabs button.ac{
+  background:var(--accent);
+  color:#fff
+}
 
 .card{
-  background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;
-  padding:16px;margin-bottom:14px;box-shadow:var(--shadow)
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:14px;
+  box-shadow:var(--shadow)
 }
 
 .title{
-  font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text-heading);
-  padding-bottom:10px;border-bottom:1px solid var(--divider);
-  display:flex;align-items:center;gap:6px
+  font-size:14px;
+  font-weight:700;
+  margin-bottom:14px;
+  color:var(--text-heading);
+  padding-bottom:10px;
+  border-bottom:1px solid var(--divider);
+  display:flex;
+  align-items:center;
+  gap:6px
 }
 
 .dot{
-  width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:8px
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  display:inline-block;
+  margin-right:8px
 }
 
-.on{background:#22c55e;box-shadow:0 0 8px #22c55e}
-.off{background:#ef4444;box-shadow:0 0 8px #ef4444}
+.on{
+  background:#22c55e;
+  box-shadow:0 0 8px #22c55e
+}
 
-.btns{display:flex;gap:8px;flex-wrap:wrap}
+.off{
+  background:#ef4444;
+  box-shadow:0 0 8px #ef4444
+}
+
+.btns{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap
+}
 
 .btn{
-  border:none;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:600;
-  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
-  gap:6px;min-height:42px;color:#fff
+  border:none;
+  border-radius:10px;
+  padding:11px 18px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:42px;
+  color:#fff
 }
 
-.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn:disabled{
+  opacity:.55;
+  cursor:not-allowed
+}
 
 .b1{background:#22c55e}
 .b2{background:#ef4444}
@@ -77,94 +144,174 @@ body{background:var(--bg);color:var(--text)}
 .b4{background:var(--accent)}
 
 .grid{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-  gap:10px;margin-bottom:14px
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px;
+  margin-bottom:14px
 }
 
 .stat{
-  background:var(--card-bg);border:1px solid var(--card-border);
-  border-radius:12px;padding:14px
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  border-radius:12px;
+  padding:14px
 }
 
 .stat .l{
-  font-size:10px;color:var(--text-muted);text-transform:uppercase;
-  margin-bottom:6px;font-weight:600
+  font-size:10px;
+  color:var(--text-muted);
+  text-transform:uppercase;
+  margin-bottom:6px;
+  font-weight:600
 }
 
-.stat .v{font-size:20px;font-weight:700;color:var(--text)}
+.stat .v{
+  font-size:20px;
+  font-weight:700;
+  color:var(--text)
+}
 
 .upbox{
-  border:2px dashed var(--accent);border-radius:12px;padding:24px 16px;
-  text-align:center;background:var(--upbox-bg);cursor:pointer
+  border:2px dashed var(--accent);
+  border-radius:12px;
+  padding:24px 16px;
+  text-align:center;
+  background:var(--upbox-bg);
+  cursor:pointer
 }
 
 .mode{
-  display:flex;border:2px solid var(--accent);border-radius:10px;overflow:hidden
+  display:flex;
+  border:2px solid var(--accent);
+  border-radius:10px;
+  overflow:hidden
 }
 
 .mode button{
-  flex:1;padding:11px 8px;border:none;background:var(--card-bg);
-  color:var(--accent);font-weight:700;cursor:pointer
+  flex:1;
+  padding:11px 8px;
+  border:none;
+  background:var(--card-bg);
+  color:var(--accent);
+  font-weight:700;
+  cursor:pointer
 }
 
-.mode button.ac{background:var(--accent);color:#fff}
+.mode button.ac{
+  background:var(--accent);
+  color:#fff
+}
 
 .ir{
-  display:flex;justify-content:space-between;padding:10px 0;
-  border-bottom:1px solid var(--divider);font-size:13px
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid var(--divider);
+  font-size:13px
 }
 
 .inp{
-  width:100%;padding:12px;border:1px solid var(--input-border);border-radius:10px;
-  font-size:13px;background:var(--input-bg);color:var(--text);margin-bottom:10px
+  width:100%;
+  padding:12px;
+  border:1px solid var(--input-border);
+  border-radius:10px;
+  font-size:13px;
+  background:var(--input-bg);
+  color:var(--text);
+  margin-bottom:10px
 }
 
 .ta{
-  width:100%;height:320px;padding:12px;border:1px solid var(--input-border);
-  border-radius:10px;font-family:monospace;background:var(--textarea-bg);color:var(--text)
+  width:100%;
+  height:320px;
+  padding:12px;
+  border:1px solid var(--input-border);
+  border-radius:10px;
+  font-family:monospace;
+  background:var(--textarea-bg);
+  color:var(--text)
 }
 
 .gp{
-  background:var(--card-bg);border:1px solid var(--card-border);
-  border-radius:12px;padding:16px;margin-bottom:12px
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:12px
 }
 
 .nd{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
+  gap:8px
 }
 
 .ni{
-  padding:10px 8px;border:2px solid var(--card-border);border-radius:8px;
-  cursor:pointer;text-align:center;background:var(--card-bg)
+  padding:10px 8px;
+  border:2px solid var(--card-border);
+  border-radius:8px;
+  cursor:pointer;
+  text-align:center;
+  background:var(--card-bg)
 }
 
-.ni.ac{border-color:var(--accent);background:var(--accent-light)}
+.ni.ac{
+  border-color:var(--accent);
+  background:var(--accent-light)
+}
 
-.tbl-wrap{overflow-x:auto}
+.tbl-wrap{
+  overflow-x:auto
+}
 
-table{width:100%;border-collapse:collapse}
+table{
+  width:100%;
+  border-collapse:collapse
+}
 
 th,td{
-  padding:10px 8px;border-bottom:1px solid var(--divider);
-  font-size:12px;text-align:left
+  padding:10px 8px;
+  border-bottom:1px solid var(--divider);
+  font-size:12px;
+  text-align:left
 }
 
 .lb{
-  background:var(--log-bg);color:var(--log-text);border-radius:12px;
-  padding:14px;height:350px;overflow-y:auto;font-family:monospace;font-size:11px
+  background:var(--log-bg);
+  color:var(--log-text);
+  border-radius:12px;
+  padding:14px;
+  height:350px;
+  overflow-y:auto;
+  font-family:monospace;
+  font-size:11px
 }
 
-.pg{display:none}
-.pg.show{display:block}
+.pg{
+  display:none
+}
+
+.pg.show{
+  display:block
+}
 
 .warn{
-  background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-text);
-  padding:12px;border-radius:10px;font-size:12px;margin-top:12px
+  background:var(--warn-bg);
+  border:1px solid var(--warn-border);
+  color:var(--warn-text);
+  padding:12px;
+  border-radius:10px;
+  font-size:12px;
+  margin-top:12px
 }
 
 .credit-card{
-  background:linear-gradient(135deg,#8b5cf6 0%,#d946ef 100%);color:#fff;
-  border-radius:14px;padding:24px;margin-top:24px;text-align:center
+  background:linear-gradient(135deg,#8b5cf6 0%,#d946ef 100%);
+  color:#fff;
+  border-radius:14px;
+  padding:24px;
+  margin-top:24px;
+  text-align:center
 }
 </style>
 
@@ -173,48 +320,127 @@ th,td{
 <div class="mc">
 
   <div class="tabs">
-    <button class="ac" onclick="sp('overview',this)">Overview</button>
-    <button onclick="sp('proxy',this)">Proxy Nodes</button>
-    <button onclick="sp('acl',this)">ACL / Devices</button>
-    <button onclick="sp('config',this)">Config Manager</button>
-    <button onclick="sp('conn',this)">Connections</button>
-    <button onclick="sp('log',this)">Live Logs</button>
+
+    <button
+      class="ac"
+      onclick="sp('overview',this)"
+    >
+      Overview
+    </button>
+
+    <button
+      onclick="sp('proxy',this)"
+    >
+      Proxy Nodes
+    </button>
+
+    <button
+      onclick="sp('acl',this)"
+    >
+      ACL / Devices
+    </button>
+
+    <button
+      onclick="sp('config',this)"
+    >
+      Config Manager
+    </button>
+
+    <button
+      onclick="sp('conn',this)"
+    >
+      Connections
+    </button>
+
+    <button
+      onclick="sp('log',this)"
+    >
+      Live Logs
+    </button>
+
   </div>
 
-  <div class="pg show" id="pg-overview">
+  <div
+    class="pg show"
+    id="pg-overview"
+  >
 
     <div class="card">
 
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          flex-wrap:wrap;
+          gap:10px
+        "
+      >
 
         <div>
 
-          <div style="font-size:17px;font-weight:700;display:flex;align-items:center">
-            <span class="dot off" id="dot"></span>
-            <span id="stxt">Checking...</span>
+          <div
+            style="
+              font-size:17px;
+              font-weight:700;
+              display:flex;
+              align-items:center
+            "
+          >
+
+            <span
+              class="dot off"
+              id="dot"
+            ></span>
+
+            <span id="stxt">
+              Checking...
+            </span>
+
           </div>
 
-          <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="ssub"></div>
+          <div
+            style="
+              font-size:12px;
+              color:var(--text-muted);
+              margin-top:4px
+            "
+            id="ssub"
+          ></div>
 
         </div>
 
         <div class="btns">
 
-          <button class="btn b1" onclick="svc('start')">
+          <button
+            class="btn b1"
+            onclick="svc('start')"
+          >
             Fast Start
           </button>
 
-          <button class="btn b2" onclick="svc('stop')">
+          <button
+            class="btn b2"
+            onclick="svc('stop')"
+          >
             Instant Kill
           </button>
 
-          <button class="btn b3" onclick="svc('restart')">
+          <button
+            class="btn b3"
+            onclick="svc('restart')"
+          >
             Restart
           </button>
 
           <button
             class="btn b4"
-            onclick="window.open('http://'+location.hostname+':9595/ui','_blank')"
+            onclick="
+              window.open(
+                'http://'+location.hostname+':9595/ui',
+                '_blank'
+              )
+            "
           >
             Dashboard
           </button>
@@ -231,13 +457,31 @@ th,td{
         🌀 Uzumaki Transparent Proxy (Full UDP Gaming & Fake-IP)
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          flex-wrap:wrap;
+          gap:10px
+        "
+      >
 
-        <div style="font-size:13px;color:var(--text-muted);max-width:500px">
+        <div
+          style="
+            font-size:13px;
+            color:var(--text-muted);
+            max-width:500px
+          "
+        >
           Zero-Lag router routing. All connected devices auto-bypass local sites and tunnel blocked traffic.
         </div>
 
-        <button class="btn b3" id="tpbtn" onclick="toggleTP()">
+        <button
+          class="btn b3"
+          id="tpbtn"
+          onclick="toggleTP()"
+        >
           Checking...
         </button>
 
@@ -251,19 +495,30 @@ th,td{
 
     <div class="card">
 
-      <div class="title">⚙️ Proxy Routing Mode</div>
+      <div class="title">
+        ⚙️ Proxy Routing Mode
+      </div>
 
       <div class="mode">
 
-        <button id="m-rule" onclick="sm('rule')">
+        <button
+          id="m-rule"
+          onclick="sm('rule')"
+        >
           Smart Rule
         </button>
 
-        <button id="m-global" onclick="sm('global')">
+        <button
+          id="m-global"
+          onclick="sm('global')"
+        >
           Global Proxy
         </button>
 
-        <button id="m-direct" onclick="sm('direct')">
+        <button
+          id="m-direct"
+          onclick="sm('direct')"
+        >
           Direct Bypass
         </button>
 
@@ -274,23 +529,63 @@ th,td{
     <div class="grid">
 
       <div class="stat">
-        <div class="l">Upload Speed</div>
-        <div class="v" id="up">0 B/s</div>
+
+        <div class="l">
+          Upload Speed
+        </div>
+
+        <div
+          class="v"
+          id="up"
+        >
+          0 B/s
+        </div>
+
       </div>
 
       <div class="stat">
-        <div class="l">Download Speed</div>
-        <div class="v" id="dn">0 B/s</div>
+
+        <div class="l">
+          Download Speed
+        </div>
+
+        <div
+          class="v"
+          id="dn"
+        >
+          0 B/s
+        </div>
+
       </div>
 
       <div class="stat">
-        <div class="l">Active Sockets</div>
-        <div class="v" id="cc">0</div>
+
+        <div class="l">
+          Active Sockets
+        </div>
+
+        <div
+          class="v"
+          id="cc"
+        >
+          0
+        </div>
+
       </div>
 
       <div class="stat">
-        <div class="l">RAM Consumed</div>
-        <div class="v" id="mem">-</div>
+
+        <div class="l">
+          RAM Consumed
+        </div>
+
+        <div
+          class="v"
+          id="mem"
+        >
+          -
+        </div>
+
       </div>
 
     </div>
@@ -301,7 +596,10 @@ th,td{
         📊 Traffic Realtime Monitor
       </div>
 
-      <canvas id="cv" style="height:120px;width:100%"></canvas>
+      <canvas
+        id="cv"
+        style="height:120px;width:100%"
+      ></canvas>
 
     </div>
 
@@ -313,11 +611,17 @@ th,td{
 
       <div class="btns">
 
-        <button class="btn b4" onclick="ug()">
+        <button
+          class="btn b4"
+          onclick="ug()"
+        >
           Update GeoData
         </button>
 
-        <button class="btn b4" onclick="fd()">
+        <button
+          class="btn b4"
+          onclick="fd()"
+        >
           Flush Fake-IP Pool
         </button>
 
@@ -327,7 +631,10 @@ th,td{
 
   </div>
 
-  <div class="pg" id="pg-acl">
+  <div
+    class="pg"
+    id="pg-acl"
+  >
 
     <div class="card">
 
@@ -335,11 +642,22 @@ th,td{
         🛡️ Client Access Control (Bypass Specific Devices)
       </div>
 
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">
+      <div
+        style="
+          font-size:13px;
+          color:var(--text-muted);
+          margin-bottom:12px
+        "
+      >
         Enter device IP address (e.g. Smart TV or Work PC) that should directly bypass proxy without routing.
       </div>
 
-      <div style="display:flex;gap:8px">
+      <div
+        style="
+          display:flex;
+          gap:8px
+        "
+      >
 
         <input
           class="inp"
@@ -348,7 +666,10 @@ th,td{
           style="margin:0"
         >
 
-        <button class="btn b1" onclick="addACL()">
+        <button
+          class="btn b1"
+          onclick="addACL()"
+        >
           Add Bypass
         </button>
 
@@ -356,37 +677,66 @@ th,td{
 
       <div
         id="aclmsg"
-        style="margin-top:10px;font-size:12px"
+        style="
+          margin-top:10px;
+          font-size:12px
+        "
       ></div>
 
     </div>
 
   </div>
 
-  <div class="pg" id="pg-proxy">
+  <div
+    class="pg"
+    id="pg-proxy"
+  >
 
     <div class="card">
 
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          flex-wrap:wrap;
+          gap:10px
+        "
+      >
 
         <span
           class="title"
-          style="border:0;margin:0;padding:0"
+          style="
+            border:0;
+            margin:0;
+            padding:0
+          "
         >
           🌐 Outbound Nodes
         </span>
 
-        <div style="display:flex;gap:8px">
+        <div
+          style="
+            display:flex;
+            gap:8px
+          "
+        >
 
           <input
             class="inp"
             id="pq"
             placeholder="Search node..."
             oninput="pft()"
-            style="width:200px;margin:0"
+            style="
+              width:200px;
+              margin:0
+            "
           >
 
-          <button class="btn b4" onclick="pt()">
+          <button
+            class="btn b4"
+            onclick="pt()"
+          >
             Ping Test All
           </button>
 
@@ -402,7 +752,10 @@ th,td{
 
   </div>
 
-  <div class="pg" id="pg-config">
+  <div
+    class="pg"
+    id="pg-config"
+  >
 
     <div class="card">
 
@@ -412,20 +765,39 @@ th,td{
 
       <div
         class="upbox"
-        onclick="document.getElementById('yf').click()"
+        onclick="
+          document
+            .getElementById('yf')
+            .click()
+        "
       >
 
-        <div style="font-size:36px;margin-bottom:6px">
+        <div
+          style="
+            font-size:36px;
+            margin-bottom:6px
+          "
+        >
           🌀
         </div>
 
-        <div style="font-weight:700;color:var(--accent)">
+        <div
+          style="
+            font-weight:700;
+            color:var(--accent)
+          "
+        >
           Select YAML Config
         </div>
 
         <div
           id="fname"
-          style="margin-top:10px;color:#16a34a;font-weight:700;font-size:13px"
+          style="
+            margin-top:10px;
+            color:#16a34a;
+            font-weight:700;
+            font-size:13px
+          "
         ></div>
 
         <input
@@ -438,7 +810,10 @@ th,td{
 
       </div>
 
-      <div class="btns" style="margin-top:14px">
+      <div
+        class="btns"
+        style="margin-top:14px"
+      >
 
         <button
           class="btn b4"
@@ -451,7 +826,11 @@ th,td{
 
       </div>
 
-      <div style="margin-top:18px">
+      <div
+        style="
+          margin-top:18px
+        "
+      >
 
         <input
           class="inp"
@@ -459,12 +838,18 @@ th,td{
           placeholder="Paste Sub Link (Clash / VLESS / Base64)"
         >
 
-        <button class="btn b4" onclick="dsub()">
+        <button
+          class="btn b4"
+          onclick="dsub()"
+        >
           Convert & Apply Sub
         </button>
 
         <div
-          style="font-size:12px;margin-top:8px"
+          style="
+            font-size:12px;
+            margin-top:8px
+          "
           id="submsg"
         ></div>
 
@@ -478,40 +863,77 @@ th,td{
         📝 Live Config Editor
       </div>
 
-      <textarea class="ta" id="ced"></textarea>
+      <textarea
+        class="ta"
+        id="ced"
+      ></textarea>
 
-      <div class="btns" style="margin-top:12px">
+      <div
+        class="btns"
+        style="
+          margin-top:12px
+        "
+      >
 
-        <button class="btn b4" onclick="cl()">
+        <button
+          class="btn b4"
+          onclick="cl()"
+        >
           Reload
         </button>
 
-        <button class="btn b1" onclick="cs()">
+        <button
+          class="btn b1"
+          onclick="cs()"
+        >
           Save & Apply
         </button>
 
       </div>
 
-      <div id="cmsg" style="margin-top:10px"></div>
+      <div
+        id="cmsg"
+        style="
+          margin-top:10px
+        "
+      ></div>
 
     </div>
 
   </div>
 
-  <div class="pg" id="pg-conn">
+  <div
+    class="pg"
+    id="pg-conn"
+  >
 
     <div class="card">
 
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          flex-wrap:wrap;
+          gap:10px
+        "
+      >
 
         <span
           class="title"
-          style="border:0;margin:0;padding:0"
+          style="
+            border:0;
+            margin:0;
+            padding:0
+          "
         >
           🔗 Active Sockets (<span id="cnc">0</span>)
         </span>
 
-        <button class="btn b2" onclick="cna()">
+        <button
+          class="btn b2"
+          onclick="cna()"
+        >
           Close All
         </button>
 
@@ -549,7 +971,10 @@ th,td{
 
   </div>
 
-  <div class="pg" id="pg-log">
+  <div
+    class="pg"
+    id="pg-log"
+  >
 
     <div class="card">
 
@@ -568,19 +993,41 @@ th,td{
 
   <div class="credit-card">
 
-    <div style="font-size:42px;margin-bottom:6px">
+    <div
+      style="
+        font-size:42px;
+        margin-bottom:6px
+      "
+    >
       🌀
     </div>
 
-    <div style="font-size:24px;font-weight:800;margin-bottom:4px">
+    <div
+      style="
+        font-size:24px;
+        font-weight:800;
+        margin-bottom:4px
+      "
+    >
       UzumakiClash
     </div>
 
-    <div style="font-size:13px;opacity:.9">
+    <div
+      style="
+        font-size:13px;
+        opacity:.9
+      "
+    >
       Ultra Lightweight & High Performance Gateway
     </div>
 
-    <div style="font-size:14px;font-weight:700;margin-top:10px">
+    <div
+      style="
+        font-size:14px;
+        font-weight:700;
+        margin-top:10px
+      "
+    >
       Created with ❤️ by Jahid Hasan Shuvo
     </div>
 
@@ -590,12 +1037,20 @@ th,td{
 
 <script>
 
-var A='http://'+location.hostname+':9595',
-    S='flclash123',
-    H={
-      'Authorization':'Bearer '+S,
-      'Content-Type':'application/json'
-    };
+var A =
+  'http://'+
+  location.hostname+
+  ':9595';
+
+var S =
+  'flclash123';
+
+var H = {
+  'Authorization':
+    'Bearer '+S,
+  'Content-Type':
+    'application/json'
+};
 
 var yc='';
 var ua=[];
@@ -607,7 +1062,7 @@ var da=[];
 
 function loadTheme(){
 
-  var s=
+  var s =
     localStorage.getItem('uz-theme') ||
     'light';
 
@@ -618,13 +1073,13 @@ function loadTheme(){
       s
     );
 
-  var b=
+  var b =
     document.getElementById(
       'themeBtn'
     );
 
   if(b){
-    b.innerHTML=
+    b.innerHTML =
       s==='dark'
         ? '☀️'
         : '🌙';
@@ -633,7 +1088,7 @@ function loadTheme(){
 
 function toggleTheme(){
 
-  var c=
+  var c =
     document
       .documentElement
       .getAttribute(
@@ -641,7 +1096,7 @@ function toggleTheme(){
       ) ||
     'light';
 
-  var n=
+  var n =
     c==='dark'
       ? 'light'
       : 'dark';
@@ -658,13 +1113,13 @@ function toggleTheme(){
     n
   );
 
-  var b=
+  var b =
     document.getElementById(
       'themeBtn'
     );
 
   if(b){
-    b.innerHTML=
+    b.innerHTML =
       n==='dark'
         ? '☀️'
         : '🌙';
@@ -698,7 +1153,7 @@ function fb(b){
     'TB'
   ];
 
-  var i=
+  var i =
     Math.floor(
       Math.log(b)/
       Math.log(k)
@@ -757,29 +1212,24 @@ function sp(n,b){
     .querySelectorAll('.pg')
     .forEach(
       function(p){
-        p.classList.remove(
-          'show'
-        );
+        p.classList.remove('show');
       }
     );
 
-  document
-    .getElementById(
+  var page =
+    document.getElementById(
       'pg-'+n
-    )
-    .classList.add(
-      'show'
     );
 
+  if(page){
+    page.classList.add('show');
+  }
+
   document
-    .querySelectorAll(
-      '.tabs button'
-    )
+    .querySelectorAll('.tabs button')
     .forEach(
       function(x){
-        x.classList.remove(
-          'ac'
-        );
+        x.classList.remove('ac');
       }
     );
 
@@ -804,7 +1254,7 @@ function sp(n,b){
 }
 
 /* ==========================================================
-   FILE
+   YAML UPLOAD
    ========================================================== */
 
 function pf(el){
@@ -815,24 +1265,25 @@ function pf(el){
 
   document
     .getElementById('fname')
-    .innerText=
+    .innerText =
       'File: '+
       el.files[0].name;
 
-  var r=
+  var r =
     new FileReader();
 
-  r.onload=
+  r.onload =
     function(e){
 
-      yc=
+      yc =
         e.target.result ||
         '';
 
       document
         .getElementById('ubtn')
-        .disabled=
+        .disabled =
           yc.length<5;
+
     };
 
   r.readAsText(
@@ -890,12 +1341,12 @@ function dup(){
 }
 
 /* ==========================================================
-   SUB
+   SUBSCRIPTION
    ========================================================== */
 
 function dsub(){
 
-  var u=
+  var u =
     document
       .getElementById('suburl')
       .value
@@ -912,7 +1363,7 @@ function dsub(){
 
   document
     .getElementById('submsg')
-    .innerText=
+    .innerText =
       'Converting & Downloading...';
 
   fetch(
@@ -932,7 +1383,7 @@ function dsub(){
 
       document
         .getElementById('submsg')
-        .innerText=
+        .innerText =
           t.indexOf('SAVED')>=0
             ? 'Subscribed Successfully!'
             : 'Failed: '+t;
@@ -941,6 +1392,7 @@ function dsub(){
         chk,
         1500
       );
+
     }
   )
   .catch(
@@ -948,7 +1400,7 @@ function dsub(){
 
       document
         .getElementById('submsg')
-        .innerText=
+        .innerText =
           'Error downloading sub';
 
     }
@@ -983,23 +1435,25 @@ function chk(){
 
         document
           .getElementById('dot')
-          .className=
+          .className =
             'dot on';
 
         document
           .getElementById('stxt')
-          .innerText=
+          .innerText =
             'Engine Active';
 
         document
           .getElementById('ssub')
-          .innerText=
-            'PID: '+d.pid+
-            ' | RAM: '+d.memory;
+          .innerText =
+            'PID: '+
+            d.pid+
+            ' | RAM: '+
+            d.memory;
 
         document
           .getElementById('mem')
-          .innerText=
+          .innerText =
             d.memory;
 
         updateTPBtn(
@@ -1010,27 +1464,28 @@ function chk(){
 
         document
           .getElementById('dot')
-          .className=
+          .className =
             'dot off';
 
         document
           .getElementById('stxt')
-          .innerText=
+          .innerText =
             'Engine Offline';
 
         document
           .getElementById('ssub')
-          .innerText=
+          .innerText =
             'PID: - | RAM: -';
 
         document
           .getElementById('mem')
-          .innerText=
+          .innerText =
             '-';
 
         updateTPBtn(
           d.transparent
         );
+
       }
 
     }
@@ -1040,7 +1495,7 @@ function chk(){
 
       document
         .getElementById('stxt')
-        .innerText=
+        .innerText =
           'API Offline';
 
     }
@@ -1053,7 +1508,7 @@ function chk(){
 
 function updateTPBtn(tp){
 
-  var btn=
+  var btn =
     document.getElementById(
       'tpbtn'
     );
@@ -1066,18 +1521,18 @@ function updateTPBtn(tp){
     String(tp)==='1'
   ){
 
-    btn.innerText=
+    btn.innerText =
       'TPROXY: ACTIVE';
 
-    btn.className=
+    btn.className =
       'btn b1';
 
   }else{
 
-    btn.innerText=
+    btn.innerText =
       'TPROXY: DISABLED';
 
-    btn.className=
+    btn.className =
       'btn b3';
 
   }
@@ -1085,7 +1540,7 @@ function updateTPBtn(tp){
 
 function toggleTP(){
 
-  var btn=
+  var btn =
     document.getElementById(
       'tpbtn'
     );
@@ -1094,21 +1549,23 @@ function toggleTP(){
     return;
   }
 
-  var isOn=
-    btn.innerText.indexOf(
-      'ACTIVE'
-    )>=0;
+  var isOn =
+    btn.innerText
+      .indexOf(
+        'ACTIVE'
+      )>=0;
 
-  var act=
+  var act =
     isOn
       ? 'disable_tp'
       : 'enable_tp';
 
-  btn.innerText=
+  btn.innerText =
     'Switching...';
 
   fetch(
-    '/cgi-bin/mihomo-api?action='+act,
+    '/cgi-bin/mihomo-api?action='+
+    act,
     {
       cache:'no-store'
     }
@@ -1129,17 +1586,20 @@ function toggleTP(){
         alert(
           'TPROXY failed: '+
           (
-            d&&d.error
+            d &&
+            d.error
               ? d.error
               : 'unknown error'
           )
         );
+
       }
 
       setTimeout(
         chk,
         500
       );
+
     }
   )
   .catch(
@@ -1153,6 +1613,7 @@ function toggleTP(){
         chk,
         500
       );
+
     }
   );
 }
@@ -1167,9 +1628,10 @@ function sm(m){
     '/configs',
     {
       method:'PATCH',
-      body:JSON.stringify({
-        mode:m
-      })
+      body:
+        JSON.stringify({
+          mode:m
+        })
     }
   )
   .then(
@@ -1195,7 +1657,7 @@ function gc(){
         .forEach(
           function(m){
 
-            var b=
+            var b =
               document.getElementById(
                 'm-'+m
               );
@@ -1209,7 +1671,7 @@ function gc(){
           }
         );
 
-        var b=
+        var b =
           document.getElementById(
             'm-'+
             (d.mode||'rule')
@@ -1226,17 +1688,17 @@ function gc(){
 }
 
 /* ==========================================================
-   SERVICE CONTROL
+   SERVICE
    ========================================================== */
 
 function svc(a){
 
-  var btns=
+  var buttons =
     document.querySelectorAll(
-      '.btns .btn'
+      '.btn'
     );
 
-  btns.forEach(
+  buttons.forEach(
     function(b){
       b.disabled=true;
     }
@@ -1260,29 +1722,35 @@ function svc(a){
             var d=null;
 
             try{
-              d=JSON.parse(t);
+              d=
+                JSON.parse(t);
             }
             catch(e){
+
               throw new Error(
-                t||
+                t ||
                 'Invalid API response'
               );
+
             }
 
             if(
-              !r.ok||
-              !d||
+              !r.ok ||
+              !d ||
               d.ok!==true
             ){
 
               throw new Error(
-                d&&d.error
+                d &&
+                d.error
                   ? d.error
                   : 'API request failed'
               );
+
             }
 
             return d;
+
           }
         );
 
@@ -1298,7 +1766,7 @@ function svc(a){
           gc();
 
         },
-        500
+        400
       );
 
     }
@@ -1324,7 +1792,7 @@ function svc(a){
       setTimeout(
         function(){
 
-          btns.forEach(
+          buttons.forEach(
             function(b){
               b.disabled=false;
             }
@@ -1352,9 +1820,11 @@ function ug(){
   )
   .then(
     function(){
+
       alert(
         'GeoData Update Triggered!'
       );
+
     }
   );
 }
@@ -1369,9 +1839,11 @@ function fd(){
   )
   .then(
     function(){
+
       alert(
         'Fake-IP Cleared!'
       );
+
     }
   );
 }
@@ -1382,7 +1854,7 @@ function fd(){
 
 function addACL(){
 
-  var ip=
+  var ip =
     document
       .getElementById('aclip')
       .value
@@ -1413,16 +1885,17 @@ function addACL(){
     function(d){
 
       if(
-        !d||
+        !d ||
         d.ok!==true
       ){
 
         document
           .getElementById('aclmsg')
-          .innerHTML=
+          .innerHTML =
             '<span style="color:#ef4444">❌ '+
             (
-              d&&d.error
+              d &&
+              d.error
                 ? d.error
                 : 'ACL operation failed'
             )+
@@ -1433,7 +1906,7 @@ function addACL(){
 
       document
         .getElementById('aclmsg')
-        .innerHTML=
+        .innerHTML =
           '<span style="color:#22c55e">✅ '+
           ip+
           ' added to bypass list!</span>';
@@ -1449,7 +1922,7 @@ function addACL(){
 
       document
         .getElementById('aclmsg')
-        .innerHTML=
+        .innerHTML =
           '<span style="color:#ef4444">❌ ACL API failed</span>';
 
     }
@@ -1464,7 +1937,7 @@ function sw(){
 
   try{
 
-    var ws=
+    var ws =
       new WebSocket(
         'ws://'+
         location.hostname+
@@ -1472,19 +1945,23 @@ function sw(){
         encodeURIComponent(S)
       );
 
-    ws.onmessage=
+    ws.onmessage =
       function(e){
 
         var d;
 
         try{
-          d=
+
+          d =
             JSON.parse(
               e.data
             );
+
         }
         catch(err){
+
           return;
+
         }
 
         if(!d){
@@ -1493,12 +1970,12 @@ function sw(){
 
         document
           .getElementById('up')
-          .innerText=
+          .innerText =
             fb(d.up)+'/s';
 
         document
           .getElementById('dn')
-          .innerText=
+          .innerText =
             fb(d.down)+'/s';
 
         ua.push(
@@ -1518,18 +1995,20 @@ function sw(){
         }
 
         dr();
+
       };
 
-    ws.onclose=
+    ws.onclose =
       function(){
 
         setTimeout(
           sw,
           2000
         );
+
       };
 
-    ws.onerror=
+    ws.onerror =
       function(){
 
         try{
@@ -1546,12 +2025,17 @@ function sw(){
       sw,
       4000
     );
+
   }
 }
 
+/* ==========================================================
+   GRAPH
+   ========================================================== */
+
 function dr(){
 
-  var c=
+  var c =
     document.getElementById(
       'cv'
     );
@@ -1560,12 +2044,12 @@ function dr(){
     return;
   }
 
-  var x=
+  var x =
     c.getContext(
       '2d'
     );
 
-  var dpr=
+  var dpr =
     window.devicePixelRatio||
     1;
 
@@ -1574,10 +2058,10 @@ function dr(){
     c.offsetWidth*dpr
   ){
 
-    c.width=
+    c.width =
       c.offsetWidth*dpr;
 
-    c.height=
+    c.height =
       c.offsetHeight*dpr;
 
     x.scale(
@@ -1586,10 +2070,10 @@ function dr(){
     );
   }
 
-  var w=
+  var w =
     c.offsetWidth;
 
-  var h=
+  var h =
     c.offsetHeight;
 
   x.clearRect(
@@ -1599,7 +2083,7 @@ function dr(){
     h
   );
 
-  var mx=
+  var mx =
     Math.max(
       Math.max.apply(
         null,
@@ -1611,7 +2095,10 @@ function dr(){
       )
     );
 
-  function ln(a,col){
+  function ln(
+    a,
+    col
+  ){
 
     if(
       a.length<2
@@ -1621,10 +2108,10 @@ function dr(){
 
     x.beginPath();
 
-    x.strokeStyle=
+    x.strokeStyle =
       col;
 
-    x.lineWidth=
+    x.lineWidth =
       2;
 
     for(
@@ -1633,29 +2120,35 @@ function dr(){
       i++
     ){
 
-      var px=
+      var px =
         (i/59)*w;
 
-      var py=
+      var py =
         h-
         (a[i]/mx)*
         (h-8)-
         4;
 
       if(i===0){
+
         x.moveTo(
           px,
           py
         );
+
       }else{
+
         x.lineTo(
           px,
           py
         );
+
       }
+
     }
 
     x.stroke();
+
   }
 
   ln(
@@ -1690,13 +2183,13 @@ function pl(){
   .then(
     function(d){
 
-      var p=
-        d.proxies||
+      var p =
+        d.proxies ||
         {};
 
       var h='';
 
-      var gn=
+      var gn =
         Object.keys(p)
           .filter(
             function(n){
@@ -1716,19 +2209,29 @@ function pl(){
       gn.forEach(
         function(g){
 
-          var gr=
+          var gr =
             p[g];
 
-          h+=
-            '<div class="gp">'+
+          h +=
+            '<div class="gp">';
+
+          h +=
             '<div style="font-weight:700;margin-bottom:4px">'+
             escapeHtml(g)+
-            '</div>'+
+            '</div>';
+
+          h +=
             '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">'+
-            escapeHtml(gr.type||'')+
+            escapeHtml(
+              gr.type||''
+            )+
             ' | Active: <b>'+
-            escapeHtml(gr.now||'-')+
-            '</b></div>'+
+            escapeHtml(
+              gr.now||'-'
+            )+
+            '</b></div>';
+
+          h +=
             '<div class="nd">';
 
           if(gr.all){
@@ -1736,37 +2239,47 @@ function pl(){
             gr.all.forEach(
               function(n){
 
-                var nd=
+                var nd =
                   p[n];
 
-                var dl=
-                  nd&&
-                  nd.history&&
+                var dl =
+                  nd &&
+                  nd.history &&
                   nd.history.length
                     ? nd.history[
                         nd.history.length-1
                       ].delay
                     : 0;
 
-                h+=
-                  '<div class="ni'+
+                var group =
+                  encodeURIComponent(
+                    g
+                  );
+
+                var node =
+                  encodeURIComponent(
+                    n
+                  );
+
+                h +=
+                  '<div class="ni '+
                   (
                     gr.now===n
-                      ? ' ac'
+                      ? 'ac'
                       : ''
                   )+
                   '" onclick="ps(\''+
-                  encodeURIComponent(g)+
+                  group+
                   '\',\''+
-                  encodeURIComponent(n)+
+                  node+
                   '\')">';
 
-                h+=
+                h +=
                   '<div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
                   escapeHtml(n)+
                   '</div>';
 
-                var dc=
+                var color =
                   dl>0
                     ? (
                       dl<200
@@ -1775,9 +2288,9 @@ function pl(){
                     )
                     : 'var(--text-muted)';
 
-                h+=
+                h +=
                   '<div style="font-size:11px;font-weight:700;color:'+
-                  dc+
+                  color+
                   '">'+
                   (
                     dl>0
@@ -1786,21 +2299,24 @@ function pl(){
                   )+
                   '</div>';
 
-                h+=
+                h +=
                   '</div>';
+
               }
             );
+
           }
 
-          h+=
+          h +=
             '</div></div>';
+
         }
       );
 
       document
         .getElementById('pgs')
-        .innerHTML=
-          h||
+        .innerHTML =
+          h ||
           '<div class="card">No node groups found. Upload config first.</div>';
 
     }
@@ -1810,7 +2326,7 @@ function pl(){
 
       document
         .getElementById('pgs')
-        .innerHTML=
+        .innerHTML =
           '<div class="card" style="color:red">API Offline</div>';
 
     }
@@ -1851,10 +2367,13 @@ function escapeHtml(v){
 }
 
 /* ==========================================================
-   SELECT PROXY
+   SELECT NODE
    ========================================================== */
 
-function ps(g,n){
+function ps(
+  g,
+  n
+){
 
   fetch(
     A+
@@ -1863,20 +2382,30 @@ function ps(g,n){
     {
       method:'PUT',
       headers:H,
-      body:JSON.stringify({
-        name:
-          decodeURIComponent(n)
-      }),
+      body:
+        JSON.stringify({
+          name:
+            decodeURIComponent(n)
+        }),
       cache:'no-store'
     }
   )
   .then(
     pl
+  )
+  .catch(
+    function(){
+
+      alert(
+        'Proxy selection failed'
+      );
+
+    }
   );
 }
 
 /* ==========================================================
-   PING
+   PING ALL
    ========================================================== */
 
 function pt(){
@@ -1898,11 +2427,10 @@ function pt(){
 
       Object.keys(
         d.proxies||{}
-      )
-      .forEach(
+      ).forEach(
         function(n){
 
-          var t=
+          var t =
             d.proxies[n].type;
 
           if(
@@ -1928,11 +2456,12 @@ function pt(){
                 headers:H,
                 cache:'no-store'
               }
-            )
-            .catch(
+            ).catch(
               function(){}
             );
+
           }
+
         }
       );
 
@@ -1940,6 +2469,7 @@ function pt(){
         pl,
         3500
       );
+
     }
   );
 }
@@ -1950,7 +2480,7 @@ function pt(){
 
 function pft(){
 
-  var q=
+  var q =
     document
       .getElementById('pq')
       .value
@@ -1961,7 +2491,7 @@ function pft(){
     .forEach(
       function(n){
 
-        n.style.display=
+        n.style.display =
           n.innerText
             .toLowerCase()
             .indexOf(q)>=0
@@ -1973,7 +2503,7 @@ function pft(){
 }
 
 /* ==========================================================
-   CONFIG
+   CONFIG LOAD
    ========================================================== */
 
 function cl(){
@@ -1994,7 +2524,7 @@ function cl(){
 
       document
         .getElementById('ced')
-        .value=
+        .value =
           t;
 
     }
@@ -2004,12 +2534,16 @@ function cl(){
 
       document
         .getElementById('cmsg')
-        .innerText=
+        .innerText =
           'Config load failed';
 
     }
   );
 }
+
+/* ==========================================================
+   CONFIG SAVE
+   ========================================================== */
 
 function cs(){
 
@@ -2034,10 +2568,10 @@ function cs(){
 
       document
         .getElementById('cmsg')
-        .innerHTML=
+        .innerHTML =
           t.indexOf('SAVED')>=0
             ? '<span style="color:#22c55e">Saved & Hot-Reloaded!</span>'
-            : '<span style="color:#ef4444">Error Saving!</span>';
+            : '<span style="color:#ef4444">Error Saving: '+escapeHtml(t)+'</span>';
 
       setTimeout(
         function(){
@@ -2057,7 +2591,7 @@ function cs(){
 
       document
         .getElementById('cmsg')
-        .innerHTML=
+        .innerHTML =
           '<span style="color:#ef4444">Error Saving!</span>';
 
     }
@@ -2085,13 +2619,18 @@ function cnl(){
   .then(
     function(d){
 
-      var c=
-        d.connections||
+      var c =
+        d.connections ||
         [];
 
       document
         .getElementById('cnc')
-        .innerText=
+        .innerText =
+          c.length;
+
+      document
+        .getElementById('cc')
+        .innerText =
           c.length;
 
       var h='';
@@ -2099,29 +2638,31 @@ function cnl(){
       c.forEach(
         function(x){
 
-          var md=
-            x.metadata||
+          var md =
+            x.metadata ||
             {};
 
-          var host=
-            md.host||
-            md.destinationIP||
+          var host =
+            md.host ||
+            md.destinationIP ||
             '-';
 
-          h+=
+          h +=
             '<tr>';
 
-          h+=
+          h +=
             '<td><b>'+
             escapeHtml(host)+
             '</b></td>';
 
-          h+=
+          h +=
             '<td>'+
-            escapeHtml(md.network||'-')+
+            escapeHtml(
+              md.network||'-'
+            )+
             '</td>';
 
-          h+=
+          h +=
             '<td>'+
             escapeHtml(
               x.chains
@@ -2130,43 +2671,46 @@ function cnl(){
             )+
             '</td>';
 
-          h+=
+          h +=
             '<td>'+
-            escapeHtml(x.rule||'-')+
+            escapeHtml(
+              x.rule||'-'
+            )+
             '</td>';
 
-          h+=
+          h +=
             '<td>'+
             fb(
               Number(x.upload)||0
             )+
             '</td>';
 
-          h+=
+          h +=
             '<td>'+
             fb(
               Number(x.download)||0
             )+
             '</td>';
 
-          h+=
+          h +=
             '<td>'+
-            '<button class="btn b2" '+
-            'style="padding:4px 8px;font-size:11px;min-height:auto" '+
-            'onclick="cnd(\''+
-            encodeURIComponent(x.id)+
+            '<button class="btn b2" style="padding:4px 8px;font-size:11px;min-height:auto" onclick="cnd(\''+
+            encodeURIComponent(
+              x.id
+            )+
             '\')">Kill</button>'+
             '</td>';
 
-          h+=
+          h +=
             '</tr>';
+
         }
       );
 
       document
         .getElementById('cnb')
-        .innerHTML=
-          h||
+        .innerHTML =
+          h ||
           '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No Active Connections</td></tr>';
 
     }
@@ -2218,7 +2762,7 @@ function lw(){
 
   try{
 
-    var ws=
+    var ws =
       new WebSocket(
         'ws://'+
         location.hostname+
@@ -2227,22 +2771,26 @@ function lw(){
         '&level=info'
       );
 
-    ws.onmessage=
+    ws.onmessage =
       function(e){
 
         var d;
 
         try{
-          d=
+
+          d =
             JSON.parse(
               e.data
             );
+
         }
         catch(err){
+
           return;
+
         }
 
-        var b=
+        var b =
           document.getElementById(
             'llb'
           );
@@ -2251,41 +2799,41 @@ function lw(){
           return;
         }
 
-        var div=
+        var row =
           document.createElement(
             'div'
           );
 
-        div.textContent=
+        row.textContent =
           '['+
           (
-            d.type||
-            ''
+            d.type||''
           )+
           '] '+
           (
-            d.payload||
-            ''
+            d.payload||''
           );
 
         b.appendChild(
-          div
+          row
         );
 
-        b.scrollTop=
+        b.scrollTop =
           b.scrollHeight;
+
       };
 
-    ws.onclose=
+    ws.onclose =
       function(){
 
         setTimeout(
           lw,
           2000
         );
+
       };
 
-    ws.onerror=
+    ws.onerror =
       function(){
 
         try{
@@ -2302,11 +2850,12 @@ function lw(){
       lw,
       4000
     );
+
   }
 }
 
 /* ==========================================================
-   STARTUP
+   START
    ========================================================== */
 
 chk();
@@ -2322,7 +2871,7 @@ setInterval(
 setInterval(
   function(){
 
-    var conn=
+    var conn =
       document.getElementById(
         'pg-conn'
       );
