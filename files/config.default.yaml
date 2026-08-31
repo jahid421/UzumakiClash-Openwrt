@@ -10,6 +10,13 @@ log-level: error
 ipv6: false
 
 external-controller: 0.0.0.0:9595
+
+# Allow the LuCI UI to communicate with the controller.
+external-controller-cors:
+  allow-origins:
+    - "*"
+  allow-private-network: true
+
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
@@ -86,21 +93,22 @@ dns:
     - '+.pvp.net'
     - '+.leagueoflegends.com'
 
+    - '+.epicgames.com'
+    - '+.epicgamescdn.com'
+    - '+.unrealengine.com'
+
+    - '+.steampowered.com'
+    - '+.steamcommunity.com'
+    - '+.steamcontent.com'
+
+    - '+.ubisoft.com'
+    - '+.ubi.com'
+
+    - '+.ea.com'
+    - '+.origin.com'
+
     - '+.ultraviewer.net'
     - '+.ultraviewer.com'
-
-  default-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-
-  proxy-server-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-
-  nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-    - 1.0.0.1
 
 proxies: []
 
@@ -115,18 +123,24 @@ proxy-groups:
     lazy: true
 
 rules:
+  # Router / LAN / reserved networks
   - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
   - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,169.254.0.0/16,DIRECT,no-resolve'
+  - 'IP-CIDR,224.0.0.0/4,DIRECT,no-resolve'
+  - 'IP-CIDR,240.0.0.0/4,DIRECT,no-resolve'
 
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
 
+  # Uzumaki controller
   - 'DST-PORT,9595,DIRECT'
 
-  # UDP stays direct for maximum compatibility with HTTP-only proxies.
+  # Do NOT force arbitrary UDP through an HTTP-only outbound.
+  # UDP-capable nodes can be handled by the user's own YAML/rules.
   - 'NETWORK,UDP,DIRECT'
 
+  # Everything else follows the selected proxy group.
   - 'MATCH,🌀 Uzumaki-Auto'
