@@ -1,4 +1,3 @@
-```html
 <%+header%>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -175,7 +174,6 @@ th,td{padding:10px 8px;border-bottom:1px solid var(--divider);font-size:12px;tex
         <div style="font-size:12px;margin-top:8px" id="submsg"></div>
       </div>
     </div>
-
     <div class="card">
       <div class="title">📝 Live Config Editor</div>
       <textarea class="ta" id="ced"></textarea>
@@ -229,6 +227,7 @@ loadTheme();
 
 function fb(b){if(!b||b===0)return'0 B';var k=1024,s=['B','KB','MB','GB','TB'];var i=Math.floor(Math.log(b)/Math.log(k));return parseFloat((b/Math.pow(k,i)).toFixed(1))+' '+s[i]}
 function af(p,o){o=o||{};o.headers=H;return fetch(A+p,o).then(function(r){return r.json()}).catch(function(){return null})}
+
 function sp(n,b){document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('show')});document.getElementById('pg-'+n).classList.add('show');document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('ac')});b.classList.add('ac');if(n==='proxy')pl();if(n==='config')cl();if(n==='conn')cnl();window.scrollTo({top:0,behavior:'smooth'})}
 
 function pf(el){if(!el.files.length)return;document.getElementById('fname').innerText='File: '+el.files[0].name;var r=new FileReader();r.onload=function(e){yc=e.target.result||'';document.getElementById('ubtn').disabled=yc.length<5};r.readAsText(el.files[0])}
@@ -270,7 +269,7 @@ function addACL(){
 }
 
 function sw(){try{var ws=new WebSocket('ws://'+location.hostname+':9595/traffic?token='+S);ws.onmessage=function(e){var d=JSON.parse(e.data);document.getElementById('up').innerText=fb(d.up)+'/s';document.getElementById('dn').innerText=fb(d.down)+'/s';ua.push(d.up);da.push(d.down);if(ua.length>60)ua.shift();if(da.length>60)da.shift();dr()};ws.onclose=function(){setTimeout(sw,2000)}}catch(x){setTimeout(sw,4000)}}
-function dr(){var c=document.getElementById('cv');if(!c)return;var x=c.getContext('2d');var dpr=window.devicePixelRatio||1;if(c.width!==c.offsetWidth*dpr){c.width=c.offsetWidth*dpr;c.height=c.offsetHeight*dpr;x.scale(dpr,dpr)}var w=c.offsetWidth,h=c.offsetHeight; x.clearRect(0,0,w,h);var mx=Math.max(Math.max.apply(null,ua.concat([1])),Math.max.apply(null,da.concat([1])));function ln(a,col){if(a.length<2)return;x.beginPath();x.strokeStyle=col;x.lineWidth=2;for(var i=0;i<a.length;i++){var px=(i/59)*w,py=h-(a[i]/mx)*(h-8)-4;if(i===0)x.moveTo(px,py);else x.lineTo(px,py)}x.stroke()}ln(ua,'#8b5cf6');ln(da,'#22c55e')}
+function dr(){var c=document.getElementById('cv');if(!c)return;var x=c.getContext('2d');var dpr=window.devicePixelRatio||1;if(c.width!==c.offsetWidth*dpr){c.width=c.offsetWidth*dpr;c.height=c.offsetHeight*dpr;x.scale(dpr,dpr)}var w=c.offsetWidth,h=c.offsetHeight;x.clearRect(0,0,w,h);var mx=Math.max(Math.max.apply(null,ua.concat([1])),Math.max.apply(null,da.concat([1])));function ln(a,col){if(a.length<2)return;x.beginPath();x.strokeStyle=col;x.lineWidth=2;for(var i=0;i<a.length;i++){var px=(i/59)*w,py=h-(a[i]/mx)*(h-8)-4;if(i===0)x.moveTo(px,py);else x.lineTo(px,py)}x.stroke()}ln(ua,'#8b5cf6');ln(da,'#22c55e')}
 
 function pl(){fetch(A+'/proxies',{headers:H}).then(function(r){return r.json()}).then(function(d){var p=d.proxies,h='',gn=Object.keys(p).filter(function(n){return['Selector','URLTest','Fallback','LoadBalance'].indexOf(p[n].type)>=0});gn.forEach(function(g){var gr=p[g];h+='<div class="gp"><div style="font-weight:700;margin-bottom:4px">'+g+'</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">'+gr.type+' | Active: <b>'+(gr.now||'-')+'</b></div><div class="nd">';if(gr.all){gr.all.forEach(function(n){var nd=p[n];var dl=nd&&nd.history&&nd.history.length?nd.history[nd.history.length-1].delay:0;h+='<div class="ni'+(gr.now===n?' ac':'')+'" onclick="ps(\''+encodeURIComponent(g)+'\',\''+encodeURIComponent(n)+'\')"><div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+n+'</div><div style="font-size:11px;font-weight:700;color:'+(dl>0?(dl<200?'#22c55e':'#f59e0b'):'var(--text-muted)')+'">'+(dl>0?dl+'ms':'-')+'</div></div>'})}h+='</div></div>'});document.getElementById('pgs').innerHTML=h||'<div class="card">No node groups found. Upload config first.</div>'}).catch(function(){document.getElementById('pgs').innerHTML='<div class="card" style="color:red">API Offline</div>'})}
 function ps(g,n){fetch(A+'/proxies/'+g,{method:'PUT',headers:H,body:JSON.stringify({name:decodeURIComponent(n)})}).then(pl)}
@@ -291,4 +290,3 @@ setInterval(chk,6000);
 setInterval(function(){if(document.getElementById('pg-conn').classList.contains('show'))cnl()},2500);
 </script>
 <%+footer%>
-```
