@@ -15,13 +15,14 @@ start_service() {
         return 0
     fi
     
+    # মেমোরি লিমিট ১০০ এমবি করা হলো নিরাপদ স্টার্টের জন্য
     procd_open_instance "mihomo"
     procd_set_param command "$PROG" -d "$CONF_DIR" -f "$CONF_DIR/config.yaml"
     procd_set_param respawn 3600 5 5
     procd_set_param pidfile /var/run/mihomo.pid
     
-    # ⚡ Proper memory limit setting under PROCD
-    procd_set_param env GOMEMLIMIT=150MiB
+    # এনভায়রনমেন্ট ভেরিয়েবল ইনজেক্ট
+    procd_set_param env GOMEMLIMIT=100MiB
     procd_set_param env GOGC=30
     
     procd_close_instance
