@@ -24,16 +24,13 @@ fi
 # ২. ফায়ারওয়াল টেবিল ক্লিনআপ
 echo "[*] Flushing firewall tables..."
 /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-/usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
 
 # ৩. হটপ্লাগ ও বাইনারি রিমুভ
 rm -f /usr/bin/mihomo
 rm -rf /etc/mihomo
 
-# ৪. CGI স্ক্রিপ্টস রিমুভ
-rm -f /www/cgi-bin/mihomo-api
-rm -f /www/cgi-bin/mihomo-cfg
-rm -f /www/cgi-bin/mihomo-sub
+# ৪. পুরনো CGI স্ক্রিপ্টস রিমুভ
+rm -f /www/cgi-bin/mihomo-*
 
 # ৫. LuCI মেনু ক্লিনআপ
 rm -f /usr/lib/lua/luci/controller/mihomo.lua
