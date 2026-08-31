@@ -1,4 +1,3 @@
-```sh
 #!/bin/sh
 # ═══════════════════════════════════════════════
 # 🌀 UzumakiClash - Subscription Parser
@@ -32,4 +31,3 @@ if [ -s "$TMP" ] && grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
 else
     echo "DOWNLOAD_OR_CONVERSION_FAILED"
 fi
-```
