@@ -45,12 +45,12 @@ curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/
 gzip -d -f mihomo.gz 2>/dev/null || gunzip -f mihomo.gz
 chmod +x mihomo && mv mihomo /usr/bin/mihomo
 
+# পুরানো ক্ষতিকর CGI ফাইলগুলো একবারে ডিলিট করে দেওয়া (স্যান্ডবক্স জঞ্জাল সাফ!)
+rm -f /www/cgi-bin/mihomo-*
+
 # ডিরেক্টরি এবং ফাইল সিঙ্ক
-mkdir -p $D/ui /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
+mkdir -p $D/ui /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
 curl -sL -o /etc/init.d/mihomo "$REPO/files/mihomo.init" && chmod +x /etc/init.d/mihomo
-curl -sL -o /www/cgi-bin/mihomo-api "$REPO/files/mihomo-api" && chmod +x /www/cgi-bin/mihomo-api
-curl -sL -o /www/cgi-bin/mihomo-cfg "$REPO/files/mihomo-cfg" && chmod +x /www/cgi-bin/mihomo-cfg
-curl -sL -o /www/cgi-bin/mihomo-sub "$REPO/files/mihomo-sub" && chmod +x /www/cgi-bin/mihomo-sub
 curl -sL -o $D/nft.conf "$REPO/files/nft.conf"
 curl -sL -o $D/config.yaml "$REPO/files/config.default.yaml"
 curl -sL -o /usr/lib/lua/luci/controller/mihomo.lua "$REPO/files/mihomo.lua"
