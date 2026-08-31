@@ -1,303 +1,126 @@
 #!/bin/sh
-
 echo "Content-Type: text/plain"
 echo ""
-
-CONF_DIR="/etc/mihomo"
-CORE="/usr/bin/mihomo"
+CONF_DIR="/etc/mihomo"; CORE="/usr/bin/mihomo"
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
+    TMP="/tmp/raw_$$.yaml"; CLEAN="/tmp/clean_$$.yaml"; FINAL="/tmp/final_$$.yaml"
+    trap "rm -f /tmp/*_$$.yaml /tmp/cfg_err.log" EXIT
+    tr -d '\r' > "$TMP"
+    if [ -s "$TMP" ]; then
+        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
+        
+        # পুরনো গ্লোবাল অপশন ফিল্টার আউট করা
+        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
-    TMP="/tmp/uzumaki_raw_$$.yaml"
-    CLEAN="/tmp/uzumaki_clean_$$.yaml"
-    FINAL="/tmp/uzumaki_final_$$.yaml"
-    ERR="/tmp/uzumaki_err_$$.log"
-
-    trap 'rm -f "$TMP" "$CLEAN" "$FINAL" "$ERR"' EXIT
-
-    # Read uploaded YAML exactly as received.
-    cat > "$TMP"
-
-    if [ ! -s "$TMP" ]; then
-        echo "EMPTY_CONFIG"
-        exit 1
-    fi
-
-    # Normalize Windows CRLF.
-    sed -i 's/\r$//' "$TMP"
-
-    # ---------------------------------------------------------
-    # First: validate the user's ORIGINAL YAML.
-    # Do not save anything if the uploaded YAML is invalid.
-    # ---------------------------------------------------------
-
-    if ! "$CORE" -d "$CONF_DIR" -f "$TMP" -t >"$ERR" 2>&1; then
-        echo "INVALID_YAML"
-        head -n 10 "$ERR"
-        exit 1
-    fi
-
-    # ---------------------------------------------------------
-    # Remove only Uzumaki-owned top-level settings.
-    # User proxy definitions, providers, groups and rules remain.
-    # ---------------------------------------------------------
-
-    awk '
-    function topkey(line, p, k) {
-        if (line !~ /^[^[:space:]#][^:]*:/)
-            return ""
-        p = index(line, ":")
-        if (p <= 1)
-            return ""
-        k = substr(line, 1, p-1)
-        return k
-    }
-
-    BEGIN {
-        own["port"] = 1
-        own["socks-port"] = 1
-        own["mixed-port"] = 1
-        own["redir-port"] = 1
-        own["tproxy-port"] = 1
-
-        own["allow-lan"] = 1
-        own["bind-address"] = 1
-        own["mode"] = 1
-        own["log-level"] = 1
-        own["ipv6"] = 1
-
-        own["external-controller"] = 1
-        own["external-controller-cors"] = 1
-        own["external-ui"] = 1
-        own["secret"] = 1
-
-        own["tcp-concurrent"] = 1
-        own["unified-delay"] = 1
-        own["global-client-fingerprint"] = 1
-
-        own["profile"] = 1
-        own["sniffer"] = 1
-        own["dns"] = 1
-
-        skip = 0
-    }
-
-    {
-        k = topkey($0)
-
-        if (k != "") {
-            if (own[k]) {
-                skip = 1
-                next
-            } else {
-                skip = 0
-            }
-        }
-
-        if (!skip)
-            print
-    }
-    ' "$TMP" > "$CLEAN"
-
-    # ---------------------------------------------------------
-    # Uzumaki controlled core configuration.
-    # ---------------------------------------------------------
-
-    cat > "$FINAL" <<'EOF'
+        # 🌀 আল্ট্রা গেমিং অপ্টিমাইজড মাস্টার টেমপ্লেট উইথ ফেক-আইপি ফিল্টারস
+        cat << HEOF > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
 tproxy-port: 7893
-
 allow-lan: true
 bind-address: '*'
-
 mode: rule
 log-level: error
 ipv6: false
-
 external-controller: 0.0.0.0:9595
-
-external-controller-cors:
-  allow-origins:
-    - "*"
-  allow-private-network: true
-
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
 tcp-concurrent: true
-unified-delay: true
+unified-delay: false
 global-client-fingerprint: chrome
 
 profile:
   store-selected: true
   store-fake-ip: true
 
-sniffer:
-  enable: true
-  override-destination: true
-
-  sniff:
-    HTTP:
-      ports:
-        - 80
-        - 8080-8880
-
-    TLS:
-      ports:
-        - 443
-        - 8443
-
-    QUIC:
-      ports:
-        - 443
-        - 8443
-
 dns:
   enable: true
   listen: 0.0.0.0:1053
-  ipv6: false
-
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-
+  
+  # 🎮 Valorant, Vanguard, Discord এবং Microsoft-কে ফেক-আইপি থেকে মুক্ত রাখার ফিল্টার
   fake-ip-filter:
     - '*.lan'
     - '*.local'
     - 'localhost'
-
-    - 'time.*.com'
-    - 'ntp.*.com'
-    - '+.pool.ntp.org'
-
-    - '+.msftconnecttest.com'
-    - '+.msftncsi.com'
-
-    - '+.microsoft.com'
-    - '+.microsoftonline.com'
-    - '+.windows.com'
-    - '+.windows.net'
-    - '+.windowsupdate.com'
-    - '+.live.com'
-
-    - 'storeedgefd.dsx.mp.microsoft.com'
-    - 'livetileedge.dsx.mp.microsoft.com'
-    - 'displaycatalog.mp.microsoft.com'
-    - 'dl.delivery.mp.microsoft.com'
-    - 'delivery.mp.microsoft.com'
-    - 'update.microsoft.com'
-
-    - 'img-prod-cms-rt-microsoft-com.akamaized.net'
-    - 'img-s-msn-com.akamaized.net'
-
-    - '+.wns.windows.com'
-
+    # Riot & Valorant (Anti-Cheat Bypass)
     - '+.riotgames.com'
-    - '+.riotcdn.net'
     - '+.playvalorant.com'
     - '+.pvp.net'
     - '+.leagueoflegends.com'
-
-    - '+.epicgames.com'
-    - '+.epicgamescdn.com'
-
+    - '+.vanguard.riotgames.com'
+    # Steam & Epic Games
     - '+.steampowered.com'
     - '+.steamcommunity.com'
-    - '+.steamcontent.com'
+    - '+.steamstatic.com'
+    - '+.epicgames.com'
+    - '+.unrealengine.com'
+    # Microsoft, Windows Update & Xbox
+    - '+.microsoft.com'
+    - '+.windows.com'
+    - '+.windowsupdate.com'
+    - '+.msecnd.net'
+    - '+.xboxlive.com'
+    - '+.xbox.com'
+    # Discord Voice Channels (Bypass Voice Lag)
+    - '+.discord.gg'
+    - '+.discord.media'
+    - '+.discordapp.com'
+    - '+.discordapp.net'
+    # Local Services
+    - '+.speedtest.net'
+    - 'fast.com'
+    - '+.bd'
+    - '+.bkash.com'
 
-    - '+.ubisoft.com'
-    - '+.ubi.com'
+  nameserver: [1.1.1.1, 8.8.8.8, 1.0.0.1]
+  proxy-server-nameserver: [1.1.1.1]
+  respect-rules: true
+HEOF
 
-    - '+.ea.com'
-    - '+.origin.com'
+        # 🎯 রুলস সেকশনে গেমগুলোর ডাইরেক্ট রুল ইনজেকশন (Direct Bypass)
+        awk -v lan="$LAN_IP" '/^rules:/ {
+            print $0
+            print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+            print "  # 🎮 Riot Games & Valorant (100% DIRECT Bypass)"
+            print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
+            print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
+            print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+            print "  - DOMAIN-KEYWORD,vanguard,DIRECT"
+            print "  - DOMAIN-KEYWORD,vnggames,DIRECT"
+            print "  # 🎮 Steam & Epic Games"
+            print "  - DOMAIN-KEYWORD,steam,DIRECT"
+            print "  - DOMAIN-KEYWORD,epicgames,DIRECT"
+            print "  # 🖥️ Microsoft & Windows Update"
+            print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
+            print "  - DOMAIN-KEYWORD,xbox,DIRECT"
+            print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
+            print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
+            print "  # 🎙️ Discord Channels"
+            print "  - DOMAIN-KEYWORD,discord,DIRECT"
+            print "  # 🇧🇩 Local BD ISP & bKash"
+            print "  - DOMAIN-SUFFIX,bd,DIRECT"
+            print "  - DOMAIN-KEYWORD,bkash,DIRECT"
+            next
+        } { print }' "$CLEAN" >> "$FINAL"
 
-    - '+.ultraviewer.net'
-    - '+.ultraviewer.com'
+        # টেস্ট রান
+        $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
+        TEST_STATUS=$? # রানটাইম এক্সিট কোড টেস্ট
 
-  default-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-
-  proxy-server-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-
-  nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-    - 1.0.0.1
-
-EOF
-
-    # ---------------------------------------------------------
-    # Preserve the user's remaining YAML exactly.
-    # ---------------------------------------------------------
-
-    cat "$CLEAN" >> "$FINAL"
-
-    # ---------------------------------------------------------
-    # Final validation before replacing production config.
-    # ---------------------------------------------------------
-
-    if ! "$CORE" -d "$CONF_DIR" -f "$FINAL" -t >"$ERR" 2>&1; then
-        echo "INVALID_FINAL_CONFIG"
-        head -n 10 "$ERR"
-        exit 1
+        if [ $TEST_STATUS -eq 0 ]; then
+            mv "$FINAL" $CONF_DIR/config.yaml
+            /etc/init.d/mihomo restart >/dev/null 2>&1
+            echo "SAVED"
+        else
+            # লগের শেষ লাইন থেকে আসল এররটি বের করা
+            ACTUAL_ERR=$(tail -n 2 /tmp/cfg_err.log | tr '\n' ' ')
+            echo "INVALID YAML: $ACTUAL_ERR"
+        fi
     fi
-
-    # ---------------------------------------------------------
-    # Backup current config.
-    # ---------------------------------------------------------
-
-    if [ -f "$CONF_DIR/config.yaml" ]; then
-        cp -f "$CONF_DIR/config.yaml" "$CONF_DIR/config.yaml.bak"
-    fi
-
-    # ---------------------------------------------------------
-    # Install new config.
-    # ---------------------------------------------------------
-
-    cp -f "$FINAL" "$CONF_DIR/config.yaml"
-    chmod 644 "$CONF_DIR/config.yaml"
-
-    # ---------------------------------------------------------
-    # Restart Mihomo.
-    # ---------------------------------------------------------
-
-    /etc/init.d/mihomo restart >/dev/null 2>&1
-    sleep 2
-
-    # ---------------------------------------------------------
-    # Verify actual Mihomo process.
-    # ---------------------------------------------------------
-
-    PID=$(pidof mihomo 2>/dev/null | awk '{print $1}')
-
-    if [ -n "$PID" ] && [ -d "/proc/$PID" ]; then
-        echo "SAVED"
-        exit 0
-    fi
-
-    # ---------------------------------------------------------
-    # Roll back if Mihomo failed to start.
-    # ---------------------------------------------------------
-
-    if [ -f "$CONF_DIR/config.yaml.bak" ]; then
-        cp -f "$CONF_DIR/config.yaml.bak" "$CONF_DIR/config.yaml"
-        /etc/init.d/mihomo restart >/dev/null 2>&1
-    fi
-
-    echo "MIHOMO_START_FAILED"
-    exit 1
-
 else
-
-    # GET: return current configuration.
-    if [ -f "$CONF_DIR/config.yaml" ]; then
-        cat "$CONF_DIR/config.yaml"
-    else
-        echo "CONFIG_NOT_FOUND"
-        exit 1
-    fi
-
+    cat $CONF_DIR/config.yaml 2>/dev/null
 fi
