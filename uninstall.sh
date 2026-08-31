@@ -9,7 +9,7 @@ echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║  🌀 UzumakiClash Universal Uninstaller                        ║"
 echo "║  Safely Reverting Network, Firewall & System Changes         ║"
-echo "╚══════════════════════════════════════════════════════════════╝"
+╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
 # ১. সার্ভিস বন্ধ করা
@@ -29,8 +29,10 @@ echo "[*] Flushing firewall tables..."
 rm -f /usr/bin/mihomo
 rm -rf /etc/mihomo
 
-# ৪. পুরনো CGI স্ক্রিপ্টস রিমুভ
-rm -f /www/cgi-bin/mihomo-*
+# ৪. CGI স্ক্রিপ্টস রিমুভ
+rm -f /www/cgi-bin/mihomo-api
+rm -f /www/cgi-bin/mihomo-cfg
+rm -f /www/cgi-bin/mihomo-sub
 
 # ৫. LuCI মেনু ক্লিনআপ
 rm -f /usr/lib/lua/luci/controller/mihomo.lua
