@@ -9,7 +9,7 @@ CONF_DIR="/etc/mihomo"
 TRANSPARENT_FILE="$CONF_DIR/transparent"
 ENABLED_FILE="$CONF_DIR/enabled"
 
-# ⚡ pgrep এর ঝঞ্জাট ছাড়া Busybox ফ্রেন্ডলি প্রসেস আইডি ডিটেকশন
+# ⚡ BusyBox Friendly Guaranteed Process Detection
 PID=$(ps | grep -v grep | grep "/usr/bin/mihomo" | awk '{print $1}' | head -n 1)
 
 case "$ACTION" in
@@ -28,9 +28,23 @@ case "$ACTION" in
   start)
     echo "1" > "$ENABLED_FILE"
     echo "1" > "$TRANSPARENT_FILE"
+    
+    # আটকে থাকা পুরনো প্রসেস কিল করা
     killall -9 mihomo >/dev/null 2>&1 || true
     rm -f /var/run/mihomo.pid
+    
+    # ১. সিস্টেম সার্ভিস দিয়ে রান করার চেষ্টা করা
     /etc/init.d/mihomo restart >/dev/null 2>&1
+    sleep 2
+    
+    # ২. ফলব্যাক রানার (যদি কার্নেল uhttpd স্যান্ডবক্স ব্লক করে, তবে setsid দিয়ে সেশন ডিটাচ রান হবে)
+    if ! ps | grep -v grep | grep -q "/usr/bin/mihomo"; then
+        setsid /usr/bin/mihomo -d "$CONF_DIR" -f "$CONF_DIR/config.yaml" >/dev/null 2>&1 &
+    fi
+    
+    # ফায়ারওয়াল রুলস অ্যাক্টিভ করা
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
@@ -46,7 +60,12 @@ case "$ACTION" in
 
   restart)
     echo "1" > "$ENABLED_FILE"
+    killall -9 mihomo >/dev/null 2>&1 || true
     /etc/init.d/mihomo restart >/dev/null 2>&1
+    sleep 1
+    if ! ps | grep -v grep | grep -q "/usr/bin/mihomo"; then
+        setsid /usr/bin/mihomo -d "$CONF_DIR" -f "$CONF_DIR/config.yaml" >/dev/null 2>&1 &
+    fi
     echo "{\"ok\":true}"
     ;;
 
@@ -62,7 +81,7 @@ case "$ACTION" in
     echo "{\"ok\":true}"
     ;;
 
-  # 🛡️ New Feature: Dynamic ACL Device Bypass
+  # 🛡️ New Feature: Client Access Control Bypass
   add_acl_bypass)
     if [ -n "$IP" ]; then
         nft add element ip uzumaki acl_bypass { "$IP" } 2>/dev/null || true
