@@ -10,10 +10,10 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
         
-        # পুরনো গ্লোবাল অপশন ফিল্টার আউট করা
+        # পুরনো অপশন ফিল্টার আউট করা
         awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
-        # 🌀 আল্ট্রা গেমিং অপ্টিমাইজড মাস্টার টেমপ্লেট উইথ ফেক-আইপি ফিল্টারস
+        # 🌀 আল্ট্রা গেমিং অপ্টিমাইজড মাস্টার টেমপ্লেট
         cat << HEOF > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
@@ -27,6 +27,7 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
+# ⚡ Performance Boost Settings
 tcp-concurrent: true
 unified-delay: false
 global-client-fingerprint: chrome
@@ -41,12 +42,12 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   
-  # 🎮 Valorant, Vanguard, Discord এবং Microsoft-কে ফেক-আইপি থেকে মুক্ত রাখার ফিল্টার
+  # 🎮 Valorant, Vanguard ও Discord-কে ফেক-আইপি থেকে মুক্ত রাখার ফিল্টার
   fake-ip-filter:
     - '*.lan'
     - '*.local'
     - 'localhost'
-    # Riot & Valorant (Anti-Cheat Bypass)
+    # Riot Games & Valorant (Anti-Cheat Bypass)
     - '+.riotgames.com'
     - '+.playvalorant.com'
     - '+.pvp.net'
@@ -58,19 +59,19 @@ dns:
     - '+.steamstatic.com'
     - '+.epicgames.com'
     - '+.unrealengine.com'
-    # Microsoft, Windows Update & Xbox
+    # Microsoft & Xbox Live
     - '+.microsoft.com'
     - '+.windows.com'
     - '+.windowsupdate.com'
     - '+.msecnd.net'
     - '+.xboxlive.com'
     - '+.xbox.com'
-    # Discord Voice Channels (Bypass Voice Lag)
+    # Discord Voice Channels
     - '+.discord.gg'
     - '+.discord.media'
     - '+.discordapp.com'
     - '+.discordapp.net'
-    # Local Services
+    # Local services
     - '+.speedtest.net'
     - 'fast.com'
     - '+.bd'
@@ -81,7 +82,7 @@ dns:
   respect-rules: true
 HEOF
 
-        # 🎯 রুলস সেকশনে গেমগুলোর ডাইরেক্ট রুল ইনজেকশন (Direct Bypass)
+        # 🎯 গেমগুলোকে ১০০% DIRECT (বাইপাস) করা
         awk -v lan="$LAN_IP" '/^rules:/ {
             print $0
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
@@ -101,15 +102,15 @@ HEOF
             print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
             print "  # 🎙️ Discord Channels"
             print "  - DOMAIN-KEYWORD,discord,DIRECT"
-            print "  # 🇧🇩 Local BD ISP & bKash"
+            print "  # 🇧🇩 Local BD CDN & bKash"
             print "  - DOMAIN-SUFFIX,bd,DIRECT"
             print "  - DOMAIN-KEYWORD,bkash,DIRECT"
             next
         } { print }' "$CLEAN" >> "$FINAL"
 
-        # টেস্ট রান
+        # টেস্ট রান ভ্যালিডেশন
         $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
-        TEST_STATUS=$? # রানটাইম এক্সিট কোড টেস্ট
+        TEST_STATUS=$? # সরাসরি এক্সিট কোড চেক
 
         if [ $TEST_STATUS -eq 0 ]; then
             mv "$FINAL" $CONF_DIR/config.yaml
