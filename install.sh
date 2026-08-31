@@ -11,27 +11,51 @@ D="/etc/mihomo"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  🌀 UzumakiClash Universal Installer                        ║"
-echo "║  Auto-Detect: opkg/apk | Mihomo | Transparent Gateway       ║"
+echo "║  🌀 UzumakiClash Universal Installer                       ║"
+echo "║  Auto-Detect: opkg/apk | Precision Arch | Stable Gateway   ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+
+# ─────────────────────────────────────────────
+# Root check
+# ─────────────────────────────────────────────
+
+if [ "$(id -u)" != "0" ]; then
+    echo "[✗] Please run as root."
+    exit 1
+fi
 
 # ─────────────────────────────────────────────
 # Package manager
 # ─────────────────────────────────────────────
 
 if command -v apk >/dev/null 2>&1; then
+
     PKG="apk"
-    apk update
+
+    echo "[*] Using apk..."
+    apk update >/dev/null 2>&1
+
     pkg_ins() {
         apk add "$@"
     }
+
 else
+
     PKG="opkg"
-    opkg update
+
+    echo "[*] Using opkg..."
+    opkg update >/dev/null 2>&1
+
     pkg_ins() {
         opkg install "$@"
     }
+
 fi
+
+# ─────────────────────────────────────────────
+# Dependencies
+# ─────────────────────────────────────────────
 
 echo "[*] Installing dependencies..."
 
@@ -41,16 +65,19 @@ pkg_ins \
     ca-certificates \
     ip-full \
     kmod-tun \
-    kmod-nft-tproxy \
-    kmod-nf-tproxy \
-    kmod-nft-core \
-    coreutils-nohup \
     gzip \
     tar \
     busybox
 
-[ "$PKG" = "opkg" ] && \
-    pkg_ins luci-compat luci-lib-ipkg
+# nftables / TPROXY support where available
+pkg_ins nftables 2>/dev/null || true
+pkg_ins kmod-nft-tproxy 2>/dev/null || true
+pkg_ins kmod-nf-tproxy 2>/dev/null || true
+
+if [ "$PKG" = "opkg" ]; then
+    pkg_ins luci-compat 2>/dev/null || true
+    pkg_ins luci-lib-ipkg 2>/dev/null || true
+fi
 
 # ─────────────────────────────────────────────
 # Architecture detection
@@ -61,65 +88,90 @@ RAW_ARCH=""
 if command -v opkg >/dev/null 2>&1; then
     RAW_ARCH=$(
         opkg print-architecture 2>/dev/null |
-        grep -E "mipsel_24kc|mipsel" |
+        grep -E 'mipsel_24kc|mipsel' |
         awk '{print $2}' |
         head -n 1
     )
 fi
 
-[ -z "$RAW_ARCH" ] && RAW_ARCH=$(uname -m)
+[ -z "$RAW_ARCH" ] && RAW_ARCH="$(uname -m 2>/dev/null)"
 
 case "$RAW_ARCH" in
+
     mipsel*|mipsle*)
         M="mipsle-softfloat"
         ;;
+
     mips*)
         M="mips-softfloat"
         ;;
+
     aarch64*|arm64*)
         M="arm64"
         ;;
+
     x86_64*|amd64*)
         M="amd64-compatible"
         ;;
+
     *)
-        echo "[!] Unknown architecture: $RAW_ARCH"
+        echo "[✗] Unsupported/unknown architecture: $RAW_ARCH"
         exit 1
         ;;
+
 esac
 
-echo "[✓] Architecture: $RAW_ARCH -> Core: $M"
+echo "[✓] Architecture: $RAW_ARCH -> Mihomo core: $M"
 
 # ─────────────────────────────────────────────
-# Mihomo core
+# Download Mihomo
 # ─────────────────────────────────────────────
 
-cd /tmp || exit 1
+TMP_DIR="/tmp/uzumakiclash"
 
-rm -f mihomo.gz mihomo
+rm -rf "$TMP_DIR"
+mkdir -p "$TMP_DIR"
 
-echo "[*] Downloading Mihomo $V ..."
+cd "$TMP_DIR" || exit 1
+
+echo "[*] Downloading Mihomo $V..."
 
 if ! curl -fL \
     --connect-timeout 15 \
-    --max-time 120 \
+    --max-time 180 \
     -o mihomo.gz \
     "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz"
 then
-    echo "[✗] Mihomo download failed"
+    echo "[✗] Mihomo download failed."
+    rm -rf "$TMP_DIR"
     exit 1
 fi
 
-gzip -d -f mihomo.gz 2>/dev/null || \
-gunzip -f mihomo.gz 2>/dev/null
+if ! gzip -d -f mihomo.gz 2>/dev/null; then
+    if ! gunzip -f mihomo.gz 2>/dev/null; then
+        echo "[✗] Unable to decompress Mihomo."
+        rm -rf "$TMP_DIR"
+        exit 1
+    fi
+fi
 
-[ -f mihomo ] || {
-    echo "[✗] Mihomo binary not found"
+if [ ! -f mihomo ]; then
+    echo "[✗] Mihomo binary not found after extraction."
+    rm -rf "$TMP_DIR"
     exit 1
-}
+fi
 
 chmod +x mihomo
+
 mv -f mihomo /usr/bin/mihomo
+
+if [ ! -x /usr/bin/mihomo ]; then
+    echo "[✗] Mihomo installation failed."
+    rm -rf "$TMP_DIR"
+    exit 1
+fi
+
+echo "[✓] Mihomo core installed."
 
 # ─────────────────────────────────────────────
 # Directories
@@ -132,32 +184,82 @@ mkdir -p \
     /usr/lib/lua/luci/view/mihomo
 
 # ─────────────────────────────────────────────
-# Project files
+# Download project files
 # ─────────────────────────────────────────────
 
-curl -fsSL -o /etc/init.d/mihomo \
-    "$REPO/files/mihomo.init"
+echo "[*] Installing UzumakiClash files..."
 
-curl -fsSL -o /www/cgi-bin/mihomo-api \
-    "$REPO/files/mihomo-api"
+download_file() {
+    SRC="$1"
+    DST="$2"
 
-curl -fsSL -o /www/cgi-bin/mihomo-cfg \
-    "$REPO/files/mihomo-cfg"
+    if ! curl -fsSL \
+        --connect-timeout 15 \
+        --max-time 120 \
+        -o "$DST" \
+        "$SRC"
+    then
+        echo "[✗] Failed: $DST"
+        return 1
+    fi
 
-curl -fsSL -o /www/cgi-bin/mihomo-sub \
-    "$REPO/files/mihomo-sub"
+    return 0
+}
 
-curl -fsSL -o "$D/nft.conf" \
-    "$REPO/files/nft.conf"
+download_file \
+    "$REPO/files/mihomo.init" \
+    "/etc/init.d/mihomo" || exit 1
 
-curl -fsSL -o "$D/config.yaml" \
-    "$REPO/files/config.default.yaml"
+download_file \
+    "$REPO/files/mihomo-api" \
+    "/www/cgi-bin/mihomo-api" || exit 1
 
-curl -fsSL -o /usr/lib/lua/luci/controller/mihomo.lua \
-    "$REPO/files/mihomo.lua"
+download_file \
+    "$REPO/files/mihomo-cfg" \
+    "/www/cgi-bin/mihomo-cfg" || exit 1
 
-curl -fsSL -o /usr/lib/lua/luci/view/mihomo/main.htm \
-    "$REPO/files/main.htm"
+download_file \
+    "$REPO/files/mihomo-sub" \
+    "/www/cgi-bin/mihomo-sub" || exit 1
+
+download_file \
+    "$REPO/files/nft.conf" \
+    "$D/nft.conf" || exit 1
+
+download_file \
+    "$REPO/files/mihomo.lua" \
+    "/usr/lib/lua/luci/controller/mihomo.lua" || exit 1
+
+download_file \
+    "$REPO/files/main.htm" \
+    "/usr/lib/lua/luci/view/mihomo/main.htm" || exit 1
+
+# ─────────────────────────────────────────────
+# Default config
+#
+# IMPORTANT:
+# Do not overwrite an existing user config.
+# On a fresh install config.yaml does not exist,
+# so default config is installed.
+# ─────────────────────────────────────────────
+
+if [ ! -f "$D/config.yaml" ]; then
+
+    download_file \
+        "$REPO/files/config.default.yaml" \
+        "$D/config.yaml" || exit 1
+
+    echo "[✓] Default config installed."
+
+else
+
+    echo "[✓] Existing config preserved."
+
+fi
+
+# ─────────────────────────────────────────────
+# Permissions
+# ─────────────────────────────────────────────
 
 chmod +x \
     /etc/init.d/mihomo \
@@ -175,44 +277,127 @@ chmod 644 \
 # Dashboard
 # ─────────────────────────────────────────────
 
-cd /tmp || exit 1
+echo "[*] Installing MetaCube dashboard..."
+
+cd "$TMP_DIR" || exit 1
 
 rm -f ui.tgz
 
 if curl -fsSL \
     --connect-timeout 15 \
-    --max-time 120 \
+    --max-time 180 \
     -o ui.tgz \
     "https://github.com/MetaCubeX/metacubexd/releases/latest/download/compressed-dist.tgz"
 then
-    rm -rf "$D/ui/"*
-    tar -xzf ui.tgz -C "$D/ui/" 2>/dev/null || true
 
-    if [ -d "$D/ui/dist" ]; then
-        mv "$D/ui/dist/"* "$D/ui/" 2>/dev/null || true
-        rmdir "$D/ui/dist" 2>/dev/null || true
+    rm -rf "$D/ui/"*
+
+    if tar -xzf ui.tgz -C "$D/ui/" 2>/dev/null; then
+
+        if [ -d "$D/ui/dist" ]; then
+            mv "$D/ui/dist/"* "$D/ui/" 2>/dev/null || true
+            rm -rf "$D/ui/dist"
+        fi
+
+        echo "[✓] Dashboard installed."
+
+    else
+
+        echo "[!] Dashboard extraction failed; core installation continues."
+
     fi
+
+else
+
+    echo "[!] Dashboard download failed; core installation continues."
+
 fi
 
 # ─────────────────────────────────────────────
-# Default state
+# Runtime state
 # ─────────────────────────────────────────────
 
-echo "1" > "$D/enabled"
-echo "1" > "$D/transparent"
+[ -f "$D/enabled" ] ||
+    echo "1" > "$D/enabled"
+
+[ -f "$D/transparent" ] ||
+    echo "1" > "$D/transparent"
 
 # ─────────────────────────────────────────────
-# Service
+# Validate config before service start
 # ─────────────────────────────────────────────
 
-/etc/init.d/mihomo enable
-/etc/init.d/mihomo restart
+echo "[*] Validating Mihomo configuration..."
 
-rm -rf /tmp/luci-*
+if ! /usr/bin/mihomo \
+    -d "$D" \
+    -f "$D/config.yaml" \
+    -t >/tmp/uzumaki_config_test.log 2>&1
+then
+
+    echo "[✗] Current config is invalid."
+    echo ""
+    head -n 12 /tmp/uzumaki_config_test.log
+    echo ""
+
+    rm -rf "$TMP_DIR"
+    exit 1
+fi
+
+echo "[✓] Mihomo configuration valid."
+
+# ─────────────────────────────────────────────
+# Service registration
+# ─────────────────────────────────────────────
+
+/etc/init.d/mihomo enable >/dev/null 2>&1 || true
+
+# Make sure stale instance is gone.
+/etc/init.d/mihomo stop >/dev/null 2>&1 || true
+killall -9 mihomo >/dev/null 2>&1 || true
+
+sleep 1
+
+/etc/init.d/mihomo start >/dev/null 2>&1
+
+sleep 3
+
+# ─────────────────────────────────────────────
+# Verify actual process
+# ─────────────────────────────────────────────
+
+PID="$(pidof mihomo 2>/dev/null | awk '{print $1}')"
+
+if [ -n "$PID" ] && [ -d "/proc/$PID" ]; then
+
+    echo "[✓] Mihomo is running. PID: $PID"
+
+else
+
+    echo "[✗] Mihomo failed to start."
+    echo ""
+    logread | grep -i mihomo | tail -20
+
+    rm -rf "$TMP_DIR"
+    exit 1
+
+fi
+
+# ─────────────────────────────────────────────
+# Reload LuCI/RPC
+# ─────────────────────────────────────────────
+
+rm -rf /tmp/luci-* 2>/dev/null || true
 
 /etc/init.d/rpcd restart >/dev/null 2>&1 || true
 /etc/init.d/uhttpd restart >/dev/null 2>&1 || true
 
+rm -rf "$TMP_DIR"
+
 echo ""
-echo "✅ UzumakiClash installed successfully!"
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║  ✅ UzumakiClash installation completed successfully!       ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+echo "LuCI → Services → UzumakiClash 🌀"
 echo ""
