@@ -10,10 +10,10 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
         
-        # পুরনো অপশন ফিল্টার আউট করা
+        # তোর অরিজিনাল ফিল্টার
         awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
-        # 🌀 আল্ট্রা গেমিং অপ্টিমাইজড মাস্টার টেমপ্লেট
+        # তোর অরিজিনাল কনফিগ টেমপ্লেট
         cat << HEOF > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
@@ -27,7 +27,7 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
-# ⚡ Performance Boost Settings
+# ⚡ Performance Boost (Fixed IDM & Speed delay)
 tcp-concurrent: true
 unified-delay: false
 global-client-fingerprint: chrome
@@ -41,83 +41,35 @@ dns:
   listen: 0.0.0.0:1053
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  
-  # 🎮 Valorant, Vanguard ও Discord-কে ফেক-আইপি থেকে মুক্ত রাখার ফিল্টার
   fake-ip-filter:
     - '*.lan'
     - '*.local'
-    - 'localhost'
-    # Riot Games & Valorant (Anti-Cheat Bypass)
-    - '+.riotgames.com'
-    - '+.playvalorant.com'
-    - '+.pvp.net'
-    - '+.leagueoflegends.com'
-    - '+.vanguard.riotgames.com'
-    # Steam & Epic Games
-    - '+.steampowered.com'
-    - '+.steamcommunity.com'
-    - '+.steamstatic.com'
-    - '+.epicgames.com'
-    - '+.unrealengine.com'
-    # Microsoft & Xbox Live
-    - '+.microsoft.com'
-    - '+.windows.com'
-    - '+.windowsupdate.com'
-    - '+.msecnd.net'
-    - '+.xboxlive.com'
-    - '+.xbox.com'
-    # Discord Voice Channels
-    - '+.discord.gg'
-    - '+.discord.media'
-    - '+.discordapp.com'
-    - '+.discordapp.net'
-    # Local services
-    - '+.speedtest.net'
-    - 'fast.com'
-    - '+.bd'
-    - '+.bkash.com'
-
   nameserver: [1.1.1.1, 8.8.8.8, 1.0.0.1]
   proxy-server-nameserver: [1.1.1.1]
   respect-rules: true
 HEOF
 
-        # 🎯 গেমগুলোকে ১০০% DIRECT (বাইপাস) করা
+        # তোর অরিজিনাল রুলস ইনজেকশন
         awk -v lan="$LAN_IP" '/^rules:/ {
             print $0
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  # 🎮 Riot Games & Valorant (100% DIRECT Bypass)"
-            print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
-            print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
-            print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-            print "  - DOMAIN-KEYWORD,vanguard,DIRECT"
-            print "  - DOMAIN-KEYWORD,vnggames,DIRECT"
-            print "  # 🎮 Steam & Epic Games"
-            print "  - DOMAIN-KEYWORD,steam,DIRECT"
-            print "  - DOMAIN-KEYWORD,epicgames,DIRECT"
-            print "  # 🖥️ Microsoft & Windows Update"
-            print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-            print "  - DOMAIN-KEYWORD,xbox,DIRECT"
-            print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
-            print "  # 🎙️ Discord Channels"
-            print "  - DOMAIN-KEYWORD,discord,DIRECT"
-            print "  # 🇧🇩 Local BD CDN & bKash"
-            print "  - DOMAIN-SUFFIX,bd,DIRECT"
-            print "  - DOMAIN-KEYWORD,bkash,DIRECT"
+            print "  # 🌀 Gaming & CDN Bypass (Fixed MS Store & Riot)"
+            print "  - DOMAIN-KEYWORD,riotgames,DIRECT\n  - DOMAIN-KEYWORD,playvalorant,DIRECT\n  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+            print "  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,windows,DIRECT\n  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
+            print "  - DOMAIN-SUFFIX,bd,DIRECT\n  - DOMAIN-KEYWORD,bkash,DIRECT"
             next
         } { print }' "$CLEAN" >> "$FINAL"
 
-        # টেস্ট রান ভ্যালিডেশন
+        # মিহোমো কোরের নিজস্ব ফাস্ট ভ্যালিডেশন টেস্ট রান
         $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
-        TEST_STATUS=$? # সরাসরি এক্সিট কোড চেক
+        TEST_STATUS=$? # টেস্টের এক্সিট কোড সরাসরি রিড করা হলো (Busybox-এ ১০০% সেফ)
 
         if [ $TEST_STATUS -eq 0 ]; then
             mv "$FINAL" $CONF_DIR/config.yaml
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
-            # লগের শেষ লাইন থেকে আসল এররটি বের করা
+            # টেস্ট ফেইল করলে আসল এরর মেসেজটি শো করবে
             ACTUAL_ERR=$(tail -n 2 /tmp/cfg_err.log | tr '\n' ' ')
             echo "INVALID YAML: $ACTUAL_ERR"
         fi
