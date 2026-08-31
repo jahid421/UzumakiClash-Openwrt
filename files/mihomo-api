@@ -1,304 +1,93 @@
 #!/bin/sh
-
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
-
 echo "Content-Type: application/json"
 echo ""
 
+ACTION=$(echo "$QUERY_STRING" | sed -n 's/.*action=\([a-z_]*\).*/\1/p')
+IP=$(echo "$QUERY_STRING" | sed -n 's/.*ip=\([0-9.]*\).*/\1/p')
 CONF_DIR="/etc/mihomo"
 TRANSPARENT_FILE="$CONF_DIR/transparent"
 ENABLED_FILE="$CONF_DIR/enabled"
-NFT_FILE="$CONF_DIR/nft.conf"
 
-ACTION=$(
-    printf '%s' "$QUERY_STRING" |
-    tr '&' '\n' |
-    sed -n 's/^action=//p' |
-    head -n 1
-)
-
-json_ok() {
-    echo '{"ok":true}'
-}
-
-json_error() {
-    printf '{"ok":false,"error":"%s"}\n' "$1"
-}
-
-is_running() {
-    PID="$(pidof mihomo 2>/dev/null | awk '{print $1}')"
-
-    if [ -n "$PID" ] && [ -d "/proc/$PID" ]; then
-        return 0
-    fi
-
-    return 1
-}
-
-apply_acl() {
-    ACL_FILE="$CONF_DIR/acl_ips"
-
-    [ -f "$ACL_FILE" ] || return 0
-
-    while IFS= read -r IP
-    do
-        [ -z "$IP" ] && continue
-
-        /usr/sbin/nft add element ip uzumaki acl_ips \
-            "{ $IP }" 2>/dev/null || true
-
-    done < "$ACL_FILE"
-}
-
-apply_nft() {
-
-    [ -f "$NFT_FILE" ] || return 1
-
-    /usr/sbin/nft delete table ip uzumaki \
-        2>/dev/null || true
-
-    /usr/sbin/nft -f "$NFT_FILE" 2>/dev/null || return 1
-
-    apply_acl
-
-    return 0
-}
-
-remove_nft() {
-    /usr/sbin/nft delete table ip uzumaki \
-        2>/dev/null || true
-
-    /usr/sbin/nft delete table inet uzumaki \
-        2>/dev/null || true
-}
+# ⚡ pgrep এর ঝঞ্জাট ছাড়া Busybox ফ্রেন্ডলি প্রসেস আইডি ডিটেকশন
+PID=$(ps | grep -v grep | grep "/usr/bin/mihomo" | awk '{print $1}' | head -n 1)
 
 case "$ACTION" in
-
-    status)
-
-        ENABLED="1"
-        TP="0"
-
-        [ -f "$ENABLED_FILE" ] && \
-            ENABLED="$(cat "$ENABLED_FILE" 2>/dev/null)"
-
-        [ -f "$TRANSPARENT_FILE" ] && \
-            TP="$(cat "$TRANSPARENT_FILE" 2>/dev/null)"
-
-        PID="$(pidof mihomo 2>/dev/null | awk '{print $1}')"
-
-        if [ -n "$PID" ] && [ -d "/proc/$PID" ]; then
-
-            MEM="$(
-                awk '/VmRSS:/ {print $2}' \
-                "/proc/$PID/status" 2>/dev/null
-            )"
-
-            [ -z "$MEM" ] && MEM="0"
-
-            echo "{\"running\":true,\"pid\":$PID,\"memory\":\"${MEM} kB\",\"transparent\":$TP,\"enabled\":$ENABLED}"
-
-        else
-
-            echo "{\"running\":false,\"transparent\":$TP,\"enabled\":$ENABLED}"
-
-        fi
-
-        ;;
-
-    start)
-
-        echo "1" > "$ENABLED_FILE"
-        echo "1" > "$TRANSPARENT_FILE"
-
-        /etc/init.d/mihomo start >/dev/null 2>&1
-
-        sleep 2
-
-        if ! is_running; then
-            /etc/init.d/mihomo restart >/dev/null 2>&1
-            sleep 2
-        fi
-
-        if ! is_running; then
-            json_error "MIHOMO_START_FAILED"
-            exit 1
-        fi
-
-        if ! apply_nft; then
-            json_error "NFT_APPLY_FAILED"
-            exit 1
-        fi
-
-        json_ok
-        ;;
-
-    stop)
-
-        echo "0" > "$ENABLED_FILE"
-        echo "0" > "$TRANSPARENT_FILE"
-
-        remove_nft
-
-        /etc/init.d/mihomo stop >/dev/null 2>&1
-        killall -9 mihomo 2>/dev/null || true
-
-        rm -f /var/run/mihomo.pid
-
-        json_ok
-        ;;
-
-    restart)
-
-        echo "1" > "$ENABLED_FILE"
-
-        /etc/init.d/mihomo restart >/dev/null 2>&1
-
-        sleep 2
-
-        if ! is_running; then
-            json_error "MIHOMO_RESTART_FAILED"
-            exit 1
-        fi
-
-        if [ -f "$TRANSPARENT_FILE" ] &&
-           [ "$(cat "$TRANSPARENT_FILE" 2>/dev/null)" = "1" ]
-        then
-
-            if ! apply_nft; then
-                json_error "NFT_APPLY_FAILED"
-                exit 1
-            fi
-
-        fi
-
-        json_ok
-        ;;
-
-    enable_tp)
-
-        echo "1" > "$TRANSPARENT_FILE"
-
-        if apply_nft; then
-            json_ok
-        else
-            json_error "NFT_APPLY_FAILED"
-        fi
-
-        ;;
-
-    disable_tp)
-
-        echo "0" > "$TRANSPARENT_FILE"
-
-        remove_nft
-
-        json_ok
-        ;;
-
-    flush_fakeip)
-
-        if curl -fsS \
-            -X POST \
-            "http://127.0.0.1:9595/cache/fakeip/flush" \
-            -H "Authorization: Bearer flclash123" \
-            >/dev/null 2>&1
-        then
-            json_ok
-        else
-            json_error "FAKEIP_FLUSH_FAILED"
-        fi
-
-        ;;
-
-    update_geo)
-
-        (
-            cd "$CONF_DIR" || exit 1
-
-            curl -fsSL \
-                --connect-timeout 15 \
-                --max-time 120 \
-                -o geoip.dat \
-                "https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/geoip-lite.dat"
-
-            curl -fsSL \
-                --connect-timeout 15 \
-                --max-time 120 \
-                -o geosite.dat \
-                "https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/geosite.dat"
-
-            curl -fsSL \
-                --connect-timeout 15 \
-                --max-time 120 \
-                -o Country.mmdb \
-                "https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/country-lite.mmdb"
-
-        ) >/dev/null 2>&1 &
-
-        echo '{"ok":true,"message":"Updating in background"}'
-        ;;
-
-    add_acl_bypass)
-
-        IP="$(
-            printf '%s' "$QUERY_STRING" |
-            tr '&' '\n' |
-            sed -n 's/^ip=//p' |
-            head -n 1
-        )"
-
-        IP="$(
-            printf '%b' \
-            "$(printf '%s' "$IP" | sed 's/+/ /g;s/%/\\x/g')"
-        )"
-
-        if ! printf '%s' "$IP" |
-            grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
-        then
-            json_error "INVALID_IP"
-            exit 1
-        fi
-
-        OLDIFS="$IFS"
-        IFS='.'
-        set -- $IP
-        IFS="$OLDIFS"
-
-        for OCTET in "$@"
-        do
-            case "$OCTET" in
-                ''|*[!0-9]*)
-                    json_error "INVALID_IP"
-                    exit 1
-                    ;;
-            esac
-
-            [ "$OCTET" -le 255 ] || {
-                json_error "INVALID_IP"
-                exit 1
-            }
-        done
-
-        ACL_FILE="$CONF_DIR/acl_ips"
-
-        touch "$ACL_FILE"
-
-        if ! grep -qxF "$IP" "$ACL_FILE" 2>/dev/null
-        then
-            echo "$IP" >> "$ACL_FILE"
-        fi
-
-        # Apply immediately if nft table is active.
-        /usr/sbin/nft add element ip uzumaki acl_ips \
-            "{ $IP }" 2>/dev/null || true
-
-        json_ok
-        ;;
-
-    *)
-
-        json_error "INVALID_ACTION"
-        ;;
-
+  status)
+    ENABLED="1"; [ -f "$ENABLED_FILE" ] && ENABLED=$(cat "$ENABLED_FILE")
+    TP="0"; [ -f "$TRANSPARENT_FILE" ] && TP=$(cat "$TRANSPARENT_FILE")
+
+    if [ -n "$PID" ]; then
+      MEM=$(awk '/VmRSS/{print $2}' /proc/$PID/status 2>/dev/null || echo 0)
+      echo "{\"running\":true,\"pid\":$PID,\"memory\":\"${MEM} kB\",\"transparent\":$TP,\"enabled\":$ENABLED}"
+    else
+      echo "{\"running\":false,\"transparent\":$TP,\"enabled\":$ENABLED}"
+    fi
+    ;;
+
+  start)
+    echo "1" > "$ENABLED_FILE"
+    echo "1" > "$TRANSPARENT_FILE"
+    killall -9 mihomo >/dev/null 2>&1 || true
+    rm -f /var/run/mihomo.pid
+    /etc/init.d/mihomo restart >/dev/null 2>&1
+    echo "{\"ok\":true}"
+    ;;
+
+  stop)
+    echo "0" > "$ENABLED_FILE"
+    echo "0" > "$TRANSPARENT_FILE"
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /etc/init.d/mihomo stop >/dev/null 2>&1
+    killall -9 mihomo 2>/dev/null || true
+    rm -f /var/run/mihomo.pid
+    echo "{\"ok\":true}"
+    ;;
+
+  restart)
+    echo "1" > "$ENABLED_FILE"
+    /etc/init.d/mihomo restart >/dev/null 2>&1
+    echo "{\"ok\":true}"
+    ;;
+
+  enable_tp)
+    echo "1" > "$TRANSPARENT_FILE"
+    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
+    echo "{\"ok\":true}"
+    ;;
+
+  disable_tp)
+    echo "0" > "$TRANSPARENT_FILE"
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    echo "{\"ok\":true}"
+    ;;
+
+  # 🛡️ New Feature: Dynamic ACL Device Bypass
+  add_acl_bypass)
+    if [ -n "$IP" ]; then
+        nft add element ip uzumaki acl_bypass { "$IP" } 2>/dev/null || true
+        echo "{\"ok\":true,\"ip\":\"$IP\"}"
+    else
+        echo "{\"ok\":false,\"error\":\"no_ip\"}"
+    fi
+    ;;
+
+  flush_fakeip)
+    curl -s -X POST "http://127.0.0.1:9595/cache/fakeip/flush" -H "Authorization: Bearer flclash123" >/dev/null 2>&1
+    echo "{\"ok\":true}"
+    ;;
+
+  update_geo)
+    (
+      cd "$CONF_DIR"
+      curl -sL -o geoip.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat"
+      curl -sL -o geosite.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+      curl -sL -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb"
+    ) &
+    echo "{\"ok\":true,\"message\":\"Updating in background\"}"
+    ;;
+
+  *)
+    echo "{\"ok\":false,\"error\":\"invalid_action\"}"
+    ;;
 esac
