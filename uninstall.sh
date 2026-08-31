@@ -15,9 +15,6 @@ echo "║  Safely Reverting Network, Firewall & System Changes       ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
-# ==============================================================
-# SERVICE
-# ==============================================================
 if [ -f /etc/init.d/mihomo ]; then
 
     echo "[*] Stopping UzumakiClash..."
@@ -31,15 +28,9 @@ if [ -f /etc/init.d/mihomo ]; then
 
 fi
 
-# ==============================================================
-# NFT
-# ==============================================================
 nft delete table ip uzumaki 2>/dev/null || true
 nft delete table inet uzumaki 2>/dev/null || true
 
-# ==============================================================
-# POLICY ROUTING
-# ==============================================================
 ip rule del \
     pref "$TPROXY_PRIORITY" \
     fwmark "$TPROXY_MARK" \
@@ -49,9 +40,6 @@ ip rule del \
 ip route flush table "$TPROXY_TABLE" \
     2>/dev/null || true
 
-# ==============================================================
-# FILES
-# ==============================================================
 rm -f /etc/sysctl.d/99-uzumaki-tune.conf
 rm -f /etc/hotplug.d/iface/99-uzumaki
 
@@ -67,18 +55,12 @@ rm -rf /usr/lib/lua/luci/view/mihomo
 
 rm -f /usr/share/luci/menu.d/luci-app-uzumakiclash.json
 
-# ==============================================================
-# UCI
-# ==============================================================
 uci -q delete firewall.uzumaki_rule 2>/dev/null
 uci -q delete firewall.mihomo_proxy 2>/dev/null
 uci commit firewall
 
 /etc/init.d/firewall restart >/dev/null 2>&1 || true
 
-# ==============================================================
-# LUCI CACHE
-# ==============================================================
 rm -rf /tmp/luci-*
 
 /etc/init.d/rpcd restart >/dev/null 2>&1 || true
