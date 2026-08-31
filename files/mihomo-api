@@ -1,4 +1,3 @@
-```sh
 #!/bin/sh
 
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
@@ -10,40 +9,45 @@ CONF_DIR="/etc/mihomo"
 TRANSPARENT_FILE="$CONF_DIR/transparent"
 ENABLED_FILE="$CONF_DIR/enabled"
 NFT_FILE="$CONF_DIR/nft.conf"
-API="http://127.0.0.1:9595"
-TOKEN="flclash123"
+
+ACTION=$(
+    printf '%s\n' "$QUERY_STRING" |
+    tr '&' '\n' |
+    sed -n 's/^action=//p' |
+    head -n 1
+)
+
+json_ok() {
+    echo '{"ok":true}'
+}
 
 json_error() {
     echo "{\"ok\":false,\"error\":\"$1\"}"
 }
 
-json_ok() {
-    echo "{\"ok\":true}"
-}
-
 apply_nft() {
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
 
-    if [ -f "$NFT_FILE" ]; then
-        /usr/sbin/nft -f "$NFT_FILE" 2>/dev/null
-        return $?
+    [ -f "$NFT_FILE" ] || return 1
+
+    /usr/sbin/nft -f "$NFT_FILE" 2>/dev/null || return 1
+
+    if [ -f "$CONF_DIR/acl_ips" ]; then
+        while IFS= read -r IP; do
+            [ -z "$IP" ] && continue
+
+            /usr/sbin/nft add element ip uzumaki acl_ips "{ $IP }" \
+                2>/dev/null || true
+        done < "$CONF_DIR/acl_ips"
     fi
 
-    return 1
+    return 0
 }
 
 remove_nft() {
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
     /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
 }
-
-restart_mihomo() {
-    /etc/init.d/mihomo restart >/dev/null 2>&1
-    sleep 2
-}
-
-ACTION=$(printf '%s' "$QUERY_STRING" |
-    sed -n 's/.*\(^\|&\)action=\([^&]*\).*/\2/p')
 
 case "$ACTION" in
 
@@ -57,12 +61,14 @@ case "$ACTION" in
         [ -f "$TRANSPARENT_FILE" ] &&
             TP=$(cat "$TRANSPARENT_FILE" 2>/dev/null)
 
-        PID=$(pgrep -f "^/usr/bin/mihomo" 2>/dev/null | head -n 1)
+        PID=$(pgrep -f '^/usr/bin/mihomo' 2>/dev/null | head -n 1)
 
         if [ -n "$PID" ] && [ -d "/proc/$PID" ]; then
 
-            MEM=$(awk '/VmRSS:/ {print $2}' \
-                "/proc/$PID/status" 2>/dev/null)
+            MEM=$(
+                awk '/VmRSS:/ {print $2}' \
+                    "/proc/$PID/status" 2>/dev/null
+            )
 
             [ -z "$MEM" ] && MEM="0"
 
@@ -81,13 +87,15 @@ case "$ACTION" in
         echo "1" > "$ENABLED_FILE"
         echo "1" > "$TRANSPARENT_FILE"
 
-        restart_mihomo
+        /etc/init.d/mihomo restart >/dev/null 2>&1
 
-        if [ -f "$NFT_FILE" ]; then
-            apply_nft
+        sleep 2
+
+        if apply_nft; then
+            json_ok
+        else
+            json_error "NFT_APPLY_FAILED"
         fi
-
-        json_ok
 
         ;;
 
@@ -111,15 +119,21 @@ case "$ACTION" in
 
         echo "1" > "$ENABLED_FILE"
 
-        restart_mihomo
+        /etc/init.d/mihomo restart >/dev/null 2>&1
+
+        sleep 2
 
         if [ -f "$TRANSPARENT_FILE" ] &&
            [ "$(cat "$TRANSPARENT_FILE" 2>/dev/null)" = "1" ]; then
 
-            apply_nft
+            if apply_nft; then
+                json_ok
+            else
+                json_error "NFT_APPLY_FAILED"
+            fi
+        else
+            json_ok
         fi
-
-        json_ok
 
         ;;
 
@@ -149,8 +163,8 @@ case "$ACTION" in
 
         curl -fsS \
             -X POST \
-            "$API/cache/fakeip/flush" \
-            -H "Authorization: Bearer $TOKEN" \
+            "http://127.0.0.1:9595/cache/fakeip/flush" \
+            -H "Authorization: Bearer flclash123" \
             >/dev/null 2>&1
 
         if [ $? -eq 0 ]; then
@@ -177,29 +191,34 @@ case "$ACTION" in
             curl -fsSL \
                 -o Country.mmdb \
                 "https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/country-lite.mmdb"
+
         ) >/dev/null 2>&1 &
 
-        echo "{\"ok\":true,\"message\":\"Updating in background\"}"
+        echo '{"ok":true,"message":"Updating in background"}"
 
         ;;
 
     add_acl_bypass)
 
-        IP=$(printf '%s' "$QUERY_STRING" |
-            sed -n 's/.*\(^\|&\)ip=\([^&]*\).*/\2/p')
+        IP=$(
+            printf '%s\n' "$QUERY_STRING" |
+            tr '&' '\n' |
+            sed -n 's/^ip=//p' |
+            head -n 1
+        )
 
-        IP=$(printf '%b' \
-            "$(printf '%s' "$IP" | sed 's/+/ /g;s/%/\\x/g')")
+        IP=$(
+            printf '%b' \
+            "$(printf '%s' "$IP" | sed 's/+/ /g;s/%/\\x/g')"
+        )
 
         if ! printf '%s' "$IP" |
-            grep -Eq \
-            '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
-
+            grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+        then
             json_error "INVALID_IP"
             exit 1
         fi
 
-        # Validate IPv4 octets
         OLDIFS="$IFS"
         IFS=.
         set -- $IP
@@ -220,6 +239,10 @@ case "$ACTION" in
             echo "$IP" >> "$ACL_FILE"
         fi
 
+        # Apply immediately when Uzumaki nft table exists.
+        /usr/sbin/nft add element ip uzumaki acl_ips "{ $IP }" \
+            2>/dev/null || true
+
         json_ok
 
         ;;
@@ -231,4 +254,3 @@ case "$ACTION" in
         ;;
 
 esac
-```
