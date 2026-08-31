@@ -1,84 +1,35 @@
 ```sh
-#!/bin/sh /etc/rc.common
+#!/bin/sh
+# ═══════════════════════════════════════════════
+# 🌀 UzumakiClash - Subscription Parser
+# ═══════════════════════════════════════════════
 
-USE_PROCD=1
-START=99
-STOP=10
+echo "Content-Type: text/plain"
+echo ""
 
-CONF_DIR="/etc/mihomo"
-PROG="/usr/bin/mihomo"
+RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=\(.*\)$/\1/p')
+URL=$(printf '%b' "$(echo "$RAW" | sed 's/+/ /g; s/%/\\x/g')")
+TMP="/tmp/uzsub_$$.yaml"
 
-boot() {
-    sleep 5
-    start
-}
+trap "rm -f ${TMP}* /tmp/uzsub_err.log" EXIT
 
-start_service() {
-    [ -x "$PROG" ] || return 1
-    [ -f "$CONF_DIR/config.yaml" ] || return 1
+if [ -z "$URL" ]; then
+    echo "NO_URL"
+    exit 0
+fi
 
-    # Default state
-    [ -f "$CONF_DIR/enabled" ] || echo "1" > "$CONF_DIR/enabled"
-    [ -f "$CONF_DIR/transparent" ] || echo "1" > "$CONF_DIR/transparent"
+SUB_CONV="https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=true&url="
 
-    # Do not start when explicitly disabled
-    [ "$(cat "$CONF_DIR/enabled" 2>/dev/null)" = "0" ] && return 0
+curl -sL --connect-timeout 15 --max-time 90 -H "User-Agent: ClashMeta/1.18.0" -o "$TMP" "$URL" 2>/dev/null
 
-    export GOMEMLIMIT=40MiB
-    export GOGC=20
+if [ ! -s "$TMP" ] || ! grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
+    curl -sL --connect-timeout 15 --max-time 90 -o "$TMP" "${SUB_CONV}$(echo "$URL" | sed 's/&/%26/g')" 2>/dev/null
+fi
 
-    procd_open_instance mihomo
-
-    procd_set_param command \
-        "$PROG" \
-        -d "$CONF_DIR" \
-        -f "$CONF_DIR/config.yaml"
-
-    procd_set_param respawn 3600 5 5
-
-    procd_set_param limits \
-        nofile="1048576 1048576"
-
-    procd_set_param stdout 1
-    procd_set_param stderr 1
-
-    procd_set_param pidfile /var/run/mihomo.pid
-
-    procd_close_instance
-
-    # Apply transparent routing after Mihomo starts
-    (
-        sleep 3
-
-        if [ -f "$CONF_DIR/transparent" ] && \
-           [ "$(cat "$CONF_DIR/transparent" 2>/dev/null)" = "1" ]; then
-
-            /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-            /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
-        fi
-    ) &
-}
-
-stop_service() {
-    # Remove transparent routing first
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
-
-    # Stop managed process
-    procd_kill mihomo 2>/dev/null || true
-
-    killall -9 mihomo 2>/dev/null || true
-
-    rm -f /var/run/mihomo.pid
-}
-
-reload_service() {
-    stop
-    sleep 1
-    start
-}
-
-service_triggers() {
-    procd_add_reload_trigger "mihomo" "network" "firewall"
-}
+if [ -s "$TMP" ] && grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
+    export REQUEST_METHOD="POST"
+    cat "$TMP" | /www/cgi-bin/mihomo-cfg
+else
+    echo "DOWNLOAD_OR_CONVERSION_FAILED"
+fi
 ```
