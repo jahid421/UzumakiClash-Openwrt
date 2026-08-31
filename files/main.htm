@@ -218,6 +218,10 @@ th,td{padding:10px 8px;border-bottom:1px solid var(--divider);font-size:12px;tex
 </div>
 
 <script>
+// 🌀 LuCI Root API Mapping (Sandbox bypass)
+var API_URL = '<%=luci.dispatcher.build_url("admin", "services", "mihomo", "api")%>';
+var CFG_URL = '<%=luci.dispatcher.build_url("admin", "services", "mihomo", "cfg")%>';
+var SUB_URL = '<%=luci.dispatcher.build_url("admin", "services", "mihomo", "sub")%>';
 var A='http://'+location.hostname+':9595',S='flclash123',H={'Authorization':'Bearer '+S,'Content-Type':'application/json'};
 var yc='',ua=[],da=[];
 
@@ -231,11 +235,11 @@ function af(p,o){o=o||{};o.headers=H;return fetch(A+p,o).then(function(r){return
 function sp(n,b){document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('show')});document.getElementById('pg-'+n).classList.add('show');document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('ac')});b.classList.add('ac');if(n==='proxy')pl();if(n==='config')cl();if(n==='conn')cnl();window.scrollTo({top:0,behavior:'smooth'})}
 
 function pf(el){if(!el.files.length)return;document.getElementById('fname').innerText='File: '+el.files[0].name;var r=new FileReader();r.onload=function(e){yc=e.target.result||'';document.getElementById('ubtn').disabled=yc.length<5};r.readAsText(el.files[0])}
-function dup(){if(!yc){alert('Select file');return}fetch('/cgi-bin/mihomo-cfg',{method:'POST',body:yc}).then(function(r){return r.text()}).then(function(t){alert(t.indexOf('SAVED')>=0?'Applied Successfully!':'Error: '+t);setTimeout(chk,1500)}).catch(function(){alert('Upload Failed')})}
-function dsub(){var u=document.getElementById('suburl').value;if(!u){alert('Enter Subscription URL');return}document.getElementById('submsg').innerText='Converting & Downloading...';fetch('/cgi-bin/mihomo-sub?url='+encodeURIComponent(u)).then(function(r){return r.text()}).then(function(t){document.getElementById('submsg').innerText=t.indexOf('SAVED')>=0?'Subscribed Successfully!':'Failed: '+t;setTimeout(chk,1500)}).catch(function(){document.getElementById('submsg').innerText='Error downloading sub'})}
+function dup(){if(!yc){alert('Select file');return}fetch(CFG_URL,{method:'POST',body:yc}).then(function(r){return r.text()}).then(function(t){alert(t.indexOf('SAVED')>=0?'Applied Successfully!':'Error: '+t);setTimeout(chk,1500)}).catch(function(){alert('Upload Failed')})}
+function dsub(){var u=document.getElementById('suburl').value;if(!u){alert('Enter Subscription URL');return}document.getElementById('submsg').innerText='Converting & Downloading...';fetch(SUB_URL+'?url='+encodeURIComponent(u)).then(function(r){return r.text()}).then(function(t){document.getElementById('submsg').innerText=t.indexOf('SAVED')>=0?'Subscribed Successfully!':'Failed: '+t;setTimeout(chk,1500)}).catch(function(){document.getElementById('submsg').innerText='Error downloading sub'})}
 
 function chk(){
-  fetch('/cgi-bin/mihomo-api?action=status').then(function(r){return r.json()}).then(function(d){
+  fetch(API_URL+'?action=status').then(function(r){return r.json()}).then(function(d){
     if(d&&d.running){
       document.getElementById('dot').className='dot on';
       document.getElementById('stxt').innerText='Engine Active';
@@ -252,17 +256,17 @@ function chk(){
 }
 
 function updateTPBtn(tp){var btn=document.getElementById('tpbtn');if(!btn)return;if(tp==1){btn.innerText='TPROXY: ACTIVE';btn.className='btn b1'}else{btn.innerText='TPROXY: DISABLED';btn.className='btn b3'}}
-function toggleTP(){var btn=document.getElementById('tpbtn');var isOn=btn.innerText.indexOf('ACTIVE')>=0;var act=isOn?'disable_tp':'enable_tp';btn.innerText='Switching...';fetch('/cgi-bin/mihomo-api?action='+act).then(function(r){return r.json()}).then(function(){setTimeout(chk,1500)})}
+function toggleTP(){var btn=document.getElementById('tpbtn');var isOn=btn.innerText.indexOf('ACTIVE')>=0;var act=isOn?'disable_tp':'enable_tp';btn.innerText='Switching...';fetch(API_URL+'?action='+act).then(function(r){return r.json()}).then(function(){setTimeout(chk,1500)})}
 function sm(m){af('/configs',{method:'PATCH',body:JSON.stringify({mode:m})}).then(gc)}
 function gc(){af('/configs').then(function(d){if(!d)return;['rule','global','direct'].forEach(function(m){document.getElementById('m-'+m).classList.remove('ac')});var b=document.getElementById('m-'+(d.mode||'rule'));if(b)b.classList.add('ac')})}
-function svc(a){fetch('/cgi-bin/mihomo-api?action='+a);setTimeout(chk,1500)}
-function ug(){fetch('/cgi-bin/mihomo-api?action=update_geo').then(function(){alert('GeoData Update Triggered!')})}
-function fd(){fetch('/cgi-bin/mihomo-api?action=flush_fakeip').then(function(){alert('Fake-IP Cleared!')})}
+function svc(a){fetch(API_URL+'?action='+a);setTimeout(chk,1500)}
+function ug(){fetch(API_URL+'?action=update_geo').then(function(){alert('GeoData Update Triggered!')})}
+function fd(){fetch(API_URL+'?action=flush_fakeip').then(function(){alert('Fake-IP Cleared!')})}
 
 function addACL(){
   var ip=document.getElementById('aclip').value.trim();
   if(!ip){alert('Enter valid IP');return}
-  fetch('/cgi-bin/mihomo-api?action=add_acl_bypass&ip='+encodeURIComponent(ip)).then(function(r){return r.json()}).then(function(d){
+  fetch(API_URL+'?action=add_acl_bypass&ip='+encodeURIComponent(ip)).then(function(r){return r.json()}).then(function(d){
     document.getElementById('aclmsg').innerHTML='<span style="color:#22c55e">✅ '+ip+' added to bypass list!</span>';
     document.getElementById('aclip').value='';
   });
@@ -276,8 +280,8 @@ function ps(g,n){fetch(A+'/proxies/'+g,{method:'PUT',headers:H,body:JSON.stringi
 function pt(){fetch(A+'/proxies',{headers:H}).then(function(r){return r.json()}).then(function(d){Object.keys(d.proxies).forEach(function(n){var t=d.proxies[n].type;if(['Selector','URLTest','Fallback','LoadBalance','Direct','Reject'].indexOf(t)<0)fetch(A+'/proxies/'+encodeURIComponent(n)+'/delay?timeout=5000&url=http://www.gstatic.com/generate_204',{headers:H}).catch(function(){})});setTimeout(pl,3500)})}
 function pft(){var q=document.getElementById('pq').value.toLowerCase();document.querySelectorAll('.ni').forEach(function(n){n.style.display=n.innerText.toLowerCase().indexOf(q)>=0?'':'none'})}
 
-function cl(){fetch('/cgi-bin/mihomo-cfg').then(function(r){return r.text()}).then(function(t){document.getElementById('ced').value=t})}
-function cs(){fetch('/cgi-bin/mihomo-cfg',{method:'POST',body:document.getElementById('ced').value}).then(function(r){return r.text()}).then(function(t){document.getElementById('cmsg').innerHTML=t.indexOf('SAVED')>=0?'<span style="color:#22c55e">Saved & Hot-Reloaded!</span>':'<span style="color:#ef4444">Error Saving!</span>';setTimeout(function(){document.getElementById('cmsg').innerHTML=''},3000)})}
+function cl(){fetch(CFG_URL).then(function(r){return r.text()}).then(function(t){document.getElementById('ced').value=t})}
+function cs(){fetch(CFG_URL,{method:'POST',body:document.getElementById('ced').value}).then(function(r){return r.text()}).then(function(t){document.getElementById('cmsg').innerHTML=t.indexOf('SAVED')>=0?'<span style="color:#22c55e">Saved & Hot-Reloaded!</span>':'<span style="color:#ef4444">Error Saving!</span>';setTimeout(function(){document.getElementById('cmsg').innerHTML=''},3000)})}
 
 function cnl(){fetch(A+'/connections',{headers:H}).then(function(r){return r.json()}).then(function(d){var c=d.connections||[];document.getElementById('cnc').innerText=c.length;var h='';c.forEach(function(x){var host=x.metadata.host||x.metadata.destinationIP||'-';h+='<tr><td><b>'+host+'</b></td><td>'+x.metadata.network+'</td><td>'+(x.chains?x.chains.join('>'):'-')+'</td><td>'+(x.rule||'-')+'</td><td>'+fb(x.upload)+'</td><td>'+fb(x.download)+'</td><td><button class="btn b2" style="padding:4px 8px;font-size:11px;min-height:auto" onclick="cnd(\''+x.id+'\')">Kill</button></td></tr>'});document.getElementById('cnb').innerHTML=h||'<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No Active Connections</td></tr>'}).catch(function(){})}
 function cnd(id){fetch(A+'/connections/'+id,{method:'DELETE',headers:H}).then(cnl)}
