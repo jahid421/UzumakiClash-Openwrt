@@ -1,4 +1,3 @@
-```sh
 #!/bin/sh
 
 echo "Content-Type: text/plain"
@@ -9,12 +8,13 @@ CORE="/usr/bin/mihomo"
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
 
-    TMP="/tmp/uz_cfg_$$.yaml"
-    ERR="/tmp/uz_cfg_err_$$.log"
+    TMP="/tmp/uz_raw_$$.yaml"
+    CLEAN="/tmp/uz_clean_$$.yaml"
+    FINAL="/tmp/uz_final_$$.yaml"
+    ERR="/tmp/uz_err_$$.log"
 
-    trap 'rm -f "$TMP" "$ERR"' EXIT
+    trap 'rm -f "$TMP" "$CLEAN" "$FINAL" "$ERR"' EXIT
 
-    # Read uploaded YAML from stdin
     cat > "$TMP"
 
     if [ ! -s "$TMP" ]; then
@@ -22,66 +22,254 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         exit 1
     fi
 
-    # Remove Windows CRLF
+    # Normalize CRLF
     sed -i 's/\r$//' "$TMP"
 
-    # Basic YAML sanity check
-    if ! grep -qE '^(proxies:|proxy-providers:|proxy-groups:|rules:)' "$TMP"; then
-        echo "ERROR: INVALID_CLASH_CONFIG"
-        exit 1
-    fi
-
-    # Validate config with Mihomo
-    "$CORE" -d "$CONF_DIR" -f "$TMP" -t > "$ERR" 2>&1
+    # First validate exactly what the user uploaded.
+    "$CORE" -d "$CONF_DIR" -f "$TMP" -t >"$ERR" 2>&1
 
     if [ $? -ne 0 ]; then
-        echo "INVALID_CONFIG"
+        echo "INVALID_YAML"
         head -n 8 "$ERR"
         exit 1
     fi
 
-    # Backup current working config
+    # Backup current working config.
     if [ -f "$CONF_DIR/config.yaml" ]; then
-        cp "$CONF_DIR/config.yaml" \
-           "$CONF_DIR/config.yaml.bak"
+        cp -f "$CONF_DIR/config.yaml" \
+              "$CONF_DIR/config.yaml.bak"
     fi
 
-    # Install uploaded config WITHOUT destroying:
-    # proxies / proxy-providers / proxy-groups / rules
-    cp "$TMP" "$CONF_DIR/config.yaml"
+    # Remove only global keys owned by UzumakiClash.
+    # User proxy definitions, providers, groups, rules,
+    # listeners and other supported sections are preserved.
 
+    awk '
+    function is_top_key(line,   s,p,k) {
+        if (line !~ /^[^[:space:]#][^:]*:/)
+            return ""
+        s=line
+        sub(/^[^:]*:[[:space:]]*/, "", s)
+        p=index(line, ":")
+        if (p < 1)
+            return ""
+        k=substr(line,1,p-1)
+        return k
+    }
+
+    BEGIN {
+        skip=0
+
+        core["port"]=1
+        core["socks-port"]=1
+        core["mixed-port"]=1
+        core["redir-port"]=1
+        core["tproxy-port"]=1
+
+        core["allow-lan"]=1
+        core["bind-address"]=1
+        core["mode"]=1
+        core["log-level"]=1
+        core["ipv6"]=1
+
+        core["external-controller"]=1
+        core["external-ui"]=1
+        core["secret"]=1
+
+        core["tcp-concurrent"]=1
+        core["unified-delay"]=1
+        core["global-client-fingerprint"]=1
+
+        core["profile"]=1
+        core["sniffer"]=1
+        core["dns"]=1
+    }
+
+    {
+        key=is_top_key($0)
+
+        if (key != "") {
+            if (core[key]) {
+                skip=1
+                next
+            } else {
+                skip=0
+            }
+        }
+
+        if (!skip)
+            print
+    }
+    ' "$TMP" > "$CLEAN"
+
+    # Our controlled core settings.
+    cat > "$FINAL" <<'EOF'
+mixed-port: 7890
+redir-port: 7892
+tproxy-port: 7893
+
+allow-lan: true
+bind-address: '*'
+
+mode: rule
+log-level: error
+ipv6: false
+
+external-controller: 0.0.0.0:9595
+external-ui: /etc/mihomo/ui
+secret: "flclash123"
+
+tcp-concurrent: true
+unified-delay: true
+global-client-fingerprint: chrome
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  override-destination: true
+
+  sniff:
+    HTTP:
+      ports:
+        - 80
+        - 8080-8880
+
+    TLS:
+      ports:
+        - 443
+        - 8443
+
+    QUIC:
+      ports:
+        - 443
+        - 8443
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - 'localhost'
+    - 'time.*.com'
+    - 'ntp.*.com'
+    - '+.pool.ntp.org'
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
+    - '+.microsoft.com'
+    - '+.microsoftonline.com'
+    - '+.windows.com'
+    - '+.windows.net'
+    - '+.windowsupdate.com'
+    - '+.live.com'
+    - '+.riotgames.com'
+    - '+.riotcdn.net'
+    - '+.playvalorant.com'
+    - '+.pvp.net'
+    - '+.leagueoflegends.com'
+    - '+.ultraviewer.net'
+    - '+.ultraviewer.com'
+
+  default-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+
+  proxy-server-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+    - 1.0.0.1
+
+EOF
+
+    # Preserve user configuration.
+    cat "$CLEAN" >> "$FINAL"
+
+    # If the uploaded config does not contain proxy groups,
+    # create a generic automatic group using all available proxies.
+    if ! grep -qE '^proxy-groups:[[:space:]]*$' "$CLEAN"; then
+
+        cat >> "$FINAL" <<'EOF'
+
+proxy-groups:
+  - name: "🌀 Uzumaki-Auto"
+    type: url-test
+    include-all: true
+    exclude-type: direct
+    url: http://www.gstatic.com/generate_204
+    interval: 120
+    tolerance: 30
+    lazy: true
+
+EOF
+    fi
+
+    # If the uploaded config has no rules, create safe defaults.
+    if ! grep -qE '^rules:[[:space:]]*$' "$CLEAN"; then
+
+        cat >> "$FINAL" <<'EOF'
+
+rules:
+  - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
+  - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
+  - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
+  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
+  - 'IP-CIDR,169.254.0.0/16,DIRECT,no-resolve'
+  - 'DOMAIN-SUFFIX,local,DIRECT'
+  - 'DOMAIN-SUFFIX,lan,DIRECT'
+  - 'DST-PORT,9595,DIRECT'
+  - 'NETWORK,UDP,DIRECT'
+  - 'MATCH,🌀 Uzumaki-Auto'
+EOF
+    fi
+
+    # Validate FINAL config before touching production config.
+    "$CORE" -d "$CONF_DIR" -f "$FINAL" -t >"$ERR" 2>&1
+
+    if [ $? -ne 0 ]; then
+        echo "INVALID_FINAL_CONFIG"
+        head -n 12 "$ERR"
+        exit 1
+    fi
+
+    # Atomic-ish replace.
+    cp -f "$FINAL" "$CONF_DIR/config.yaml"
     chmod 644 "$CONF_DIR/config.yaml"
 
-    # Restart Mihomo cleanly
+    # Restart engine.
     /etc/init.d/mihomo restart >/dev/null 2>&1
 
     sleep 2
 
-    # Verify process
-    if pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
+    if pgrep -f '^/usr/bin/mihomo' >/dev/null 2>&1; then
         echo "SAVED"
         exit 0
     fi
 
-    # Restore previous config if restart failed
+    # Restore previous known-good configuration.
     if [ -f "$CONF_DIR/config.yaml.bak" ]; then
-        cp "$CONF_DIR/config.yaml.bak" \
-           "$CONF_DIR/config.yaml"
+        cp -f "$CONF_DIR/config.yaml.bak" \
+              "$CONF_DIR/config.yaml"
+
         /etc/init.d/mihomo restart >/dev/null 2>&1
     fi
 
-    echo "ERROR: MIHOMO_FAILED_TO_START"
+    echo "ERROR: MIHOMO_START_FAILED"
     exit 1
 
 else
 
-    # GET = return current config
-    if [ -f "$CONF_DIR/config.yaml" ]; then
-        cat "$CONF_DIR/config.yaml"
-    else
-        echo "ERROR: CONFIG_NOT_FOUND"
-        exit 1
-    fi
+    cat "$CONF_DIR/config.yaml" 2>/dev/null
 
 fi
-```
