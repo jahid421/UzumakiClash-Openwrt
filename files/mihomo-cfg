@@ -25,7 +25,7 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
-# ⚡ Performance Boost (Fixed IDM & Speed delay)
+# ⚡ Performance Boost
 tcp-concurrent: true
 unified-delay: true
 global-client-fingerprint: chrome
@@ -56,43 +56,49 @@ dns:
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
-    # Microsoft NCSI & Store Fix
-    - '*.msftconnecttest.com'
-    - '*.msftncsi.com'
+    # Microsoft NCSI & MS Store Speed Fix
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
     - 'msftncsi.com'
-    - '*.microsoft.com'
-    - '*.windowsupdate.com'
-    - '*.store.microsoft.com'
-    - '*.store-images.s-microsoft.com'
-    - '*.xboxlive.com'
+    - '+.microsoft.com'
+    - '+.windowsupdate.com'
+    - '+.store.microsoft.com'
+    - '+.store-images.s-microsoft.com'
+    - '+.xboxlive.com'
+    - '+.delivery.mp.microsoft.com'
+    - '+.mp.microsoft.com'
     # Riot & Valorant Fix
-    - '*.pvp.net'
-    - '*.riotgames.com'
-    - '*.playvalorant.com'
-    - '*.leagueoflegends.com'
-    - '*.rgpub.io'
+    - '+.pvp.net'
+    - '+.riotgames.com'
+    - '+.playvalorant.com'
+    - '+.leagueoflegends.com'
+    - '+.rgpub.io'
+    - '+.riotcdn.net'
+    - '+.rnet.riotgames.com'
     - 'anticheat.riotgames.com'
     # Gaming & Discord Voice
-    - '*.stun.*'
-    - '*.stun.*.*'
+    - '+.stun.*'
     - '+.srv.nintendo.net'
     - '+.stun.playstation.net'
-    - '*.discord.gg'
-    - '*.discord.media'
+    - '+.discord.gg'
+    - '+.discord.media'
 HEOF
 
         awk -v lan="$LAN_IP" '/^rules:/ {
             print $0
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  # 🌀 Gaming & CDN Bypass (Fixed MS Store & Riot)"
-            print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
-            print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
-            print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+            print "  # 🌀 Gaming & CDN Bypass (Fixed MS Store Speed & Riot)"
+            print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
+            print "  - DOMAIN-SUFFIX,mp.microsoft.com,DIRECT"
             print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
             print "  - DOMAIN-KEYWORD,windows,DIRECT"
             print "  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,msftncsi.com,DIRECT"
             print "  - DOMAIN-SUFFIX,store.microsoft.com,DIRECT"
+            print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
+            print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
+            print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+            print "  - DOMAIN-SUFFIX,riotcdn.net,DIRECT"
+            print "  - DOMAIN-SUFFIX,rnet.riotgames.com,DIRECT"
             print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
             print "  - DOMAIN-SUFFIX,discord.gg,DIRECT"
             print "  - DOMAIN-SUFFIX,discord.media,DIRECT"
