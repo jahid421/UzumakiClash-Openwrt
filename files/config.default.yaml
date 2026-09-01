@@ -23,7 +23,12 @@ dns:
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
-    # Microsoft & MS Store Maximum Download Speed Fix
+    # Speedtest & Benchmark Sites Fix
+    - '+.speedtest.net'
+    - '+.ooklaserver.net'
+    - '+.ovh.net'
+    - '+.fast.com'
+    # Microsoft & MS Store Maximum Speed Fix
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
     - 'msftncsi.com'
@@ -78,6 +83,12 @@ rules:
   - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
+
+  # Speedtest Direct
+  - 'DOMAIN-SUFFIX,speedtest.net,DIRECT'
+  - 'DOMAIN-SUFFIX,ooklaserver.net,DIRECT'
+  - 'DOMAIN-SUFFIX,ovh.net,DIRECT'
+  - 'DOMAIN-SUFFIX,fast.com,DIRECT'
 
   # MS Store & Windows Update Maximum Speed Pass
   - 'DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT'
