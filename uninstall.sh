@@ -9,7 +9,7 @@ echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║  🌀 UzumakiClash Universal Uninstaller                        ║"
 echo "║  Safely Reverting Network, Firewall & System Changes         ║"
-╚══════════════════════════════════════════════════════════════╝"
+echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
 # ১. সার্ভিস বন্ধ করা
@@ -21,13 +21,19 @@ if [ -f /etc/init.d/mihomo ]; then
     rm -f /etc/init.d/mihomo
 fi
 
-# ২. ফায়ারওয়াল টেবিল ক্লিনআপ
+# ২. ফায়ারওয়াল টেবিল ও টিউনিং ক্লিনআপ
 echo "[*] Flushing firewall tables..."
 /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+/usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
+rm -f /etc/sysctl.d/99-uzumaki-tune.conf
 
-# ৩. হটপ্লাগ ও বাইনারি রিমুভ
+# ৩. হটপ্লাগ, বাইনারি ও সিস্টেম ফাইল রিমুভ
+echo "[*] Purging system files & binaries..."
+rm -f /etc/hotplug.d/iface/99-uzumaki
 rm -f /usr/bin/mihomo
 rm -rf /etc/mihomo
+rm -f /var/run/mihomo.pid
+rm -f /tmp/uzsub_* /tmp/raw_* /tmp/clean_* /tmp/final_*
 
 # ৪. CGI স্ক্রিপ্টস রিমুভ
 rm -f /www/cgi-bin/mihomo-api
@@ -45,9 +51,16 @@ uci -q delete firewall.mihomo_proxy 2>/dev/null
 uci commit firewall
 /etc/init.d/firewall restart >/dev/null 2>&1 || true
 
-# ৭. LuCI ও uhttpd ক্যাশ রিলোড
-rm -rf /tmp/luci-*
-/etc/init.d/rpcd restart >/dev/null 2>&1
-/etc/init.d/uhttpd restart >/dev/null 2>&1
+# ৭. LuCI ও ওয়েব সার্ভার ক্যাশ রিলোড
+echo "[*] Reloading Web GUI cache..."
+rm -rf /tmp/luci-* /tmp/luci-indexcache 2>/dev/null
+/etc/init.d/rpcd restart >/dev/null 2>&1 || true
+/etc/init.d/uhttpd restart >/dev/null 2>&1 || true
+/etc/init.d/nginx restart >/dev/null 2>&1 || true
 
-echo "✅ UzumakiClash has been completely removed!"
+echo ""
+echo "══════════════════════════════════════════════════════════════"
+echo " ✅ UzumakiClash has been completely removed!"
+echo "    Your router's native network has been fully restored."
+echo "══════════════════════════════════════════════════════════════"
+echo ""
