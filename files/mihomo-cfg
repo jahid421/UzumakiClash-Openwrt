@@ -56,6 +56,11 @@ dns:
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
+    # Speedtest & Benchmark Sites Fix
+    - '+.speedtest.net'
+    - '+.ooklaserver.net'
+    - '+.ovh.net'
+    - '+.fast.com'
     # Microsoft NCSI & MS Store Speed Fix
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
@@ -87,7 +92,10 @@ HEOF
         awk -v lan="$LAN_IP" '/^rules:/ {
             print $0
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  # 🌀 Gaming & CDN Bypass (Fixed MS Store Speed & Riot)"
+            print "  # 🌀 Gaming & CDN Bypass (Fixed Speedtest, MS Store & Riot)"
+            print "  - DOMAIN-SUFFIX,speedtest.net,DIRECT"
+            print "  - DOMAIN-SUFFIX,ooklaserver.net,DIRECT"
+            print "  - DOMAIN-SUFFIX,ovh.net,DIRECT"
             print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
             print "  - DOMAIN-SUFFIX,mp.microsoft.com,DIRECT"
             print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
