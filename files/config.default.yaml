@@ -18,28 +18,26 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
+    # GEOSITE Auto Rules (Fixes Riot, Valorant, MS Store & Games)
+    - 'geosite:riot'
+    - 'geosite:microsoft'
+    - 'geosite:category-games'
     - '*.lan'
     - '*.local'
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
-    # Speedtest & Benchmark Sites Fix
     - '+.speedtest.net'
     - '+.ooklaserver.net'
     - '+.ovh.net'
     - '+.fast.com'
-    # Microsoft NCSI & MS Store Speed Fix
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
     - 'msftncsi.com'
     - '+.microsoft.com'
     - '+.windowsupdate.com'
     - '+.store.microsoft.com'
-    - '+.store-images.s-microsoft.com'
     - '+.xboxlive.com'
-    - '+.delivery.mp.microsoft.com'
-    - '+.mp.microsoft.com'
-    # Riot Games, Valorant & Vanguard Fix
     - '+.pvp.net'
     - '+.riotgames.com'
     - '+.playvalorant.com'
@@ -48,12 +46,6 @@ dns:
     - '+.riotcdn.net'
     - '+.rnet.riotgames.com'
     - 'anticheat.riotgames.com'
-    # Gaming & Discord Voice
-    - '+.stun.*'
-    - '+.srv.nintendo.net'
-    - '+.stun.playstation.net'
-    - '+.discord.gg'
-    - '+.discord.media'
 
   default-nameserver:
     - 1.1.1.1
@@ -76,7 +68,7 @@ proxy-groups:
     lazy: true
 
 rules:
-  # Local Subnets Bypass
+  # Local Subnets
   - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
@@ -84,44 +76,20 @@ rules:
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
 
-  # Riot Games IP Ranges Direct Bypass
-  - 'IP-CIDR,162.249.72.0/22,DIRECT,no-resolve'
-  - 'IP-CIDR,192.64.168.0/22,DIRECT,no-resolve'
-  - 'IP-CIDR,172.65.0.0/16,DIRECT,no-resolve'
-  - 'IP-CIDR,103.240.224.0/22,DIRECT,no-resolve'
-  - 'IP-CIDR,103.2.196.0/22,DIRECT,no-resolve'
-  - 'IP-CIDR,151.106.0.0/16,DIRECT,no-resolve'
+  # GEOSITE Direct Rules (Riot Games, Microsoft, Games)
+  - 'GEOSITE,riot,DIRECT'
+  - 'GEOSITE,microsoft,DIRECT'
 
-  # Speedtest Direct
+  # Direct Domain Fallbacks
   - 'DOMAIN-SUFFIX,speedtest.net,DIRECT'
-  - 'DOMAIN-SUFFIX,ooklaserver.net,DIRECT'
-  - 'DOMAIN-SUFFIX,ovh.net,DIRECT'
-  - 'DOMAIN-SUFFIX,fast.com,DIRECT'
-
-  # MS Store & Windows Update Maximum Speed Pass
-  - 'DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT'
-  - 'DOMAIN-SUFFIX,mp.microsoft.com,DIRECT'
-  - 'DOMAIN-KEYWORD,microsoft,DIRECT'
-  - 'DOMAIN-SUFFIX,msftconnecttest.com,DIRECT'
-  - 'DOMAIN-SUFFIX,msftncsi.com,DIRECT'
-  - 'DOMAIN-SUFFIX,store.microsoft.com,DIRECT'
-  - 'DOMAIN-SUFFIX,windowsupdate.com,DIRECT'
-
-  # Riot Games & Valorant Complete Direct Pass
   - 'DOMAIN-SUFFIX,pvp.net,DIRECT'
   - 'DOMAIN-SUFFIX,riotgames.com,DIRECT'
   - 'DOMAIN-SUFFIX,playvalorant.com,DIRECT'
-  - 'DOMAIN-SUFFIX,riotcdn.net,DIRECT'
-  - 'DOMAIN-SUFFIX,rnet.riotgames.com,DIRECT'
   - 'DOMAIN-KEYWORD,valorant,DIRECT'
   - 'DOMAIN-KEYWORD,riot,DIRECT'
 
-  # Discord Voice Pass
-  - 'DOMAIN-SUFFIX,discord.gg,DIRECT'
-  - 'DOMAIN-SUFFIX,discord.media,DIRECT'
-
-  # Uzumaki Web Control
+  # Uzumaki Control
   - 'DST-PORT,9595,DIRECT'
 
-  # Match All Traffic
+  # Match
   - 'MATCH,🌀 Uzumaki-Auto'
