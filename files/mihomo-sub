@@ -1,33 +1,27 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════
-# 🌀 UzumakiClash - Subscription Parser
+# 🌀 UzumakiClash - Smart Subscription Parser
 # ═══════════════════════════════════════════════
 
 echo "Content-Type: text/plain"
 echo ""
 
-RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=\(.*\)$/\1/p')
-URL=$(printf '%b' "$(echo "$RAW" | sed 's/+/ /g; s/%/\\x/g')")
-TMP="/tmp/uzsub_$$.yaml"
+# Extract RAW URL parameter
+RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=\(.*\)$/\1/p' | cut -d'&' -f1)
 
-trap "rm -f ${TMP}* /tmp/uzsub_err.log" EXIT
+# Safe URL Decode function
+urldecode() {
+    printf '%b\n' "$(echo "$1" | sed 's/+/ /g; s/%/\\x/g')"
+}
 
-if [ -z "$URL" ]; then
-    echo "NO_URL"
-    exit 0
-fi
-
-SUB_CONV="https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=true&url="
-
-curl -sL --connect-timeout 15 --max-time 90 -H "User-Agent: ClashMeta/1.18.0" -o "$TMP" "$URL" 2>/dev/null
-
-if [ ! -s "$TMP" ] || ! grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
-    curl -sL --connect-timeout 15 --max-time 90 -o "$TMP" "${SUB_CONV}$(echo "$URL" | sed 's/&/%26/g')" 2>/dev/null
-fi
-
-if [ -s "$TMP" ] && grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
-    export REQUEST_METHOD="POST"
-    cat "$TMP" | /www/cgi-bin/mihomo-cfg
-else
-    echo "DOWNLOAD_OR_CONVERSION_FAILED"
-fi
+# Safe URL Encode function for API string
+urlencode() {
+    echo "$1" | awk -v ORS="" '{
+        gsub(/%/, "%25")
+        gsub(/&/, "%26")
+        gsub(/\+/, "%2B")
+        gsub(/#/, "%23")
+        gsub(/\?/, "%3F")
+        print
+    }'
+}
