@@ -51,28 +51,21 @@ dns:
   proxy-server-nameserver:
     - 1.1.1.1
   fake-ip-filter:
+    - 'geosite:riot'
+    - 'geosite:microsoft'
+    - 'geosite:category-games'
     - '*.lan'
     - '*.local'
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
-    # Speedtest & Benchmark Sites Fix
     - '+.speedtest.net'
-    - '+.ooklaserver.net'
-    - '+.ovh.net'
-    - '+.fast.com'
-    # Microsoft NCSI & MS Store Speed Fix
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
     - 'msftncsi.com'
     - '+.microsoft.com'
     - '+.windowsupdate.com'
     - '+.store.microsoft.com'
-    - '+.store-images.s-microsoft.com'
-    - '+.xboxlive.com'
-    - '+.delivery.mp.microsoft.com'
-    - '+.mp.microsoft.com'
-    # Riot & Valorant Fix
     - '+.pvp.net'
     - '+.riotgames.com'
     - '+.playvalorant.com'
@@ -81,10 +74,6 @@ dns:
     - '+.riotcdn.net'
     - '+.rnet.riotgames.com'
     - 'anticheat.riotgames.com'
-    # Gaming & Discord Voice
-    - '+.stun.*'
-    - '+.srv.nintendo.net'
-    - '+.stun.playstation.net'
     - '+.discord.gg'
     - '+.discord.media'
 HEOF
@@ -92,31 +81,14 @@ HEOF
         awk -v lan="$LAN_IP" '/^rules:/ {
             print $0
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  # 🌀 Riot Games IP Ranges Bypass"
-            print "  - IP-CIDR,162.249.72.0/22,DIRECT,no-resolve"
-            print "  - IP-CIDR,192.64.168.0/22,DIRECT,no-resolve"
-            print "  - IP-CIDR,172.65.0.0/16,DIRECT,no-resolve"
-            print "  - IP-CIDR,103.240.224.0/22,DIRECT,no-resolve"
-            print "  - IP-CIDR,103.2.196.0/22,DIRECT,no-resolve"
-            print "  - IP-CIDR,151.106.0.0/16,DIRECT,no-resolve"
-            print "  # 🌀 Gaming & CDN Bypass"
+            print "  # 🌀 Gaming & Riot GEOSITE Bypass"
+            print "  - GEOSITE,riot,DIRECT"
+            print "  - GEOSITE,microsoft,DIRECT"
             print "  - DOMAIN-SUFFIX,speedtest.net,DIRECT"
-            print "  - DOMAIN-SUFFIX,ooklaserver.net,DIRECT"
-            print "  - DOMAIN-SUFFIX,ovh.net,DIRECT"
-            print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,mp.microsoft.com,DIRECT"
-            print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-            print "  - DOMAIN-KEYWORD,windows,DIRECT"
-            print "  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,store.microsoft.com,DIRECT"
             print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
             print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
             print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-            print "  - DOMAIN-SUFFIX,riotcdn.net,DIRECT"
-            print "  - DOMAIN-SUFFIX,rnet.riotgames.com,DIRECT"
-            print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
             print "  - DOMAIN-SUFFIX,discord.gg,DIRECT"
-            print "  - DOMAIN-SUFFIX,discord.media,DIRECT"
             print "  - DOMAIN-SUFFIX,bd,DIRECT"
             print "  - DOMAIN-KEYWORD,bkash,DIRECT"
             next
@@ -125,6 +97,7 @@ HEOF
         $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
         if ! grep -qi "level=fatal\|level=error" /tmp/cfg_err.log; then
             mv "$FINAL" $CONF_DIR/config.yaml
+            rm -f $CONF_DIR/fakeip.sqlite /tmp/fakeip* 2>/dev/null
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
