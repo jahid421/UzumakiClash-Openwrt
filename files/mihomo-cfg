@@ -92,7 +92,14 @@ HEOF
         awk -v lan="$LAN_IP" '/^rules:/ {
             print $0
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  # 🌀 Gaming & CDN Bypass (Fixed Speedtest, MS Store & Riot)"
+            print "  # 🌀 Riot Games IP Ranges Bypass"
+            print "  - IP-CIDR,162.249.72.0/22,DIRECT,no-resolve"
+            print "  - IP-CIDR,192.64.168.0/22,DIRECT,no-resolve"
+            print "  - IP-CIDR,172.65.0.0/16,DIRECT,no-resolve"
+            print "  - IP-CIDR,103.240.224.0/22,DIRECT,no-resolve"
+            print "  - IP-CIDR,103.2.196.0/22,DIRECT,no-resolve"
+            print "  - IP-CIDR,151.106.0.0/16,DIRECT,no-resolve"
+            print "  # 🌀 Gaming & CDN Bypass"
             print "  - DOMAIN-SUFFIX,speedtest.net,DIRECT"
             print "  - DOMAIN-SUFFIX,ooklaserver.net,DIRECT"
             print "  - DOMAIN-SUFFIX,ovh.net,DIRECT"
