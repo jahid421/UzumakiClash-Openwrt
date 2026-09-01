@@ -6,22 +6,40 @@
 echo "Content-Type: text/plain"
 echo ""
 
-# Extract RAW URL parameter
-RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=\(.*\)$/\1/p' | cut -d'&' -f1)
+RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=\(.*\)$/\1/p')
+URL=$(printf '%b' "$(echo "$RAW" | sed 's/+/ /g; s/%/\\x/g')")
+TMP="/tmp/uzsub_$$.yaml"
 
-# Safe URL Decode function
-urldecode() {
-    printf '%b\n' "$(echo "$1" | sed 's/+/ /g; s/%/\\x/g')"
-}
+trap "rm -f ${TMP}* /tmp/uzsub_err.log" EXIT
 
-# Safe URL Encode function for API string
-urlencode() {
-    echo "$1" | awk -v ORS="" '{
-        gsub(/%/, "%25")
-        gsub(/&/, "%26")
-        gsub(/\+/, "%2B")
-        gsub(/#/, "%23")
-        gsub(/\?/, "%3F")
-        print
-    }'
-}
+if [ -z "$URL" ]; then
+    echo "NO_URL"
+    exit 0
+fi
+
+# Primary & Backup Subconverter APIs
+SUB_CONV1="https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=true&url="
+SUB_CONV2="https://sub.id9.cc/sub?target=clash&insert=true&emoji=true&list=true&url="
+
+# 1. Direct Download Try (for YAML configs)
+curl -sL --connect-timeout 10 --max-time 60 -H "User-Agent: Mihomo/1.18.0" -o "$TMP" "$URL" 2>/dev/null
+
+# 2. Try Primary Subconverter API (for Vless/Vmess/Base64 URLs)
+if [ ! -s "$TMP" ] || ! grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
+    ENCODED_URL=$(echo "$URL" | sed 's/&/%26/g')
+    curl -sL --connect-timeout 10 --max-time 60 -o "$TMP" "${SUB_CONV1}${ENCODED_URL}" 2>/dev/null
+fi
+
+# 3. Fallback Subconverter API (If primary fails)
+if [ ! -s "$TMP" ] || ! grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
+    ENCODED_URL=$(echo "$URL" | sed 's/&/%26/g')
+    curl -sL --connect-timeout 10 --max-time 60 -o "$TMP" "${SUB_CONV2}${ENCODED_URL}" 2>/dev/null
+fi
+
+# 4. Pass clean YAML to mihomo-cfg (Auto applies MS Store & Game Fixes)
+if [ -s "$TMP" ] && grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
+    export REQUEST_METHOD="POST"
+    cat "$TMP" | /www/cgi-bin/mihomo-cfg
+else
+    echo "DOWNLOAD_OR_CONVERSION_FAILED"
+fi
