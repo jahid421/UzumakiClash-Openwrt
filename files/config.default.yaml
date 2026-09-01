@@ -9,8 +9,7 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 tcp-concurrent: true
-unified-delay: false
-global-client-fingerprint: chrome
+unified-delay: true
 
 dns:
   enable: true
@@ -19,11 +18,41 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
+    # Local & System
     - '*.lan'
     - '*.local'
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
+
+    # Microsoft NCSI & Store (Fixes MS Store "Connecting..." / Windows No Internet Icon)
+    - '*.msftconnecttest.com'
+    - '*.msftncsi.com'
+    - 'msftncsi.com'
+    - '*.microsoft.com'
+    - '*.windowsupdate.com'
+    - '*.store.microsoft.com'
+    - '*.store-images.s-microsoft.com'
+    - '*.xboxlive.com'
+    - '*.microsoftstore.com'
+
+    # Riot Games & Valorant (Fixes Riot Client Infinite Connecting / Vanguard)
+    - '*.pvp.net'
+    - '*.riotgames.com'
+    - '*.playvalorant.com'
+    - '*.leagueoflegends.com'
+    - '*.rgpub.io'
+    - 'anticheat.riotgames.com'
+
+    # Gaming & Voice Bypass (Discord, PlayStation, Nintendo)
+    - '*.stun.*'
+    - '*.stun.*.*'
+    - '+.srv.nintendo.net'
+    - '+.stun.playstation.net'
+    - '*.discord.gg'
+    - '*.discord.media'
+    - '*.discordapp.net'
+
   default-nameserver:
     - 1.1.1.1
     - 8.8.8.8
@@ -45,11 +74,34 @@ proxy-groups:
     lazy: true
 
 rules:
+  # Local Subnets Bypass
   - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
   - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
+
+  # Microsoft Store & Windows Connectivity Direct Pass
+  - 'DOMAIN-KEYWORD,microsoft,DIRECT'
+  - 'DOMAIN-SUFFIX,msftconnecttest.com,DIRECT'
+  - 'DOMAIN-SUFFIX,msftncsi.com,DIRECT'
+  - 'DOMAIN-SUFFIX,store.microsoft.com,DIRECT'
+  - 'DOMAIN-SUFFIX,windowsupdate.com,DIRECT'
+
+  # Riot Games & Valorant Direct Pass (Direct Latency/Zero Lag)
+  - 'DOMAIN-SUFFIX,pvp.net,DIRECT'
+  - 'DOMAIN-SUFFIX,riotgames.com,DIRECT'
+  - 'DOMAIN-SUFFIX,playvalorant.com,DIRECT'
+  - 'DOMAIN-KEYWORD,valorant,DIRECT'
+  - 'DOMAIN-KEYWORD,riot,DIRECT'
+
+  # Discord Voice & Media Pass
+  - 'DOMAIN-SUFFIX,discord.gg,DIRECT'
+  - 'DOMAIN-SUFFIX,discord.media,DIRECT'
+
+  # Uzumaki Web Control Direct
   - 'DST-PORT,9595,DIRECT'
+
+  # Match All Traffic
   - 'MATCH,🌀 Uzumaki-Auto'
