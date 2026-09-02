@@ -11,52 +11,33 @@ secret: "flclash123"
 tcp-concurrent: true
 unified-delay: true
 
-sniffer:
-  enable: true
-  parse-pure-ip: true
-  sniff:
-    TLS:
-      ports: [443, 8443]
-    HTTP:
-      ports: [80, 8080]
-
 dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  respect-rules: true
-  default-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-  nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-    - 1.0.0.1
-  proxy-server-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
   fake-ip-filter:
+    # GEOSITE Auto Rules (Fixes Riot, Valorant, MS Store & Games)
+    - 'geosite:riot'
+    - 'geosite:microsoft'
+    - 'geosite:category-games'
     - '*.lan'
     - '*.local'
-    - '*.pool.ntp.org'
-    - 'time.apple.com'
-    - 'time.windows.com'
-    - 'time.nist.gov'
+    - 'time.*.com'
+    - 'ntp.*.com'
+    - '+.pool.ntp.org'
     - '+.speedtest.net'
     - '+.ooklaserver.net'
+    - '+.ovh.net'
+    - '+.fast.com'
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
+    - 'msftncsi.com'
     - '+.microsoft.com'
     - '+.windowsupdate.com'
     - '+.store.microsoft.com'
-    # UltraViewer & Remote Tools Fix
-    - '+.ultraviewer.net'
-    - '+.ultraviewer.com'
-    - '+.anydesk.com'
-    - '+.teamviewer.com'
-    # Riot & Valorant Fix
+    - '+.xboxlive.com'
     - '+.pvp.net'
     - '+.riotgames.com'
     - '+.playvalorant.com'
@@ -65,8 +46,14 @@ dns:
     - '+.riotcdn.net'
     - '+.rnet.riotgames.com'
     - 'anticheat.riotgames.com'
-    - '+.discord.gg'
-    - '+.discord.media'
+
+  default-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+    - 1.0.0.1
 
 proxies: []
 
@@ -81,32 +68,28 @@ proxy-groups:
     lazy: true
 
 rules:
+  # Local Subnets
   - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
   - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
-  - 'IP-CIDR,162.249.72.0/22,DIRECT,no-resolve'
-  - 'IP-CIDR,192.64.168.0/22,DIRECT,no-resolve'
-  - 'IP-CIDR,172.65.0.0/16,DIRECT,no-resolve'
-  - 'IP-CIDR,103.240.224.0/22,DIRECT,no-resolve'
-  - 'IP-CIDR,103.2.196.0/22,DIRECT,no-resolve'
-  - 'IP-CIDR,151.106.0.0/16,DIRECT,no-resolve'
-  # UltraViewer & Apps Direct
-  - 'DOMAIN-KEYWORD,ultraviewer,DIRECT'
-  - 'DOMAIN-KEYWORD,anydesk,DIRECT'
-  - 'DOMAIN-KEYWORD,teamviewer,DIRECT'
-  - 'DOMAIN-SUFFIX,ultraviewer.net,DIRECT'
-  - 'DOMAIN-SUFFIX,ultraviewer.com,DIRECT'
-  # General Directs
+
+  # GEOSITE Direct Rules (Riot Games, Microsoft, Games)
+  - 'GEOSITE,riot,DIRECT'
+  - 'GEOSITE,microsoft,DIRECT'
+
+  # Direct Domain Fallbacks
   - 'DOMAIN-SUFFIX,speedtest.net,DIRECT'
-  - 'DOMAIN-KEYWORD,microsoft,DIRECT'
-  - 'DOMAIN-KEYWORD,riotgames,DIRECT'
-  - 'DOMAIN-KEYWORD,playvalorant,DIRECT'
   - 'DOMAIN-SUFFIX,pvp.net,DIRECT'
-  - 'DOMAIN-SUFFIX,riotcdn.net,DIRECT'
-  - 'DOMAIN-SUFFIX,rnet.riotgames.com,DIRECT'
-  - 'DOMAIN-SUFFIX,discord.gg,DIRECT'
+  - 'DOMAIN-SUFFIX,riotgames.com,DIRECT'
+  - 'DOMAIN-SUFFIX,playvalorant.com,DIRECT'
+  - 'DOMAIN-KEYWORD,valorant,DIRECT'
+  - 'DOMAIN-KEYWORD,riot,DIRECT'
+
+  # Uzumaki Control
   - 'DST-PORT,9595,DIRECT'
+
+  # Match
   - 'MATCH,🌀 Uzumaki-Auto'
