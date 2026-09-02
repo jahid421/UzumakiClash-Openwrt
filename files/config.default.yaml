@@ -51,6 +51,12 @@ dns:
     - '+.microsoft.com'
     - '+.windowsupdate.com'
     - '+.store.microsoft.com'
+    # UltraViewer & Remote Tools Fix
+    - '+.ultraviewer.net'
+    - '+.ultraviewer.com'
+    - '+.anydesk.com'
+    - '+.teamviewer.com'
+    # Riot & Valorant Fix
     - '+.pvp.net'
     - '+.riotgames.com'
     - '+.playvalorant.com'
@@ -87,6 +93,13 @@ rules:
   - 'IP-CIDR,103.240.224.0/22,DIRECT,no-resolve'
   - 'IP-CIDR,103.2.196.0/22,DIRECT,no-resolve'
   - 'IP-CIDR,151.106.0.0/16,DIRECT,no-resolve'
+  # UltraViewer & Apps Direct
+  - 'DOMAIN-KEYWORD,ultraviewer,DIRECT'
+  - 'DOMAIN-KEYWORD,anydesk,DIRECT'
+  - 'DOMAIN-KEYWORD,teamviewer,DIRECT'
+  - 'DOMAIN-SUFFIX,ultraviewer.net,DIRECT'
+  - 'DOMAIN-SUFFIX,ultraviewer.com,DIRECT'
+  # General Directs
   - 'DOMAIN-SUFFIX,speedtest.net,DIRECT'
   - 'DOMAIN-KEYWORD,microsoft,DIRECT'
   - 'DOMAIN-KEYWORD,riotgames,DIRECT'
