@@ -18,34 +18,31 @@ if [ -z "$URL" ]; then
     exit 0
 fi
 
-# 1. Try Direct Download with Mihomo User-Agent (For Modern Panels: Marzban, 3X-UI, V2board)
+# 1. Try Direct Download with Mihomo User-Agent
 curl -sL --connect-timeout 15 --max-time 90 -A "Mihomo/1.18.0 (Clash.Meta)" -o "$TMP" "$URL" 2>/dev/null
 
-# Check if direct download returned valid Clash YAML
+# Check valid Clash YAML
 if [ -s "$TMP" ] && grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
     VALID=1
 else
     VALID=0
 fi
 
-# 2. If direct download failed or returned raw Base64, convert via Subconverter API
+# 2. Fallback to Subconverter
 if [ "$VALID" -eq 0 ]; then
-    # Full URL Encoding for Shell compatibility
     ENCODED_URL=$(echo "$URL" | sed 's/&/%26/g; s/?/%3F/g; s/=/%3D/g; s/#/%23/g; s/+/%2B/g')
 
     SUB_CONV1="https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=true&url=${ENCODED_URL}"
     SUB_CONV2="https://sub.id9.cc/sub?target=clash&insert=true&emoji=true&list=true&url=${ENCODED_URL}"
 
-    # Try Primary Subconverter
     curl -sL --connect-timeout 15 --max-time 90 -A "Mihomo/1.18.0" -o "$TMP" "$SUB_CONV1" 2>/dev/null
 
-    # Try Secondary Subconverter if primary fails
     if [ ! -s "$TMP" ] || ! grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
         curl -sL --connect-timeout 15 --max-time 90 -A "Mihomo/1.18.0" -o "$TMP" "$SUB_CONV2" 2>/dev/null
     fi
 fi
 
-# 3. Final Pass: Inject through Uzumaki Mihomo-CFG Engine
+# 3. Pipe through Uzumaki Mihomo-CFG Engine
 if [ -s "$TMP" ] && grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
     export REQUEST_METHOD="POST"
     
