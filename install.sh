@@ -99,26 +99,10 @@ if [ -f ui.tgz ]; then
     rm -f ui.tgz
 fi
 
-# ৭. Kernel Tuning (Fixes Proxy Routing)
-echo "[*] Applying Kernel Tuning..."
-cat << EOF > /etc/sysctl.d/99-uzumaki-tune.conf
-net.ipv4.ip_forward=1
-net.ipv4.conf.all.route_localnet=1
-net.ipv4.tcp_fastopen=3
-net.core.default_qdisc=fq
-net.ipv4.tcp_congestion_control=bbr
-EOF
-sysctl -p /etc/sysctl.d/99-uzumaki-tune.conf >/dev/null 2>&1
+# ৭. Kernel IP Routing Enable (Crucial)
+sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1
 
-# ৮. DNSMasq সেটআপ (Mihomo DNS Forward - CRITICAL FIX)
-echo "[*] Configuring DNSMasq to forward to Mihomo..."
-uci set dhcp.@dnsmasq[0].noresolv="1"
-uci -q delete dhcp.@dnsmasq[0].server
-uci add_list dhcp.@dnsmasq[0].server="127.0.0.1#1053"
-uci commit dhcp
-/etc/init.d/dnsmasq restart >/dev/null 2>&1
-
-# ৯. বুট এবং ক্যাশ ক্লিয়ার
+# ৮. বুট এবং ক্যাশ ক্লিয়ার
 echo "[*] Enabling Services..."
 echo "1" > $D/enabled
 echo "1" > $D/transparent
