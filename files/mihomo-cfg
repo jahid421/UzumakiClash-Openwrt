@@ -9,7 +9,8 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     tr -d '\r' > "$TMP"
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
-        # পুরনো গ্লোবাল সেটিংস ফিল্টার
+
+        # Strip old global configs before injecting Uzumaki Core
         awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
         cat << HEOF > "$FINAL"
@@ -25,7 +26,6 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
-# ⚡ Performance Boost
 tcp-concurrent: true
 unified-delay: true
 global-client-fingerprint: chrome
@@ -34,7 +34,6 @@ profile:
   store-selected: true
   store-fake-ip: true
 
-# 🌀 Sniffer Engine
 sniffer:
   enable: true
   force-dns-mapping: true
@@ -106,10 +105,17 @@ dns:
     - '+.discord.media'
 HEOF
 
-        awk -v lan="$LAN_IP" '/^rules:/ {
+        # Detect the FIRST proxy-group name from the uploaded subscription
+        FIRST_GROUP=$(grep -A 2 "^proxy-groups:" "$CLEAN" | grep "name:" | head -n 1 | sed 's/.*name:[[:space:]]*["'"'"']\?//; s/["'"'"'].*//' | tr -d '\r\n' | sed 's/[[:space:]]*$//')
+        [ -z "$FIRST_GROUP" ] && FIRST_GROUP="GLOBAL"
+
+        awk -v group="$FIRST_GROUP" '/^rules:/ {
             print $0
+            print "  # 🌀 Uzumaki Direct Bypasses"
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  # 🌀 Process & Direct Gaming Rules"
+            print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
+            print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
+            print "  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
             print "  - PROCESS-NAME,VALORANT.exe,DIRECT"
             print "  - PROCESS-NAME,VALORANT-Win64-Shipping.exe,DIRECT"
             print "  - PROCESS-NAME,RiotClientServices.exe,DIRECT"
@@ -128,6 +134,9 @@ HEOF
             print "  - DOMAIN-SUFFIX,discord.gg,DIRECT"
             print "  - DOMAIN-SUFFIX,bd,DIRECT"
             print "  - DOMAIN-KEYWORD,bkash,DIRECT"
+            print "  - DST-PORT,9595,DIRECT"
+            print "  # 🌀 Route everything else through active proxy group"
+            print "  - MATCH," group
             next
         } { print }' "$CLEAN" >> "$FINAL"
 
