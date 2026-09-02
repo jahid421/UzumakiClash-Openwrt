@@ -11,6 +11,15 @@ secret: "flclash123"
 tcp-concurrent: true
 unified-delay: true
 
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+    HTTP:
+      ports: [80, 8080]
+
 dns:
   enable: true
   listen: 0.0.0.0:1053
@@ -23,11 +32,8 @@ dns:
     - 'time.*.com'
     - 'ntp.*.com'
     - '*.pool.ntp.org'
-    # Speedtest & Benchmark Sites
     - '*.speedtest.net'
     - 'speedtest.net'
-    - '*.ooklaserver.net'
-    # Microsoft & MS Store Fix
     - '*.msftconnecttest.com'
     - '*.msftncsi.com'
     - 'msftncsi.com'
@@ -35,8 +41,6 @@ dns:
     - 'microsoft.com'
     - '*.windowsupdate.com'
     - '*.store.microsoft.com'
-    - '*.delivery.mp.microsoft.com'
-    # Riot Games & Valorant Fix
     - '*.pvp.net'
     - 'pvp.net'
     - '*.riotgames.com'
@@ -48,7 +52,6 @@ dns:
     - '*.riotcdn.net'
     - '*.rnet.riotgames.com'
     - 'anticheat.riotgames.com'
-    # Discord Voice
     - '*.discord.gg'
     - '*.discord.media'
 
@@ -80,6 +83,14 @@ rules:
   - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
+
+  # Riot Games CIDRs Direct Bypass
+  - 'IP-CIDR,162.249.72.0/22,DIRECT,no-resolve'
+  - 'IP-CIDR,192.64.168.0/22,DIRECT,no-resolve'
+  - 'IP-CIDR,172.65.0.0/16,DIRECT,no-resolve'
+  - 'IP-CIDR,103.240.224.0/22,DIRECT,no-resolve'
+  - 'IP-CIDR,103.2.196.0/22,DIRECT,no-resolve'
+  - 'IP-CIDR,151.106.0.0/16,DIRECT,no-resolve'
 
   # Direct Bypasses
   - 'DOMAIN-SUFFIX,speedtest.net,DIRECT'
