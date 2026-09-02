@@ -26,6 +26,17 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  respect-rules: true
+  default-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+    - 1.0.0.1
+  proxy-server-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
   fake-ip-filter:
     - '*.lan'
     - '*.local'
@@ -50,14 +61,6 @@ dns:
     - 'anticheat.riotgames.com'
     - '+.discord.gg'
     - '+.discord.media'
-
-  default-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-  nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-    - 1.0.0.1
 
 proxies: []
 
