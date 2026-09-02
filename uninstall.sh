@@ -27,7 +27,14 @@ echo "[*] Flushing firewall tables..."
 /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
 rm -f /etc/sysctl.d/99-uzumaki-tune.conf
 
-# ৩. হটপ্লাগ, বাইনারি ও সিস্টেম ফাইল রিমুভ
+# ৩. DNSMasq রিস্টোর (CRITICAL)
+echo "[*] Restoring native DNSMasq settings..."
+uci set dhcp.@dnsmasq[0].noresolv="0"
+uci -q delete dhcp.@dnsmasq[0].server
+uci commit dhcp
+/etc/init.d/dnsmasq restart >/dev/null 2>&1
+
+# ৪. হটপ্লাগ, বাইনারি ও সিস্টেম ফাইল রিমুভ
 echo "[*] Purging system files & binaries..."
 rm -f /etc/hotplug.d/iface/99-uzumaki
 rm -f /usr/bin/mihomo
@@ -35,23 +42,23 @@ rm -rf /etc/mihomo
 rm -f /var/run/mihomo.pid
 rm -f /tmp/uzsub_* /tmp/raw_* /tmp/clean_* /tmp/final_*
 
-# ৪. CGI স্ক্রিপ্টস রিমুভ
+# ৫. CGI স্ক্রিপ্টস রিমুভ
 rm -f /www/cgi-bin/mihomo-api
 rm -f /www/cgi-bin/mihomo-cfg
 rm -f /www/cgi-bin/mihomo-sub
 
-# ৫. LuCI মেনু ক্লিনআপ
+# ৬. LuCI মেনু ক্লিনআপ
 rm -f /usr/lib/lua/luci/controller/mihomo.lua
 rm -rf /usr/lib/lua/luci/view/mihomo
 rm -f /usr/share/luci/menu.d/luci-app-uzumakiclash.json
 
-# ৬. ফায়ারওয়াল UCI রুলস রিমুভ
+# ৭. ফায়ারওয়াল UCI রুলস রিমুভ
 uci -q delete firewall.uzumaki_rule 2>/dev/null
 uci -q delete firewall.mihomo_proxy 2>/dev/null
 uci commit firewall
 /etc/init.d/firewall restart >/dev/null 2>&1 || true
 
-# ৭. LuCI ও ওয়েব সার্ভার ক্যাশ রিলোড
+# ৮. LuCI ও ওয়েব সার্ভার ক্যাশ রিলোড
 echo "[*] Reloading Web GUI cache..."
 rm -rf /tmp/luci-* /tmp/luci-indexcache 2>/dev/null
 /etc/init.d/rpcd restart >/dev/null 2>&1 || true
