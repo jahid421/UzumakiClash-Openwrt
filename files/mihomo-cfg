@@ -4,16 +4,30 @@ echo ""
 CONF_DIR="/etc/mihomo"; CORE="/usr/bin/mihomo"
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
-    TMP="/tmp/raw_$$.yaml"; CLEAN="/tmp/clean_$$.yaml"; FINAL="/tmp/final_$$.yaml"
+    TMP="/tmp/raw_$$.yaml"; CLEAN="/tmp/clean_$$.yaml"; FINAL="/tmp/final_$$.yaml"; MERGED="/tmp/merged_$$.yaml"
     trap "rm -f /tmp/*_$$.yaml /tmp/cfg_err.log" EXIT
     tr -d '\r' > "$TMP"
-    if [ -s "$TMP" ]; then
-        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
-        
-        # Filter conflicting global keys
-        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
-        cat << 'HEOF' > "$FINAL"
+    if [ -s "$TMP" ]; then
+        # 1. Strip top-level system settings from user YAML
+        awk '
+        BEGIN { skip = 0 }
+        /^[a-zA-Z0-9_-]+:/ {
+            key = $1
+            sub(/:.*/, "", key)
+            if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile)$/) {
+                skip = 1
+            } else {
+                skip = 0
+            }
+        }
+        {
+            if (!skip) print $0
+        }
+        ' "$TMP" > "$CLEAN"
+
+        # 2. Write Base Header to FINAL
+        cat << 'EOF_HEADER' > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
 tproxy-port: 7893
@@ -23,6 +37,7 @@ mode: rule
 log-level: error
 ipv6: false
 external-controller: 0.0.0.0:9595
+external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
 tcp-concurrent: true
@@ -59,35 +74,37 @@ dns:
   fake-ip-filter:
     - '*.lan'
     - '*.local'
-    - 'time.*.com'
-    - 'ntp.*.com'
     - '*.pool.ntp.org'
-    - '*.speedtest.net'
-    - 'speedtest.net'
-    - '*.msftconnecttest.com'
-    - '*.msftncsi.com'
-    - 'msftncsi.com'
-    - '*.microsoft.com'
-    - 'microsoft.com'
-    - '*.windowsupdate.com'
-    - '*.store.microsoft.com'
-    - '*.pvp.net'
-    - 'pvp.net'
-    - '*.riotgames.com'
-    - 'riotgames.com'
-    - '*.playvalorant.com'
-    - 'playvalorant.com'
-    - '*.leagueoflegends.com'
-    - '*.rgpub.io'
-    - '*.riotcdn.net'
-    - '*.rnet.riotgames.com'
+    - 'time.apple.com'
+    - 'time.windows.com'
+    - 'time.nist.gov'
+    - '+.speedtest.net'
+    - '+.ooklaserver.net'
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
+    - '+.microsoft.com'
+    - '+.windowsupdate.com'
+    - '+.store.microsoft.com'
+    - '+.pvp.net'
+    - '+.riotgames.com'
+    - '+.playvalorant.com'
+    - '+.leagueoflegends.com'
+    - '+.rgpub.io'
+    - '+.riotcdn.net'
+    - '+.rnet.riotgames.com'
     - 'anticheat.riotgames.com'
-    - '*.discord.gg'
-    - '*.discord.media'
-HEOF
+    - '+.discord.gg'
+    - '+.discord.media'
 
-        if grep -q "^rules:" "$CLEAN"; then
-            awk '/^rules:/ {
+EOF_HEADER
+
+        # 3. Append Cleaned User Content
+        cat "$CLEAN" >> "$FINAL"
+
+        # 4. Inject Uzumaki Direct Rules Safely using AWK
+        if grep -q "^rules:" "$FINAL"; then
+            awk '
+            /^rules:/ {
                 print $0
                 print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
                 print "  - IP-CIDR,162.249.72.0/22,DIRECT,no-resolve"
@@ -108,10 +125,12 @@ HEOF
                 print "  - DOMAIN-SUFFIX,bd,DIRECT"
                 print "  - DOMAIN-KEYWORD,bkash,DIRECT"
                 next
-            } { print }' "$CLEAN" >> "$FINAL"
+            }
+            { print }
+            ' "$FINAL" > "$MERGED"
+            mv "$MERGED" "$FINAL"
         else
-            cat "$CLEAN" >> "$FINAL"
-            cat << 'REOF' >> "$FINAL"
+            cat << 'EOF_RULES' >> "$FINAL"
 
 rules:
   - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
@@ -133,20 +152,22 @@ rules:
   - DOMAIN-SUFFIX,bd,DIRECT
   - DOMAIN-KEYWORD,bkash,DIRECT
   - MATCH,DIRECT
-REOF
+EOF_RULES
         fi
 
-        CHK_OUT=$($CORE -d $CONF_DIR -f "$FINAL" -t 2>&1)
+        # 5. Syntax Test using Mihomo Core
+        CHK_ERR=$($CORE -d $CONF_DIR -f "$FINAL" -t 2>&1)
         if [ $? -eq 0 ]; then
             mv "$FINAL" $CONF_DIR/config.yaml
-            rm -f $CONF_DIR/fakeip.sqlite 2>/dev/null
+            rm -f $CONF_DIR/fakeip.sqlite /tmp/fakeip* 2>/dev/null
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
-            ERR_MSG=$(echo "$CHK_OUT" | grep -iE "fatal|error|panic" | tail -n 1)
-            [ -z "$ERR_MSG" ] && ERR_MSG=$(echo "$CHK_OUT" | tail -n 1)
+            ERR_MSG=$(echo "$CHK_ERR" | tail -n 2 | tr '\n' ' ')
             echo "INVALID YAML: $ERR_MSG"
         fi
+    else
+        echo "EMPTY_INPUT"
     fi
 else
     cat $CONF_DIR/config.yaml 2>/dev/null
