@@ -29,31 +29,27 @@ dns:
   fake-ip-filter:
     - '*.lan'
     - '*.local'
-    - 'time.*.com'
-    - 'ntp.*.com'
     - '*.pool.ntp.org'
-    - '*.speedtest.net'
-    - 'speedtest.net'
-    - '*.msftconnecttest.com'
-    - '*.msftncsi.com'
-    - 'msftncsi.com'
-    - '*.microsoft.com'
-    - 'microsoft.com'
-    - '*.windowsupdate.com'
-    - '*.store.microsoft.com'
-    - '*.pvp.net'
-    - 'pvp.net'
-    - '*.riotgames.com'
-    - 'riotgames.com'
-    - '*.playvalorant.com'
-    - 'playvalorant.com'
-    - '*.leagueoflegends.com'
-    - '*.rgpub.io'
-    - '*.riotcdn.net'
-    - '*.rnet.riotgames.com'
+    - 'time.apple.com'
+    - 'time.windows.com'
+    - 'time.nist.gov'
+    - '+.speedtest.net'
+    - '+.ooklaserver.net'
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
+    - '+.microsoft.com'
+    - '+.windowsupdate.com'
+    - '+.store.microsoft.com'
+    - '+.pvp.net'
+    - '+.riotgames.com'
+    - '+.playvalorant.com'
+    - '+.leagueoflegends.com'
+    - '+.rgpub.io'
+    - '+.riotcdn.net'
+    - '+.rnet.riotgames.com'
     - 'anticheat.riotgames.com'
-    - '*.discord.gg'
-    - '*.discord.media'
+    - '+.discord.gg'
+    - '+.discord.media'
 
   default-nameserver:
     - 1.1.1.1
@@ -76,23 +72,18 @@ proxy-groups:
     lazy: true
 
 rules:
-  # Local Subnets
   - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
   - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
-
-  # Riot Games CIDRs Direct Bypass
   - 'IP-CIDR,162.249.72.0/22,DIRECT,no-resolve'
   - 'IP-CIDR,192.64.168.0/22,DIRECT,no-resolve'
   - 'IP-CIDR,172.65.0.0/16,DIRECT,no-resolve'
   - 'IP-CIDR,103.240.224.0/22,DIRECT,no-resolve'
   - 'IP-CIDR,103.2.196.0/22,DIRECT,no-resolve'
   - 'IP-CIDR,151.106.0.0/16,DIRECT,no-resolve'
-
-  # Direct Bypasses
   - 'DOMAIN-SUFFIX,speedtest.net,DIRECT'
   - 'DOMAIN-KEYWORD,microsoft,DIRECT'
   - 'DOMAIN-KEYWORD,riotgames,DIRECT'
@@ -101,9 +92,5 @@ rules:
   - 'DOMAIN-SUFFIX,riotcdn.net,DIRECT'
   - 'DOMAIN-SUFFIX,rnet.riotgames.com,DIRECT'
   - 'DOMAIN-SUFFIX,discord.gg,DIRECT'
-
-  # Uzumaki Web Control
   - 'DST-PORT,9595,DIRECT'
-
-  # Match
   - 'MATCH,🌀 Uzumaki-Auto'
