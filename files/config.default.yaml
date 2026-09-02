@@ -22,25 +22,35 @@ dns:
     - '*.local'
     - 'time.*.com'
     - 'ntp.*.com'
-    - '+.pool.ntp.org'
-    - '+.speedtest.net'
-    - '+.ooklaserver.net'
-    - '+.msftconnecttest.com'
-    - '+.msftncsi.com'
+    - '*.pool.ntp.org'
+    # Speedtest & Benchmark Sites
+    - '*.speedtest.net'
+    - 'speedtest.net'
+    - '*.ooklaserver.net'
+    # Microsoft & MS Store Fix
+    - '*.msftconnecttest.com'
+    - '*.msftncsi.com'
     - 'msftncsi.com'
-    - '+.microsoft.com'
-    - '+.windowsupdate.com'
-    - '+.store.microsoft.com'
-    - '+.pvp.net'
-    - '+.riotgames.com'
-    - '+.playvalorant.com'
-    - '+.leagueoflegends.com'
-    - '+.rgpub.io'
-    - '+.riotcdn.net'
-    - '+.rnet.riotgames.com'
+    - '*.microsoft.com'
+    - 'microsoft.com'
+    - '*.windowsupdate.com'
+    - '*.store.microsoft.com'
+    - '*.delivery.mp.microsoft.com'
+    # Riot Games & Valorant Fix
+    - '*.pvp.net'
+    - 'pvp.net'
+    - '*.riotgames.com'
+    - 'riotgames.com'
+    - '*.playvalorant.com'
+    - 'playvalorant.com'
+    - '*.leagueoflegends.com'
+    - '*.rgpub.io'
+    - '*.riotcdn.net'
+    - '*.rnet.riotgames.com'
     - 'anticheat.riotgames.com'
-    - '+.discord.gg'
-    - '+.discord.media'
+    # Discord Voice
+    - '*.discord.gg'
+    - '*.discord.media'
 
   default-nameserver:
     - 1.1.1.1
@@ -63,12 +73,15 @@ proxy-groups:
     lazy: true
 
 rules:
+  # Local Subnets
   - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
   - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
+
+  # Direct Bypasses
   - 'DOMAIN-SUFFIX,speedtest.net,DIRECT'
   - 'DOMAIN-KEYWORD,microsoft,DIRECT'
   - 'DOMAIN-KEYWORD,riotgames,DIRECT'
@@ -77,5 +90,9 @@ rules:
   - 'DOMAIN-SUFFIX,riotcdn.net,DIRECT'
   - 'DOMAIN-SUFFIX,rnet.riotgames.com,DIRECT'
   - 'DOMAIN-SUFFIX,discord.gg,DIRECT'
+
+  # Uzumaki Web Control
   - 'DST-PORT,9595,DIRECT'
+
+  # Match
   - 'MATCH,🌀 Uzumaki-Auto'
