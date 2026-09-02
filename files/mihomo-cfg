@@ -8,9 +8,10 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     trap "rm -f /tmp/*_$$.yaml /tmp/cfg_err.log" EXIT
     tr -d '\r' > "$TMP"
     if [ -s "$TMP" ]; then
+        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
         
-        # Remove old bulky global keys
-        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
+        # Strip old bulky global settings
+        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile|tun):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
         cat << HEOF > "$FINAL"
 mixed-port: 7890
@@ -25,101 +26,77 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
+# ⚡ Performance Boost
 tcp-concurrent: true
-unified-delay: true
+unified-delay: false
+global-client-fingerprint: chrome
 
 profile:
   store-selected: true
-  store-fake-ip: true
-
-sniffer:
-  enable: true
-  force-dns-mapping: true
-  parse-pure-ip: true
-  override-destination: true
-  sniff:
-    HTTP:
-      ports: [80, 8080-8880]
-      override-destination: true
-    TLS:
-      ports: [443, 8443]
 
 dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: false
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  respect-rules: true
-  default-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
+  enhanced-mode: redir-host
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
     - 1.0.0.1
-  fake-ip-filter:
-    - '*.lan'
-    - '*.local'
-    - 'time.*.com'
-    - 'ntp.*.com'
-    - '+.pool.ntp.org'
-    - '+.speedtest.net'
-    - '+.msftconnecttest.com'
-    - '+.msftncsi.com'
-    - 'msftncsi.com'
-    - '+.microsoft.com'
-    - '+.windowsupdate.com'
-    - '+.riotgames.com'
-    - '+.playvalorant.com'
-    - '+.leagueoflegends.com'
-    - '+.pvp.net'
+  proxy-server-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  respect-rules: true
 HEOF
 
-        # Detect subscription main proxy group
-        MAIN_GROUP=$(grep -E "^  - name:" "$CLEAN" | head -n 1 | sed 's/.*name:[[:space:]]*["'"'"']\?//; s/["'"'"'].*//' | tr -d '\r\n' | sed 's/[[:space:]]*$//')
+        # Smart detection of primary proxy group from the uploaded sub
+        MAIN_GROUP=$(awk '
+        /^proxy-groups:/ { pg=1; next }
+        pg && /^[[:space:]]*- name:/ {
+            sub(/^[[:space:]]*- name:[[:space:]]*/, "")
+            gsub(/^["'"'"']|["'"'"']$/, "")
+            print $0
+            exit
+        }
+        ' "$CLEAN")
         [ -z "$MAIN_GROUP" ] && MAIN_GROUP="GLOBAL"
 
-        # Apply OOM-proof rules (No geosite lookup, standard domain rules only)
-        awk -v mg="$MAIN_GROUP" '
+        awk -v mg="$MAIN_GROUP" -v lan="$LAN_IP" '
         BEGIN { in_rules=0 }
         /^rules:/ {
             in_rules=1
             print $0
-            print "  # 🌀 Uzumaki Direct Whitelisted Bypasses"
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
             print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
             print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
-            print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,playvalorant.com,DIRECT"
+            print "  # 🌀 Gaming & CDN Bypass (Fixed UltraViewer, MS Store & Riot)"
+            print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
+            print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
             print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-            print "  - DOMAIN-SUFFIX,leagueoflegends.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT"
+            print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
+            print "  - DOMAIN-KEYWORD,windows,DIRECT"
+            print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
             print "  - DOMAIN-SUFFIX,bd,DIRECT"
             print "  - DOMAIN-KEYWORD,bkash,DIRECT"
             print "  - DOMAIN-SUFFIX,speedtest.net,DIRECT"
             print "  - DST-PORT,9595,DIRECT"
             next
         }
-        in_rules && /^[[:space:]]*- MATCH,/ {
+        in_rules && /^[[:space:]]*- MATCH,/ { next }
+        in_rules && /^[a-zA-Z0-9_-]+:/ {
+            in_rules=0
             print "  - MATCH," mg
-            next
         }
         { print }
         END {
-            if (!in_rules) {
-                print "rules:"
+            if (in_rules) {
                 print "  - MATCH," mg
             }
         }' "$CLEAN" >> "$FINAL"
 
-        # Ultra-light syntax testing (takes < 0.2s)
         $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
-        if [ $? -eq 0 ]; then
+        if ! grep -qi "level=fatal\|level=error" /tmp/cfg_err.log; then
             mv "$FINAL" $CONF_DIR/config.yaml
-            rm -f $CONF_DIR/fakeip.sqlite /tmp/fakeip* 2>/dev/null
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
