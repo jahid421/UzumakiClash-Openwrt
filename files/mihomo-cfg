@@ -34,6 +34,24 @@ profile:
   store-selected: true
   store-fake-ip: true
 
+# 🌀 Sniffer Engine
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443]
+  skip-domain:
+    - "Mijia Cloud"
+    - "+.push.apple.com"
+
 dns:
   enable: true
   listen: 0.0.0.0:1053
@@ -66,14 +84,24 @@ dns:
     - '+.microsoft.com'
     - '+.windowsupdate.com'
     - '+.store.microsoft.com'
-    - '+.pvp.net'
+    - '+.windows.com'
+    - '+.xboxlive.com'
+    - '+.xbox.com'
+    - '+.mp.microsoft.com'
+    - '+.delivery.mp.microsoft.com'
     - '+.riotgames.com'
     - '+.playvalorant.com'
     - '+.leagueoflegends.com'
+    - '+.pvp.net'
     - '+.rgpub.io'
     - '+.riotcdn.net'
     - '+.rnet.riotgames.com'
     - 'anticheat.riotgames.com'
+    - '+.epicgames.com'
+    - '+.easyanticheat.net'
+    - '+.steampowered.com'
+    - '+.battle.net'
+    - '+.blizzard.com'
     - '+.discord.gg'
     - '+.discord.media'
 HEOF
@@ -81,13 +109,22 @@ HEOF
         awk -v lan="$LAN_IP" '/^rules:/ {
             print $0
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  # 🌀 Gaming & Riot GEOSITE Bypass"
+            print "  # 🌀 Process & Direct Gaming Rules"
+            print "  - PROCESS-NAME,VALORANT.exe,DIRECT"
+            print "  - PROCESS-NAME,VALORANT-Win64-Shipping.exe,DIRECT"
+            print "  - PROCESS-NAME,RiotClientServices.exe,DIRECT"
+            print "  - PROCESS-NAME,WinStore.App.exe,DIRECT"
             print "  - GEOSITE,riot,DIRECT"
             print "  - GEOSITE,microsoft,DIRECT"
+            print "  - GEOSITE,category-games,DIRECT"
             print "  - DOMAIN-SUFFIX,speedtest.net,DIRECT"
             print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
             print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
             print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+            print "  - DOMAIN-SUFFIX,riotcdn.net,DIRECT"
+            print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
+            print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
+            print "  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT"
             print "  - DOMAIN-SUFFIX,discord.gg,DIRECT"
             print "  - DOMAIN-SUFFIX,bd,DIRECT"
             print "  - DOMAIN-KEYWORD,bkash,DIRECT"
