@@ -9,55 +9,28 @@ ipv6: false
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
+
+# ⚡ Performance Boost
 tcp-concurrent: true
-unified-delay: true
+unified-delay: false
+global-client-fingerprint: chrome
 
 profile:
   store-selected: true
-  store-fake-ip: true
-
-sniffer:
-  enable: true
-  force-dns-mapping: true
-  parse-pure-ip: true
-  override-destination: true
-  sniff:
-    HTTP:
-      ports: [80, 8080-8880]
-      override-destination: true
-    TLS:
-      ports: [443, 8443]
 
 dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: false
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  respect-rules: true
-  default-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
+  enhanced-mode: redir-host
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
     - 1.0.0.1
-  fake-ip-filter:
-    - '*.lan'
-    - '*.local'
-    - 'time.*.com'
-    - 'ntp.*.com'
-    - '+.pool.ntp.org'
-    - '+.speedtest.net'
-    - '+.msftconnecttest.com'
-    - '+.msftncsi.com'
-    - 'msftncsi.com'
-    - '+.microsoft.com'
-    - '+.windowsupdate.com'
-    - '+.riotgames.com'
-    - '+.playvalorant.com'
-    - '+.leagueoflegends.com'
-    - '+.pvp.net'
+  proxy-server-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  respect-rules: true
 
 proxies: []
 
@@ -75,18 +48,18 @@ rules:
   - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
+  - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
-  # Riot & Games Bypass (OOM Safe)
-  - 'DOMAIN-SUFFIX,riotgames.com,DIRECT'
-  - 'DOMAIN-SUFFIX,playvalorant.com,DIRECT'
+  # 🌀 Gaming, UltraViewer & Microsoft Bypass
+  - 'DOMAIN-KEYWORD,riotgames,DIRECT'
+  - 'DOMAIN-KEYWORD,playvalorant,DIRECT'
   - 'DOMAIN-SUFFIX,pvp.net,DIRECT'
-  - 'DOMAIN-SUFFIX,leagueoflegends.com,DIRECT'
-  - 'DOMAIN-KEYWORD,valorant,DIRECT'
-  - 'DOMAIN-KEYWORD,riot,DIRECT'
-  # Microsoft & Windows Store Bypass
-  - 'DOMAIN-SUFFIX,microsoft.com,DIRECT'
-  - 'DOMAIN-SUFFIX,windowsupdate.com,DIRECT'
-  - 'DOMAIN-SUFFIX,msftconnecttest.com,DIRECT'
-  - 'DOMAIN-SUFFIX,xboxlive.com,DIRECT'
+  - 'DOMAIN-KEYWORD,microsoft,DIRECT'
+  - 'DOMAIN-KEYWORD,windows,DIRECT'
+  - 'DOMAIN-KEYWORD,ultraviewer,DIRECT'
+  - 'DOMAIN-SUFFIX,bd,DIRECT'
+  - 'DOMAIN-KEYWORD,bkash,DIRECT'
+  - 'DOMAIN-SUFFIX,speedtest.net,DIRECT'
+  - 'DST-PORT,9595,DIRECT'
   - 'MATCH,🌀 Uzumaki-Auto'
