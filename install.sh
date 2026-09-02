@@ -14,7 +14,7 @@ echo "║  🌀 UzumakiClash Universal Installer (Fixed Edition)          ║"
 echo "║  Auto-Detect: opkg/apk | Precision Arch | Turbo Gaming       ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 
-# ১. ডিপেন্ডেন্সি চেক
+# ডিপেন্ডেন্সি চেক
 if command -v apk >/dev/null 2>&1; then
     PKG="apk"
     echo "[*] Updating package manager (apk)..."
@@ -31,7 +31,7 @@ echo "[*] Installing required dependencies..."
 pkg_ins curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup gzip tar busybox nftables
 [ "$PKG" = "opkg" ] && pkg_ins luci-compat luci-lib-ipkg >/dev/null 2>&1
 
-# ২. আর্কিটেকচার ডিটেকশন
+# আর্কিটেকচার ডিটেকশন
 RAW_ARCH=""
 if command -v opkg >/dev/null 2>&1; then
     RAW_ARCH=$(opkg print-architecture 2>/dev/null | grep -E "mipsel_24kc|mipsel|ramips" | awk '{print $2}' | head -n 1)
@@ -49,7 +49,7 @@ esac
 
 echo "[✓] Precise Architecture: $RAW_ARCH -> Core: $M"
 
-# ৩. কোর ডাউনলোড
+# কোর ডাউনলোড ও ইন্সটলেশন
 echo "[*] Downloading Mihomo Core Engine..."
 cd /tmp && rm -f mihomo.gz mihomo
 curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz"
@@ -69,7 +69,7 @@ else
     exit 1
 fi
 
-# ৪. ডিরেক্টরি এবং ফাইল সিঙ্ক
+# ডিরেক্টরি এবং ফাইল সিঙ্ক
 echo "[*] Syncing UzumakiClash System Files..."
 mkdir -p $D/ui /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
 
@@ -82,14 +82,7 @@ curl -sL -o $D/config.yaml "$REPO/files/config.default.yaml"
 curl -sL -o /usr/lib/lua/luci/controller/mihomo.lua "$REPO/files/mihomo.lua"
 curl -sL -o /usr/lib/lua/luci/view/mihomo/main.htm "$REPO/files/main.htm"
 
-# ৫. জিও-ডাটাবেজ ডাউনলোড
-echo "[*] Downloading GeoData Databases..."
-cd $D
-curl -sL -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb"
-curl -sL -o geoip.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat"
-curl -sL -o geosite.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
-
-# ৬. ড্যাশবোর্ড রিস্টোর
+# ড্যাশবোর্ড রিস্টোর
 echo "[*] Setting up Web Dashboard UI..."
 cd /tmp && rm -rf ui.tgz dist
 curl -sL -o ui.tgz "https://github.com/MetaCubeX/metacubexd/releases/latest/download/compressed-dist.tgz"
@@ -99,10 +92,10 @@ if [ -f ui.tgz ]; then
     rm -f ui.tgz
 fi
 
-# ৭. Kernel IP Routing Enable (Crucial)
+# কার্নেল টিউনিং
 sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1
 
-# ৮. বুট এবং ক্যাশ ক্লিয়ার
+# বুট এবং সার্ভিস সক্রিয় করা
 echo "[*] Enabling Services..."
 echo "1" > $D/enabled
 echo "1" > $D/transparent
@@ -114,5 +107,5 @@ rm -rf /tmp/luci-* /tmp/luci-indexcache 2>/dev/null
 
 echo ""
 echo "✅ UzumakiClash Ultimate Fixed Version Installed!"
-echo "🔗 Dashboard: http://$(uci get network.lan.ipaddr):9595/ui"
+echo "🔗 Dashboard: http://$(uci get network.lan.ipaddr 2>/dev/null || echo '192.168.1.1'):9595/ui"
 echo "🔑 Secret: flclash123"
