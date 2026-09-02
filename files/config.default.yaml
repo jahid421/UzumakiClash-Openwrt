@@ -1,5 +1,6 @@
 mixed-port: 7890
 redir-port: 7892
+tproxy-port: 7893
 allow-lan: true
 bind-address: '*'
 mode: rule
@@ -10,6 +11,29 @@ external-ui: /etc/mihomo/ui
 secret: "flclash123"
 tcp-concurrent: true
 unified-delay: true
+global-client-fingerprint: chrome
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+# 🌀 Sniffer Engine (Crucial for Riot, Valorant & MS Store)
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443]
+  skip-domain:
+    - "Mijia Cloud"
+    - "+.push.apple.com"
 
 dns:
   enable: true
@@ -17,36 +41,7 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  fake-ip-filter:
-    # GEOSITE Auto Rules (Fixes Riot, Valorant, MS Store & Games)
-    - 'geosite:riot'
-    - 'geosite:microsoft'
-    - 'geosite:category-games'
-    - '*.lan'
-    - '*.local'
-    - 'time.*.com'
-    - 'ntp.*.com'
-    - '+.pool.ntp.org'
-    - '+.speedtest.net'
-    - '+.ooklaserver.net'
-    - '+.ovh.net'
-    - '+.fast.com'
-    - '+.msftconnecttest.com'
-    - '+.msftncsi.com'
-    - 'msftncsi.com'
-    - '+.microsoft.com'
-    - '+.windowsupdate.com'
-    - '+.store.microsoft.com'
-    - '+.xboxlive.com'
-    - '+.pvp.net'
-    - '+.riotgames.com'
-    - '+.playvalorant.com'
-    - '+.leagueoflegends.com'
-    - '+.rgpub.io'
-    - '+.riotcdn.net'
-    - '+.rnet.riotgames.com'
-    - 'anticheat.riotgames.com'
-
+  respect-rules: true
   default-nameserver:
     - 1.1.1.1
     - 8.8.8.8
@@ -54,6 +49,58 @@ dns:
     - 1.1.1.1
     - 8.8.8.8
     - 1.0.0.1
+  proxy-server-nameserver:
+    - 1.1.1.1
+  fake-ip-filter:
+    # GEOSITE Rules
+    - 'geosite:riot'
+    - 'geosite:microsoft'
+    - 'geosite:category-games'
+    # Local
+    - '*.lan'
+    - '*.local'
+    - 'localhost.ptlogin2.qq.com'
+    # NTP / Time
+    - 'time.*.com'
+    - 'ntp.*.com'
+    - '+.pool.ntp.org'
+    - 'time.windows.com'
+    # Speedtest
+    - '+.speedtest.net'
+    - '+.ooklaserver.net'
+    - '+.fast.com'
+    # Microsoft & Windows Store
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
+    - 'msftncsi.com'
+    - '+.microsoft.com'
+    - '+.windowsupdate.com'
+    - '+.store.microsoft.com'
+    - '+.windows.com'
+    - '+.xboxlive.com'
+    - '+.xbox.com'
+    - '+.mp.microsoft.com'
+    - '+.delivery.mp.microsoft.com'
+    # Riot Games & Valorant
+    - '+.riotgames.com'
+    - '+.playvalorant.com'
+    - '+.leagueoflegends.com'
+    - '+.pvp.net'
+    - '+.riotcdn.net'
+    - '+.rgpub.io'
+    - '+.rnet.riotgames.com'
+    - 'anticheat.riotgames.com'
+    - '+.vnggames.com'
+    # Gaming Launchers (Epic, Steam, Battle.net)
+    - '+.epicgames.com'
+    - '+.easyanticheat.net'
+    - '+.steampowered.com'
+    - '+.steamserver.net'
+    - '+.battle.net'
+    - '+.blizzard.com'
+    # Voice Apps
+    - '+.discord.gg'
+    - '+.discord.media'
 
 proxies: []
 
@@ -69,27 +116,46 @@ proxy-groups:
 
 rules:
   # Local Subnets
+  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
   - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
   - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
-  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
   - 'DOMAIN-SUFFIX,local,DIRECT'
   - 'DOMAIN-SUFFIX,lan,DIRECT'
 
-  # GEOSITE Direct Rules (Riot Games, Microsoft, Games)
+  # Process-based Direct Rules (Game Executables)
+  - 'PROCESS-NAME,VALORANT.exe,DIRECT'
+  - 'PROCESS-NAME,VALORANT-Win64-Shipping.exe,DIRECT'
+  - 'PROCESS-NAME,RiotClientServices.exe,DIRECT'
+  - 'PROCESS-NAME,LeagueClient.exe,DIRECT'
+  - 'PROCESS-NAME,WinStore.App.exe,DIRECT'
+
+  # GEOSITE Direct Rules
   - 'GEOSITE,riot,DIRECT'
   - 'GEOSITE,microsoft,DIRECT'
+  - 'GEOSITE,category-games,DIRECT'
 
-  # Direct Domain Fallbacks
-  - 'DOMAIN-SUFFIX,speedtest.net,DIRECT'
-  - 'DOMAIN-SUFFIX,pvp.net,DIRECT'
+  # Direct Domain Fallbacks for Riot & Valorant
   - 'DOMAIN-SUFFIX,riotgames.com,DIRECT'
   - 'DOMAIN-SUFFIX,playvalorant.com,DIRECT'
+  - 'DOMAIN-SUFFIX,pvp.net,DIRECT'
+  - 'DOMAIN-SUFFIX,riotcdn.net,DIRECT'
   - 'DOMAIN-KEYWORD,valorant,DIRECT'
   - 'DOMAIN-KEYWORD,riot,DIRECT'
 
-  # Uzumaki Control
+  # Microsoft & Windows Store
+  - 'DOMAIN-SUFFIX,microsoft.com,DIRECT'
+  - 'DOMAIN-SUFFIX,windowsupdate.com,DIRECT'
+  - 'DOMAIN-SUFFIX,msftconnecttest.com,DIRECT'
+  - 'DOMAIN-SUFFIX,xboxlive.com,DIRECT'
+
+  # Local / Bangladesh Bypass
+  - 'DOMAIN-SUFFIX,bd,DIRECT'
+  - 'DOMAIN-KEYWORD,bkash,DIRECT'
+  - 'DOMAIN-SUFFIX,speedtest.net,DIRECT'
+
+  # Uzumaki Control API
   - 'DST-PORT,9595,DIRECT'
 
-  # Match
+  # Match Rule
   - 'MATCH,🌀 Uzumaki-Auto'
