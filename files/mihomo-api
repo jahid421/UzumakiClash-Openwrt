@@ -13,8 +13,8 @@ case "$ACTION" in
     ENABLED="1"; [ -f "$ENABLED_FILE" ] && ENABLED=$(cat "$ENABLED_FILE")
     TP="0"; [ -f "$TRANSPARENT_FILE" ] && TP=$(cat "$TRANSPARENT_FILE")
 
-    PID=$(pgrep -f "/usr/bin/mihomo" | head -n 1)
-    if [ -n "$PID" ]; then
+    if pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
+      PID=$(pgrep -f "/usr/bin/mihomo" | head -n 1)
       MEM=$(awk '/VmRSS/{print $2}' /proc/$PID/status 2>/dev/null || echo 0)
       echo "{\"running\":true,\"pid\":$PID,\"memory\":\"${MEM} kB\",\"transparent\":$TP,\"enabled\":$ENABLED}"
     else
@@ -32,7 +32,6 @@ case "$ACTION" in
         /usr/bin/mihomo -d "$CONF_DIR" -f "$CONF_DIR/config.yaml" >/dev/null 2>&1 &
     fi
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
@@ -41,7 +40,6 @@ case "$ACTION" in
     echo "0" > "$ENABLED_FILE"
     echo "0" > "$TRANSPARENT_FILE"
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     /etc/init.d/mihomo stop >/dev/null 2>&1
     killall -9 mihomo 2>/dev/null || true
     rm -f /var/run/mihomo.pid
@@ -54,7 +52,6 @@ case "$ACTION" in
     TP="0"; [ -f "$TRANSPARENT_FILE" ] && TP=$(cat "$TRANSPARENT_FILE")
     if [ "$TP" = "1" ]; then
       /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-      /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
       /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     fi
     echo "{\"ok\":true}"
@@ -63,7 +60,6 @@ case "$ACTION" in
   enable_tp)
     echo "1" > "$TRANSPARENT_FILE"
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
@@ -71,24 +67,12 @@ case "$ACTION" in
   disable_tp)
     echo "0" > "$TRANSPARENT_FILE"
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
   flush_fakeip)
     curl -s -X POST "http://127.0.0.1:9595/cache/fakeip/flush" -H "Authorization: Bearer flclash123" >/dev/null 2>&1
     echo "{\"ok\":true}"
-    ;;
-
-  update_geo)
-    (
-      cd /etc/mihomo
-      curl -sL -o geoip.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" &
-      curl -sL -o geosite.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" &
-      curl -sL -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" &
-      wait
-    ) &
-    echo "{\"ok\":true,\"message\":\"Updating in background\"}"
     ;;
 
   *)
