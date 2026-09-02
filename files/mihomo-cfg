@@ -10,7 +10,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
         
-        # Fast Header Filter
+        # Header Settings Filter
         awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
         cat << HEOF > "$FINAL"
@@ -26,7 +26,6 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
-# Turbo Performance
 tcp-concurrent: true
 unified-delay: true
 global-client-fingerprint: chrome
@@ -54,25 +53,29 @@ dns:
     - '*.local'
     - 'time.*.com'
     - 'ntp.*.com'
-    - '+.pool.ntp.org'
-    - '+.speedtest.net'
-    - '+.ooklaserver.net'
-    - '+.msftconnecttest.com'
-    - '+.msftncsi.com'
+    - '*.pool.ntp.org'
+    - '*.speedtest.net'
+    - 'speedtest.net'
+    - '*.msftconnecttest.com'
+    - '*.msftncsi.com'
     - 'msftncsi.com'
-    - '+.microsoft.com'
-    - '+.windowsupdate.com'
-    - '+.store.microsoft.com'
-    - '+.pvp.net'
-    - '+.riotgames.com'
-    - '+.playvalorant.com'
-    - '+.leagueoflegends.com'
-    - '+.rgpub.io'
-    - '+.riotcdn.net'
-    - '+.rnet.riotgames.com'
+    - '*.microsoft.com'
+    - 'microsoft.com'
+    - '*.windowsupdate.com'
+    - '*.store.microsoft.com'
+    - '*.pvp.net'
+    - 'pvp.net'
+    - '*.riotgames.com'
+    - 'riotgames.com'
+    - '*.playvalorant.com'
+    - 'playvalorant.com'
+    - '*.leagueoflegends.com'
+    - '*.rgpub.io'
+    - '*.riotcdn.net'
+    - '*.rnet.riotgames.com'
     - 'anticheat.riotgames.com'
-    - '+.discord.gg'
-    - '+.discord.media'
+    - '*.discord.gg'
+    - '*.discord.media'
 HEOF
 
         awk '/^rules:/ {
@@ -92,10 +95,16 @@ HEOF
             next
         } { print }' "$CLEAN" >> "$FINAL"
 
-        mv "$FINAL" $CONF_DIR/config.yaml
-        rm -f $CONF_DIR/fakeip.sqlite 2>/dev/null
-        /etc/init.d/mihomo restart >/dev/null 2>&1
-        echo "SAVED"
+        # Check Syntax using Mihomo Engine
+        $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
+        if [ $? -eq 0 ]; then
+            mv "$FINAL" $CONF_DIR/config.yaml
+            rm -f $CONF_DIR/fakeip.sqlite 2>/dev/null
+            /etc/init.d/mihomo restart >/dev/null 2>&1
+            echo "SAVED"
+        else
+            echo "INVALID YAML syntax check failed"
+        fi
     fi
 else
     cat $CONF_DIR/config.yaml 2>/dev/null
