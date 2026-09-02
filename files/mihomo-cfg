@@ -10,10 +10,10 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
         
-        # Header Settings Filter
+        # Filter conflicting global keys
         awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
-        cat << HEOF > "$FINAL"
+        cat << 'HEOF' > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
 tproxy-port: 7893
@@ -23,7 +23,6 @@ mode: rule
 log-level: error
 ipv6: false
 external-controller: 0.0.0.0:9595
-external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
 tcp-concurrent: true
@@ -33,6 +32,15 @@ global-client-fingerprint: chrome
 profile:
   store-selected: true
   store-fake-ip: false
+
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+    HTTP:
+      ports: [80, 8080]
 
 dns:
   enable: true
@@ -78,32 +86,66 @@ dns:
     - '*.discord.media'
 HEOF
 
-        awk '/^rules:/ {
-            print $0
-            print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  - DOMAIN-SUFFIX,speedtest.net,DIRECT"
-            print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
-            print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-            print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
-            print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
-            print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-            print "  - DOMAIN-SUFFIX,riotcdn.net,DIRECT"
-            print "  - DOMAIN-SUFFIX,rnet.riotgames.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,discord.gg,DIRECT"
-            print "  - DOMAIN-SUFFIX,bd,DIRECT"
-            print "  - DOMAIN-KEYWORD,bkash,DIRECT"
-            next
-        } { print }' "$CLEAN" >> "$FINAL"
+        if grep -q "^rules:" "$CLEAN"; then
+            awk '/^rules:/ {
+                print $0
+                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+                print "  - IP-CIDR,162.249.72.0/22,DIRECT,no-resolve"
+                print "  - IP-CIDR,192.64.168.0/22,DIRECT,no-resolve"
+                print "  - IP-CIDR,172.65.0.0/16,DIRECT,no-resolve"
+                print "  - IP-CIDR,103.240.224.0/22,DIRECT,no-resolve"
+                print "  - IP-CIDR,103.2.196.0/22,DIRECT,no-resolve"
+                print "  - IP-CIDR,151.106.0.0/16,DIRECT,no-resolve"
+                print "  - DOMAIN-SUFFIX,speedtest.net,DIRECT"
+                print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
+                print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
+                print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
+                print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
+                print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+                print "  - DOMAIN-SUFFIX,riotcdn.net,DIRECT"
+                print "  - DOMAIN-SUFFIX,rnet.riotgames.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,discord.gg,DIRECT"
+                print "  - DOMAIN-SUFFIX,bd,DIRECT"
+                print "  - DOMAIN-KEYWORD,bkash,DIRECT"
+                next
+            } { print }' "$CLEAN" >> "$FINAL"
+        else
+            cat "$CLEAN" >> "$FINAL"
+            cat << 'REOF' >> "$FINAL"
 
-        # Check Syntax using Mihomo Engine
-        $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
+rules:
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,162.249.72.0/22,DIRECT,no-resolve
+  - IP-CIDR,192.64.168.0/22,DIRECT,no-resolve
+  - IP-CIDR,172.65.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,103.240.224.0/22,DIRECT,no-resolve
+  - IP-CIDR,103.2.196.0/22,DIRECT,no-resolve
+  - IP-CIDR,151.106.0.0/16,DIRECT,no-resolve
+  - DOMAIN-SUFFIX,speedtest.net,DIRECT
+  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT
+  - DOMAIN-KEYWORD,microsoft,DIRECT
+  - DOMAIN-KEYWORD,riotgames,DIRECT
+  - DOMAIN-KEYWORD,playvalorant,DIRECT
+  - DOMAIN-SUFFIX,pvp.net,DIRECT
+  - DOMAIN-SUFFIX,riotcdn.net,DIRECT
+  - DOMAIN-SUFFIX,rnet.riotgames.com,DIRECT
+  - DOMAIN-SUFFIX,discord.gg,DIRECT
+  - DOMAIN-SUFFIX,bd,DIRECT
+  - DOMAIN-KEYWORD,bkash,DIRECT
+  - MATCH,DIRECT
+REOF
+        fi
+
+        CHK_OUT=$($CORE -d $CONF_DIR -f "$FINAL" -t 2>&1)
         if [ $? -eq 0 ]; then
             mv "$FINAL" $CONF_DIR/config.yaml
             rm -f $CONF_DIR/fakeip.sqlite 2>/dev/null
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
-            echo "INVALID YAML syntax check failed"
+            ERR_MSG=$(echo "$CHK_OUT" | grep -iE "fatal|error|panic" | tail -n 1)
+            [ -z "$ERR_MSG" ] && ERR_MSG=$(echo "$CHK_OUT" | tail -n 1)
+            echo "INVALID YAML: $ERR_MSG"
         fi
     fi
 else
