@@ -8,6 +8,23 @@ CONF_DIR="/etc/mihomo"
 TRANSPARENT_FILE="$CONF_DIR/transparent"
 ENABLED_FILE="$CONF_DIR/enabled"
 
+# Setup DNSMasq to forward queries to Mihomo (Port 1053)
+setup_dnsmasq() {
+    uci set dhcp.@dnsmasq[0].noresolv="1"
+    uci -q delete dhcp.@dnsmasq[0].server
+    uci add_list dhcp.@dnsmasq[0].server="127.0.0.1#1053"
+    uci commit dhcp
+    /etc/init.d/dnsmasq restart >/dev/null 2>&1
+}
+
+# Restore Original DNSMasq settings
+restore_dnsmasq() {
+    uci set dhcp.@dnsmasq[0].noresolv="0"
+    uci -q delete dhcp.@dnsmasq[0].server
+    uci commit dhcp
+    /etc/init.d/dnsmasq restart >/dev/null 2>&1
+}
+
 case "$ACTION" in
   status)
     ENABLED="1"; [ -f "$ENABLED_FILE" ] && ENABLED=$(cat "$ENABLED_FILE")
@@ -31,10 +48,10 @@ case "$ACTION" in
     if ! pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
         /usr/bin/mihomo -d "$CONF_DIR" -f "$CONF_DIR/config.yaml" >/dev/null 2>&1 &
     fi
-    # Clean old nftables and re-apply fresh rules
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
     /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
+    setup_dnsmasq
     echo "{\"ok\":true}"
     ;;
 
@@ -43,6 +60,7 @@ case "$ACTION" in
     echo "0" > "$TRANSPARENT_FILE"
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
     /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
+    restore_dnsmasq
     /etc/init.d/mihomo stop >/dev/null 2>&1
     killall -9 mihomo 2>/dev/null || true
     rm -f /var/run/mihomo.pid
@@ -57,6 +75,7 @@ case "$ACTION" in
       /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
       /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
       /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
+      setup_dnsmasq
     fi
     echo "{\"ok\":true}"
     ;;
@@ -66,6 +85,7 @@ case "$ACTION" in
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
     /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
+    setup_dnsmasq
     echo "{\"ok\":true}"
     ;;
 
@@ -73,6 +93,7 @@ case "$ACTION" in
     echo "0" > "$TRANSPARENT_FILE"
     /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
     /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
+    restore_dnsmasq
     echo "{\"ok\":true}"
     ;;
 
