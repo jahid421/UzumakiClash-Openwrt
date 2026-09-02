@@ -9,7 +9,6 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     tr -d '\r' > "$TMP"
 
     if [ -s "$TMP" ]; then
-        # 1. Strip top-level system settings from user YAML
         awk '
         BEGIN { skip = 0 }
         /^[a-zA-Z0-9_-]+:/ {
@@ -26,7 +25,6 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         }
         ' "$TMP" > "$CLEAN"
 
-        # 2. Write Base Header to FINAL
         cat << 'EOF_HEADER' > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
@@ -88,6 +86,10 @@ dns:
     - '+.microsoft.com'
     - '+.windowsupdate.com'
     - '+.store.microsoft.com'
+    - '+.ultraviewer.net'
+    - '+.ultraviewer.com'
+    - '+.anydesk.com'
+    - '+.teamviewer.com'
     - '+.pvp.net'
     - '+.riotgames.com'
     - '+.playvalorant.com'
@@ -101,10 +103,8 @@ dns:
 
 EOF_HEADER
 
-        # 3. Append Cleaned User Content
         cat "$CLEAN" >> "$FINAL"
 
-        # 4. Inject Uzumaki Direct Rules Safely using AWK
         if grep -q "^rules:" "$FINAL"; then
             awk '
             /^rules:/ {
@@ -116,6 +116,11 @@ EOF_HEADER
                 print "  - IP-CIDR,103.240.224.0/22,DIRECT,no-resolve"
                 print "  - IP-CIDR,103.2.196.0/22,DIRECT,no-resolve"
                 print "  - IP-CIDR,151.106.0.0/16,DIRECT,no-resolve"
+                print "  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
+                print "  - DOMAIN-KEYWORD,anydesk,DIRECT"
+                print "  - DOMAIN-KEYWORD,teamviewer,DIRECT"
+                print "  - DOMAIN-SUFFIX,ultraviewer.net,DIRECT"
+                print "  - DOMAIN-SUFFIX,ultraviewer.com,DIRECT"
                 print "  - DOMAIN-SUFFIX,speedtest.net,DIRECT"
                 print "  - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT"
                 print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
@@ -143,6 +148,11 @@ rules:
   - IP-CIDR,103.240.224.0/22,DIRECT,no-resolve
   - IP-CIDR,103.2.196.0/22,DIRECT,no-resolve
   - IP-CIDR,151.106.0.0/16,DIRECT,no-resolve
+  - DOMAIN-KEYWORD,ultraviewer,DIRECT
+  - DOMAIN-KEYWORD,anydesk,DIRECT
+  - DOMAIN-KEYWORD,teamviewer,DIRECT
+  - DOMAIN-SUFFIX,ultraviewer.net,DIRECT
+  - DOMAIN-SUFFIX,ultraviewer.com,DIRECT
   - DOMAIN-SUFFIX,speedtest.net,DIRECT
   - DOMAIN-SUFFIX,delivery.mp.microsoft.com,DIRECT
   - DOMAIN-KEYWORD,microsoft,DIRECT
@@ -158,7 +168,6 @@ rules:
 EOF_RULES
         fi
 
-        # 5. Syntax Test using Mihomo Core
         CHK_ERR=$($CORE -d $CONF_DIR -f "$FINAL" -t 2>&1)
         if [ $? -eq 0 ]; then
             mv "$FINAL" $CONF_DIR/config.yaml
