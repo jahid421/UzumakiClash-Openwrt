@@ -8,9 +8,8 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     trap "rm -f /tmp/*_$$.yaml /tmp/cfg_err.log" EXIT
     tr -d '\r' > "$TMP"
     if [ -s "$TMP" ]; then
-        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
-
-        # Strip old global configs to inject clean Uzumaki Core
+        
+        # Remove old bulky global keys
         awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
         cat << HEOF > "$FINAL"
@@ -28,7 +27,6 @@ secret: "flclash123"
 
 tcp-concurrent: true
 unified-delay: true
-global-client-fingerprint: chrome
 
 profile:
   store-selected: true
@@ -45,11 +43,6 @@ sniffer:
       override-destination: true
     TLS:
       ports: [443, 8443]
-    QUIC:
-      ports: [443]
-  skip-domain:
-    - "Mijia Cloud"
-    - "+.push.apple.com"
 
 dns:
   enable: true
@@ -65,12 +58,7 @@ dns:
     - 1.1.1.1
     - 8.8.8.8
     - 1.0.0.1
-  proxy-server-nameserver:
-    - 1.1.1.1
   fake-ip-filter:
-    - 'geosite:riot'
-    - 'geosite:microsoft'
-    - 'geosite:category-games'
     - '*.lan'
     - '*.local'
     - 'time.*.com'
@@ -82,67 +70,54 @@ dns:
     - 'msftncsi.com'
     - '+.microsoft.com'
     - '+.windowsupdate.com'
-    - '+.store.microsoft.com'
-    - '+.windows.com'
-    - '+.xboxlive.com'
-    - '+.xbox.com'
-    - '+.mp.microsoft.com'
-    - '+.delivery.mp.microsoft.com'
     - '+.riotgames.com'
     - '+.playvalorant.com'
     - '+.leagueoflegends.com'
     - '+.pvp.net'
-    - '+.rgpub.io'
-    - '+.riotcdn.net'
-    - '+.rnet.riotgames.com'
-    - 'anticheat.riotgames.com'
-    - '+.epicgames.com'
-    - '+.easyanticheat.net'
-    - '+.steampowered.com'
-    - '+.steamserver.net'
-    - '+.battle.net'
-    - '+.blizzard.com'
-    - '+.discord.gg'
-    - '+.discord.media'
 HEOF
 
-        # Smart Auto-detect the primary proxy-group name from the subscription
-        FIRST_GROUP=$(grep -A 2 "^proxy-groups:" "$CLEAN" | grep "name:" | head -n 1 | sed 's/.*name:[[:space:]]*["'"'"']\?//; s/["'"'"'].*//' | tr -d '\r\n' | sed 's/[[:space:]]*$//')
-        [ -z "$FIRST_GROUP" ] && FIRST_GROUP="GLOBAL"
+        # Detect subscription main proxy group
+        MAIN_GROUP=$(grep -E "^  - name:" "$CLEAN" | head -n 1 | sed 's/.*name:[[:space:]]*["'"'"']\?//; s/["'"'"'].*//' | tr -d '\r\n' | sed 's/[[:space:]]*$//')
+        [ -z "$MAIN_GROUP" ] && MAIN_GROUP="GLOBAL"
 
-        awk -v group="$FIRST_GROUP" '/^rules:/ {
+        # Apply OOM-proof rules (No geosite lookup, standard domain rules only)
+        awk -v mg="$MAIN_GROUP" '
+        BEGIN { in_rules=0 }
+        /^rules:/ {
+            in_rules=1
             print $0
-            print "  # 🌀 Uzumaki Direct Whitelist Bypasses"
+            print "  # 🌀 Uzumaki Direct Whitelisted Bypasses"
             print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
             print "  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
             print "  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
-            print "  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
-            print "  - PROCESS-NAME,VALORANT.exe,DIRECT"
-            print "  - PROCESS-NAME,VALORANT-Win64-Shipping.exe,DIRECT"
-            print "  - PROCESS-NAME,RiotClientServices.exe,DIRECT"
-            print "  - PROCESS-NAME,WinStore.App.exe,DIRECT"
-            print "  - GEOSITE,riot,DIRECT"
-            print "  - GEOSITE,microsoft,DIRECT"
-            print "  - GEOSITE,category-games,DIRECT"
-            print "  - DOMAIN-SUFFIX,speedtest.net,DIRECT"
-            print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
-            print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
+            print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
+            print "  - DOMAIN-SUFFIX,playvalorant.com,DIRECT"
             print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-            print "  - DOMAIN-SUFFIX,riotcdn.net,DIRECT"
+            print "  - DOMAIN-SUFFIX,leagueoflegends.com,DIRECT"
             print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
             print "  - DOMAIN-SUFFIX,windowsupdate.com,DIRECT"
             print "  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,discord.gg,DIRECT"
             print "  - DOMAIN-SUFFIX,bd,DIRECT"
             print "  - DOMAIN-KEYWORD,bkash,DIRECT"
+            print "  - DOMAIN-SUFFIX,speedtest.net,DIRECT"
             print "  - DST-PORT,9595,DIRECT"
-            print "  # 🌀 Route remaining traffic to Proxy Node"
-            print "  - MATCH," group
             next
-        } { print }' "$CLEAN" >> "$FINAL"
+        }
+        in_rules && /^[[:space:]]*- MATCH,/ {
+            print "  - MATCH," mg
+            next
+        }
+        { print }
+        END {
+            if (!in_rules) {
+                print "rules:"
+                print "  - MATCH," mg
+            }
+        }' "$CLEAN" >> "$FINAL"
 
+        # Ultra-light syntax testing (takes < 0.2s)
         $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
-        if ! grep -qi "level=fatal\|level=error" /tmp/cfg_err.log; then
+        if [ $? -eq 0 ]; then
             mv "$FINAL" $CONF_DIR/config.yaml
             rm -f $CONF_DIR/fakeip.sqlite /tmp/fakeip* 2>/dev/null
             /etc/init.d/mihomo restart >/dev/null 2>&1
