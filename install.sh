@@ -14,7 +14,7 @@ echo "║  🌀 UzumakiClash Universal Installer (Fixed Edition)          ║"
 echo "║  Auto-Detect: opkg/apk | Precision Arch | Turbo Gaming       ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 
-# ১. ডিপেন্ডেন্সি চেক (opkg vs apk)
+# ১. ডিপেন্ডেন্সি চেক
 if command -v apk >/dev/null 2>&1; then
     PKG="apk"
     echo "[*] Updating package manager (apk)..."
@@ -31,7 +31,7 @@ echo "[*] Installing required dependencies..."
 pkg_ins curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup gzip tar busybox nftables
 [ "$PKG" = "opkg" ] && pkg_ins luci-compat luci-lib-ipkg >/dev/null 2>&1
 
-# ২. mt7621 / mipsel_24kc এর জন্য নিখুঁত ডিটেকশন (Fix for 'unexpected (' error)
+# ২. আর্কিটেকচার ডিটেকশন
 RAW_ARCH=""
 if command -v opkg >/dev/null 2>&1; then
     RAW_ARCH=$(opkg print-architecture 2>/dev/null | grep -E "mipsel_24kc|mipsel|ramips" | awk '{print $2}' | head -n 1)
@@ -49,7 +49,7 @@ esac
 
 echo "[✓] Precise Architecture: $RAW_ARCH -> Core: $M"
 
-# ৩. কোর ডাউনলোড ও ইন্সটলেশন
+# ৩. কোর ডাউনলোড
 echo "[*] Downloading Mihomo Core Engine..."
 cd /tmp && rm -f mihomo.gz mihomo
 curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz"
@@ -82,7 +82,7 @@ curl -sL -o $D/config.yaml "$REPO/files/config.default.yaml"
 curl -sL -o /usr/lib/lua/luci/controller/mihomo.lua "$REPO/files/mihomo.lua"
 curl -sL -o /usr/lib/lua/luci/view/mihomo/main.htm "$REPO/files/main.htm"
 
-# ৫. জিও-ডাটাবেজ ডাউনলোড (GeoData for Rules & Gaming)
+# ৫. জিও-ডাটাবেজ ডাউনলোড
 echo "[*] Downloading GeoData Databases..."
 cd $D
 curl -sL -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb"
@@ -99,7 +99,26 @@ if [ -f ui.tgz ]; then
     rm -f ui.tgz
 fi
 
-# ৭. বুট এবং ক্যাশ ক্লিয়ার
+# ৭. Kernel Tuning (Fixes Proxy Routing)
+echo "[*] Applying Kernel Tuning..."
+cat << EOF > /etc/sysctl.d/99-uzumaki-tune.conf
+net.ipv4.ip_forward=1
+net.ipv4.conf.all.route_localnet=1
+net.ipv4.tcp_fastopen=3
+net.core.default_qdisc=fq
+net.ipv4.tcp_congestion_control=bbr
+EOF
+sysctl -p /etc/sysctl.d/99-uzumaki-tune.conf >/dev/null 2>&1
+
+# ৮. DNSMasq সেটআপ (Mihomo DNS Forward - CRITICAL FIX)
+echo "[*] Configuring DNSMasq to forward to Mihomo..."
+uci set dhcp.@dnsmasq[0].noresolv="1"
+uci -q delete dhcp.@dnsmasq[0].server
+uci add_list dhcp.@dnsmasq[0].server="127.0.0.1#1053"
+uci commit dhcp
+/etc/init.d/dnsmasq restart >/dev/null 2>&1
+
+# ৯. বুট এবং ক্যাশ ক্লিয়ার
 echo "[*] Enabling Services..."
 echo "1" > $D/enabled
 echo "1" > $D/transparent
@@ -111,3 +130,5 @@ rm -rf /tmp/luci-* /tmp/luci-indexcache 2>/dev/null
 
 echo ""
 echo "✅ UzumakiClash Ultimate Fixed Version Installed!"
+echo "🔗 Dashboard: http://$(uci get network.lan.ipaddr):9595/ui"
+echo "🔑 Secret: flclash123"
