@@ -2,6 +2,7 @@
 USE_PROCD=1
 START=99
 STOP=10
+
 CONF_DIR="/etc/mihomo"
 PROG="/usr/bin/mihomo"
 
@@ -10,36 +11,55 @@ boot() {
     start
 }
 
+setup_routing() {
+    # 🌀 Linux Policy Routing for TPROXY Engine (FwMark 0x1 -> Table 100)
+    ip rule del fwmark 0x1 table 100 2>/dev/null
+    ip route flush table 100 2>/dev/null
+    ip rule add fwmark 0x1 table 100
+    ip route add local 0.0.0.0/0 dev lo table 100
+}
+
+cleanup_routing() {
+    ip rule del fwmark 0x1 table 100 2>/dev/null
+    ip route flush table 100 2>/dev/null
+}
+
 start_service() {
     if [ -f "$CONF_DIR/enabled" ] && [ "$(cat "$CONF_DIR/enabled")" = "0" ]; then
         return 0
     fi
-    
+
     [ -x "$PROG" ] || return 1
     [ -f "$CONF_DIR/config.yaml" ] || return 1
 
-    # Low-RAM Guardian
-    export GOMEMLIMIT=40MiB
-    export GOGC=20
+    # 🧹 Purge Old Fake-IP Cache on every start
+    rm -f $CONF_DIR/fakeip.sqlite /tmp/fakeip* 2>/dev/null
 
     procd_open_instance mihomo
     procd_set_param command "$PROG" -d "$CONF_DIR" -f "$CONF_DIR/config.yaml"
+    
+    # Low-RAM Guardian
+    procd_set_param env GOMEMLIMIT="45MiB"
+    procd_set_param env GOGC="25"
+    
     procd_set_param respawn 3600 5 5
     procd_set_param limits nofile="1048576 1048576"
     procd_set_param pidfile /var/run/mihomo.pid
     procd_close_instance
-    
+
     if [ -f "$CONF_DIR/transparent" ] && [ "$(cat "$CONF_DIR/transparent")" = "1" ]; then
         (
             sleep 2
-            /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+            setup_routing
+            /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
             /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
         ) &
     fi
 }
 
 stop_service() {
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    cleanup_routing
+    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     killall -9 mihomo 2>/dev/null || true
     rm -f /var/run/mihomo.pid
 }
