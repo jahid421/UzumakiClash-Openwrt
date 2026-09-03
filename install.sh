@@ -1,6 +1,6 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════════════
-# 🌀 UzumakiClash - Master Universal Installer (Gaming Fixed Edition)
+# 🌀 UzumakiClash - Master Installer (Final Precision Edition)
 # Repo: https://github.com/jahid421/UzumakiClash-Openwrt
 # Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
 # ═══════════════════════════════════════════════════════════════════════
@@ -10,43 +10,38 @@ V="v1.18.10"; D="/etc/mihomo"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  🌀 UzumakiClash Universal Installer (Gaming Fixed Edition)   ║"
-echo "║  Auto-Detect: opkg/apk | Gaming TPROXY Engine | All Routers  ║"
+echo "║  🌀 UzumakiClash Universal Installer (Fixed Edition)         ║"
+echo "║  Auto-Detect: opkg/apk | Precision Arch | Turbo Gaming       ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 
-# ডিপেন্ডেন্সি চেক ও প্যাকেজ ম্যানেজার হ্যান্ডলিং
 if command -v apk >/dev/null 2>&1; then
     PKG="apk"; apk update; pkg_ins() { apk add "$@"; }
 else
     PKG="opkg"; opkg update; pkg_ins() { opkg install "$@"; }
 fi
 
-echo "[*] Installing critical networking & TPROXY kernel modules..."
-pkg_ins curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup gzip tar busybox kmod-nft-tproxy kmod-ipt-tproxy iptables-mod-tproxy
+echo "[*] Installing dependencies..."
+pkg_ins curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup gzip tar busybox
 [ "$PKG" = "opkg" ] && pkg_ins luci-compat luci-lib-ipkg
 
-# ⚡ নিখুঁত আর্কিটেকচার ডিটেকশন (MIPS, ARMv7, ARM64, x86_64)
-RAW_ARCH=$(opkg print-architecture 2>/dev/null | grep -E "mipsel_24kc|mips_24kc|arm_cortex-a7|aarch64|x86_64" | awk '{print $2}' | head -n 1)
+RAW_ARCH=$(opkg print-architecture | grep -E "mipsel_24kc|mipsel" | awk '{print $2}' | head -n 1)
 [ -z "$RAW_ARCH" ] && RAW_ARCH=$(uname -m)
 
 case "$RAW_ARCH" in
     mipsel*|mipsle*) M="mipsle-softfloat" ;;
     mips*) M="mips-softfloat" ;;
-    armv7*|armv7l*|armhf*|*cortex-a7*) M="armv7" ;;
     aarch64*|arm64*) M="arm64" ;;
     x86_64*|amd64*) M="amd64-compatible" ;;
     *) M="mipsle-softfloat" ;; 
 esac
 
-echo "[✓] Detected Router Architecture: $RAW_ARCH -> Mihomo Core: $M"
+echo "[✓] Precise Architecture: $RAW_ARCH -> Core: $M"
 
-# কোর ডাউনলোড ও ইন্সটলেশন
 cd /tmp && rm -f mihomo.gz mihomo
 curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz"
 gzip -d -f mihomo.gz 2>/dev/null || gunzip -f mihomo.gz
 chmod +x mihomo && mv mihomo /usr/bin/mihomo
 
-# ডিরেক্টরি এবং ফাইল সিঙ্ক
 mkdir -p $D/ui /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
 curl -sL -o /etc/init.d/mihomo "$REPO/files/mihomo.init" && chmod +x /etc/init.d/mihomo
 curl -sL -o /www/cgi-bin/mihomo-api "$REPO/files/mihomo-api" && chmod +x /www/cgi-bin/mihomo-api
@@ -57,11 +52,9 @@ curl -sL -o $D/config.yaml "$REPO/files/config.default.yaml"
 curl -sL -o /usr/lib/lua/luci/controller/mihomo.lua "$REPO/files/mihomo.lua"
 curl -sL -o /usr/lib/lua/luci/view/mihomo/main.htm "$REPO/files/main.htm"
 
-# ড্যাশবোর্ড রিস্টোর
 cd /tmp && curl -sL -o ui.tgz "https://github.com/MetaCubeX/metacubexd/releases/latest/download/compressed-dist.tgz"
 tar -xzf ui.tgz -C $D/ui/ && [ -d "$D/ui/dist" ] && mv $D/ui/dist/* $D/ui/ && rm -rf $D/ui/dist
 
-# বুট এবং ক্যাশ ক্লিয়ার
 /etc/init.d/mihomo enable && /etc/init.d/mihomo restart
 rm -rf /tmp/luci-* && /etc/init.d/rpcd restart
-echo "✅ UzumakiClash Fixed & Optimized Version Installed Successfully!"
+echo "✅ UzumakiClash Ultimate Fixed Version Installed!"
