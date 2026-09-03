@@ -1,93 +1,46 @@
 #!/bin/sh
-echo "Content-Type: text/plain"
-echo ""
-CONF_DIR="/etc/mihomo"; CORE="/usr/bin/mihomo"
+# UzumakiClash Config Validator & Optimizer
 
-if [ "$REQUEST_METHOD" = "POST" ]; then
-    TMP="/tmp/raw_$$.yaml"; CLEAN="/tmp/clean_$$.yaml"; FINAL="/tmp/final_$$.yaml"
-    trap "rm -f /tmp/*_$$.yaml /tmp/cfg_err.log" EXIT
-    tr -d '\r' > "$TMP"
+CORE="/usr/bin/uzumaki-core"
+CONF_DIR="/etc/uzumaki"
+
+case "$1" in
+    validate)
+        FILE="${2:-$CONF_DIR/config.yaml}"
+        if $CORE -t -d $CONF_DIR -f "$FILE" 2>&1 | grep -q "successful"; then
+            echo "✓ Config is valid"
+            exit 0
+        else
+            echo "✗ Config is INVALID:"
+            $CORE -t -d $CONF_DIR -f "$FILE"
+            exit 1
+        fi
+        ;;
     
-    if [ -s "$TMP" ]; then
-        # ১. গ্লোবাল সেটিংস ক্লিন করা
-        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
-
-        # ২. ডাইনামিকভাবে প্রথম প্রক্সি গ্রুপের নাম খুঁজে বের করা (মাস্ট ফিক্স!)
-        # এটি ইউজারের কনফিগ থেকে প্রথম '- name: "..."' লাইনটি খুঁজে নাম বের করবে
-        PGROUP=$(grep -A 15 "proxy-groups:" "$CLEAN" | grep "- name:" | head -n 1 | sed 's/.*name:[[:space:]]*//; s/["'\'']//g')
+    optimize)
+        # অপ্রয়োজনীয় প্রক্সি রিমুভ + সাইজ কমানো
+        FILE="${2:-$CONF_DIR/config.yaml}"
+        BACKUP="${FILE}.bak"
+        cp "$FILE" "$BACKUP"
         
-        # যদি কোনো গ্রুপ না পায় তবে DIRECT ব্যবহার করবে (যাতে ক্র্যাশ না করে)
-        [ -z "$PGROUP" ] && PGROUP="DIRECT"
-
-        # ৩. নতুন গ্লোবাল সেটিংস তৈরি
-        cat << HEOF > "$FINAL"
-mixed-port: 7890
-tproxy-port: 7893
-allow-lan: true
-bind-address: '*'
-mode: rule
-log-level: error
-ipv6: false
-external-controller: 0.0.0.0:9595
-external-ui: /etc/mihomo/ui
-secret: "flclash123"
-tcp-concurrent: true
-unified-delay: true
-
-sniffer:
-  enable: true
-  sniff:
-    HTTP: {ports: [80, 8080-8880], override-destination: true}
-    TLS: {ports: [443, 8443], override-destination: true}
-    QUIC: {ports: [443, 8443], override-destination: true}
-
-profile:
-  store-selected: true
-  store-fake-ip: true
-
-dns:
-  enable: true
-  listen: 0.0.0.0:1053
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  fake-ip-filter: ['+.msftconnecttest.com', '+.msftncsi.com', '+.microsoft.com', '+.windowsupdate.com', '+.microsoftstore.com', '+.xboxlive.com', '+.riotgames.com', '+.pvp.net', '+.playvalorant.com', '+.riotcdn.net', '+.si.riotgames.com', '+.stun.*.*', '+.stun.*.*.*', '*.lan', '*.local']
-  nameserver: [1.1.1.1, 8.8.8.8]
-  respect-rules: true
-HEOF
-
-        # ৪. রুলস ইনজেক্ট করা (ডাইনামিক গ্রুপের নাম ব্যবহার করে)
-        if grep -q "^rules:" "$CLEAN"; then
-            awk -v pg="$PGROUP" '/^rules:/ {
-                print $0
-                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-                print "  - DOMAIN-KEYWORD,riotgames," pg
-                print "  - DOMAIN-KEYWORD,playvalorant," pg
-                print "  - DOMAIN-SUFFIX,pvp.net," pg
-                print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-                print "  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,msftncsi.com,DIRECT"
-                next
-            } { print }' "$CLEAN" >> "$FINAL"
-        else
-            echo "rules:" >> "$FINAL"
-            echo "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            echo "  - DOMAIN-KEYWORD,riotgames,$PGROUP"
-            echo "  - DOMAIN-SUFFIX,microsoft,DIRECT"
-            echo "  - MATCH,$PGROUP" >> "$FINAL"
-            cat "$CLEAN" >> "$FINAL"
-        fi
-
-        # ৫. স্মার্ট ভ্যালিডেশন
-        $CORE -t -d $CONF_DIR -f "$FINAL" > /tmp/cfg_err.log 2>&1
-        if grep -q "test is successful" /tmp/cfg_err.log; then
-            mv "$FINAL" $CONF_DIR/config.yaml
-            /etc/init.d/mihomo restart >/dev/null 2>&1
-            echo "SAVED"
-        else
-            ACTUAL_ERR=$(grep -i "error\|fatal" /tmp/cfg_err.log | head -n 1)
-            [ -z "$ACTUAL_ERR" ] && echo "INVALID YAML: Please check proxies section." || echo "INVALID YAML: $ACTUAL_ERR"
-        fi
-    fi
-else
-    cat $CONF_DIR/config.yaml 2>/dev/null
-fi
+        # কমেন্ট রিমুভ
+        sed -i '/^\s*#/d;/^\s*$/d' "$FILE"
+        echo "✓ Optimized: $(wc -l < $FILE) lines"
+        ;;
+    
+    backup)
+        tar -czf /tmp/uzumaki-backup-$(date +%Y%m%d).tar.gz -C /etc uzumaki
+        echo "✓ Backup: /tmp/uzumaki-backup-$(date +%Y%m%d).tar.gz"
+        ;;
+    
+    restore)
+        [ -f "$2" ] || { echo "✗ Backup file not found"; exit 1; }
+        tar -xzf "$2" -C /etc/
+        /etc/init.d/uzumaki restart
+        echo "✓ Restored & restarted"
+        ;;
+    
+    *)
+        echo "Usage: $0 {validate|optimize|backup|restore} [file]"
+        ;;
+esac
