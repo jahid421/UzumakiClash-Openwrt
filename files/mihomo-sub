@@ -1,61 +1,33 @@
 #!/bin/sh
-# UzumakiClash Subscription Converter
-# Supports: SS, SSR, VMess, VLESS, Trojan, Hysteria2
+# ═══════════════════════════════════════════════
+# 🌀 UzumakiClash - Subscription Parser
+# ═══════════════════════════════════════════════
 
-CONF_DIR="/etc/uzumaki"
-SUB_FILE="$CONF_DIR/subscriptions.txt"
+echo "Content-Type: text/plain"
+echo ""
 
-update_subs() {
-    [ ! -f "$SUB_FILE" ] && { echo "No subscriptions found"; exit 0; }
-    
-    OUTPUT="$CONF_DIR/proxy_provider/subs.yaml"
-    mkdir -p "$CONF_DIR/proxy_provider"
-    echo "proxies:" > "$OUTPUT"
-    
-    while IFS= read -r URL; do
-        [ -z "$URL" ] && continue
-        echo "[→] Fetching: $URL"
-        
-        # Base64 ডিকোড করে প্রক্সি নোড এক্সট্রাক্ট
-        RAW=$(curl -sL --max-time 15 "$URL")
-        DECODED=$(echo "$RAW" | base64 -d 2>/dev/null || echo "$RAW")
-        
-        # Clash ফরম্যাট চেক
-        if echo "$DECODED" | grep -q "proxies:"; then
-            echo "$DECODED" | sed -n '/proxies:/,/^[a-z]/p' | sed '$d' | tail -n +2 >> "$OUTPUT"
-        else
-            # V2Ray/SS/SSR লিঙ্ক পার্স করা
-            echo "$DECODED" | grep -E "^(ss|ssr|vmess|vless|trojan|hysteria2)://" | \
-            while read -r LINK; do
-                parse_link "$LINK" >> "$OUTPUT"
-            done
-        fi
-    done < "$SUB_FILE"
-    
-    echo "✓ Updated: $(grep -c "name:" $OUTPUT) proxies"
-    /etc/init.d/uzumaki reload
-}
+RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=\(.*\)$/\1/p')
+URL=$(printf '%b' "$(echo "$RAW" | sed 's/+/ /g; s/%/\\x/g')")
+TMP="/tmp/uzsub_$$.yaml"
 
-parse_link() {
-    # Basic link parser (VMess/VLESS ইত্যাদি)
-    LINK="$1"
-    case "$LINK" in
-        vmess://*)
-            DATA=$(echo "${LINK#vmess://}" | base64 -d 2>/dev/null)
-            NAME=$(echo "$DATA" | jsonfilter -e '@.ps')
-            SERVER=$(echo "$DATA" | jsonfilter -e '@.add')
-            PORT=$(echo "$DATA" | jsonfilter -e '@.port')
-            UUID=$(echo "$DATA" | jsonfilter -e '@.id')
-            echo "  - {name: '$NAME', type: vmess, server: $SERVER, port: $PORT, uuid: $UUID, alterId: 0, cipher: auto}"
-            ;;
-        # আরো প্রোটোকল যোগ করা যাবে
-    esac
-}
+trap "rm -f ${TMP}* /tmp/uzsub_err.log" EXIT
 
-case "$1" in
-    add)     echo "$2" >> "$SUB_FILE"; update_subs ;;
-    update)  update_subs ;;
-    list)    cat "$SUB_FILE" 2>/dev/null ;;
-    clear)   > "$SUB_FILE"; echo "✓ Cleared" ;;
-    *)       echo "Usage: $0 {add <url>|update|list|clear}" ;;
-esac
+if [ -z "$URL" ]; then
+    echo "NO_URL"
+    exit 0
+fi
+
+SUB_CONV="https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=true&url="
+
+curl -sL --connect-timeout 15 --max-time 90 -H "User-Agent: ClashMeta/1.18.0" -o "$TMP" "$URL" 2>/dev/null
+
+if [ ! -s "$TMP" ] || ! grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
+    curl -sL --connect-timeout 15 --max-time 90 -o "$TMP" "${SUB_CONV}$(echo "$URL" | sed 's/&/%26/g')" 2>/dev/null
+fi
+
+if [ -s "$TMP" ] && grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
+    export REQUEST_METHOD="POST"
+    cat "$TMP" | /www/cgi-bin/mihomo-cfg
+else
+    echo "DOWNLOAD_OR_CONVERSION_FAILED"
+fi
