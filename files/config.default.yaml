@@ -1,5 +1,5 @@
 mixed-port: 7890
-redir-port: 7892
+tproxy-port: 7893
 allow-lan: true
 bind-address: '*'
 mode: rule
@@ -10,6 +10,13 @@ external-ui: /etc/mihomo/ui
 secret: "flclash123"
 tcp-concurrent: true
 unified-delay: true
+
+sniffer:
+  enable: true
+  sniff:
+    HTTP: {ports: [80, 8080-8880], override-destination: true}
+    TLS: {ports: [443, 8443], override-destination: true}
+    QUIC: {ports: [443, 8443], override-destination: true}
 
 dns:
   enable: true
@@ -23,50 +30,34 @@ dns:
     - 'time.*.com'
     - 'ntp.*.com'
     - '+.pool.ntp.org'
-    - '*.msftconnecttest.com'
-    - '*.msftncsi.com'
-    - '*.microsoft.com'
-    - '*.windowsupdate.com'
-    - '*.xboxlive.com'
-    - '*.riotgames.com'
-    - '*.pvp.net'
-    - '*.playvalorant.com'
-    - '*.riotcdn.net'
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
+    - '+.microsoft.com'
+    - '+.windowsupdate.com'
+    - '+.microsoftstore.com'
+    - '+.xboxlive.com'
+    - '+.riotgames.com'
+    - '+.pvp.net'
+    - '+.playvalorant.com'
+    - '+.riotcdn.net'
+    - '+.si.riotgames.com'
     - '+.stun.*.*'
-  default-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-  nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-    - 1.0.0.1
+    - '+.stun.*.*.*'
+    - 'localhost.ptlogin2.qq.com'
+  default-nameserver: [1.1.1.1, 8.8.8.8]
+  nameserver: [1.1.1.1, 8.8.8.8]
 
 proxies: []
-
 proxy-groups:
   - name: "🌀 Uzumaki-Auto"
     type: url-test
-    proxies:
-      - DIRECT
+    proxies: [DIRECT]
     url: http://www.gstatic.com/generate_204
     interval: 120
-    tolerance: 20
-    lazy: true
-
 rules:
   - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
-  - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
-  - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
-  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
-  - 'DOMAIN-SUFFIX,local,DIRECT'
-  - 'DOMAIN-SUFFIX,lan,DIRECT'
-  - 'DST-PORT,9595,DIRECT'
-  - 'DOMAIN-KEYWORD,riotgames,DIRECT'
-  - 'DOMAIN-KEYWORD,playvalorant,DIRECT'
-  - 'DOMAIN-SUFFIX,pvp.net,DIRECT'
-  - 'DOMAIN-SUFFIX,riotcdn.net,DIRECT'
-  - 'DOMAIN-KEYWORD,microsoft,DIRECT'
-  - 'DOMAIN-KEYWORD,windows,DIRECT'
-  - 'DOMAIN-KEYWORD,xbox,DIRECT'
-  - 'DOMAIN-SUFFIX,msftconnecttest.com,DIRECT'
+  - 'DOMAIN-KEYWORD,riotgames,PROXY'
+  - 'DOMAIN-KEYWORD,playvalorant,PROXY'
+  - 'DOMAIN-SUFFIX,pvp.net,PROXY'
+  - 'DOMAIN-SUFFIX,microsoft,DIRECT'
   - 'MATCH,🌀 Uzumaki-Auto'
