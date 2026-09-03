@@ -1,174 +1,67 @@
-# ==========================================
-# UzumakiClash - Default Configuration
-# Optimized for Low-RAM & High Performance
-# ==========================================
-
 mixed-port: 7890
-redir-port: 7891
-tproxy-port: 7895
+redir-port: 7892
+tproxy-port: 7893
 allow-lan: true
 bind-address: '*'
 mode: rule
-log-level: warning
-ipv6: true
-external-controller: 0.0.0.0:9090
-secret: "uzumaki-clash-secret"
-external-ui: /etc/uzumaki/dashboard
-
-# ==== Performance Tuning ====
-find-process-mode: 'off'
-global-client-fingerprint: chrome
-keep-alive-interval: 30
-disable-keep-alive: false
-unified-delay: true
+log-level: error
+ipv6: false
+external-controller: 0.0.0.0:9595
+external-ui: /etc/mihomo/ui
+secret: "flclash123"
 tcp-concurrent: true
+unified-delay: true
+global-client-fingerprint: chrome
 
-# ==== TUN Mode (Universal Support) ====
-tun:
-  enable: true
-  stack: system              # system = কম CPU, gvisor = বেশি কম্প্যাটিবল
-  device: uzumaki-tun
-  mtu: 9000
-  auto-route: true
-  auto-detect-interface: true
-  strict-route: true
-  endpoint-independent-nat: true    # গেমিং (PUBG/FF) এর জন্য জরুরি
-  udp-timeout: 300
-  dns-hijack:
-    - any:53
-    - tcp://any:53
+profile:
+  store-selected: true
+  store-fake-ip: true
 
-# ==== DNS (Fake-IP for speed) ====
 dns:
   enable: true
   listen: 0.0.0.0:1053
-  ipv6: true
+  ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
     - '*.lan'
     - '*.local'
-    - '+.msftconnecttest.com'
-    - '+.msftncsi.com'
     - 'time.*.com'
     - 'ntp.*.com'
-    - '+.market.xiaomi.com'
-    # গেমিং সার্ভার (Fake-IP এড়ানো)
+    - '+.pool.ntp.org'
     - '*.pubg.com'
     - '*.pubgmobile.com'
-    - '*.igamecj.com'
     - '*.garena.com'
     - '*.freefiremobile.com'
   default-nameserver:
-    - 223.5.5.5
+    - 1.1.1.1
     - 8.8.8.8
   nameserver:
-    - https://1.1.1.1/dns-query
-    - https://8.8.8.8/dns-query
-  fallback:
-    - https://dns.google/dns-query
-    - tls://1.0.0.1:853
-  fallback-filter:
-    geoip: true
-    geoip-code: BD
+    - 1.1.1.1
+    - 8.8.8.8
+    - 1.0.0.1
 
-# ==== Sniffer (সঠিক ডোমেন রাউটিংয়ের জন্য) ====
-sniffer:
-  enable: true
-  sniff:
-    HTTP:
-      ports: [80, 8080-8880]
-      override-destination: true
-    TLS:
-      ports: [443, 8443]
-    QUIC:
-      ports: [443, 8443]
-
-# ==== Proxies (এখানে আপনার সার্ভার যোগ হবে) ====
 proxies:
-  # Sample VLESS + Reality
-  - name: "🚀 Node-VLESS"
-    type: vless
-    server: example.com
-    port: 443
-    uuid: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    network: tcp
-    tls: true
+  - name: "DIRECT"
+    type: direct
     udp: true
-    flow: xtls-rprx-vision
-    servername: example.com
-    reality-opts:
-      public-key: YOUR_PUBLIC_KEY
-      short-id: YOUR_SHORT_ID
-    client-fingerprint: chrome
 
-# ==== Proxy Groups ====
 proxy-groups:
-  - name: "🌍 GLOBAL"
-    type: select
-    proxies:
-      - "♻️ Auto-Fastest"
-      - "🔒 Fallback"
-      - DIRECT
-
-  - name: "♻️ Auto-Fastest"
+  - name: "🌀 Uzumaki-Auto"
     type: url-test
-    proxies: ["🚀 Node-VLESS"]
-    url: 'http://www.gstatic.com/generate_204'
-    interval: 300
-    tolerance: 50
+    proxies:
+      - DIRECT
+    url: http://www.gstatic.com/generate_204
+    interval: 120
+    tolerance: 20
+    lazy: true
 
-  - name: "🔒 Fallback"
-    type: fallback
-    proxies: ["🚀 Node-VLESS"]
-    url: 'http://www.gstatic.com/generate_204'
-    interval: 300
-
-  - name: "🎮 GAMING"
-    type: select
-    proxies: ["DIRECT", "🚀 Node-VLESS", "♻️ Auto-Fastest"]
-
-  - name: "🎬 STREAMING"
-    type: select
-    proxies: ["🌍 GLOBAL", "DIRECT"]
-
-# ==== Rule Providers ====
-rule-providers:
-  bd-domains:
-    type: http
-    behavior: domain
-    format: text
-    path: ./rule_provider/bd_domains.txt
-    url: https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/bd
-    interval: 86400
-
-# ==== Rules ====
 rules:
-  # লোকাল বাইপাস
-  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
-  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
-
-  # গেমিং সার্ভার (DIRECT for low ping)
-  - DOMAIN-KEYWORD,pubg,🎮 GAMING
-  - DOMAIN-KEYWORD,igame,🎮 GAMING
-  - DOMAIN-KEYWORD,garena,🎮 GAMING
-  - DOMAIN-KEYWORD,freefire,🎮 GAMING
-
-  # স্ট্রিমিং
-  - DOMAIN-KEYWORD,netflix,🎬 STREAMING
-  - DOMAIN-KEYWORD,youtube,🎬 STREAMING
-  - DOMAIN-SUFFIX,googlevideo.com,🎬 STREAMING
-
-  # বাংলাদেশ (Direct)
-  - RULE-SET,bd-domains,DIRECT
-  - GEOIP,BD,DIRECT
-
-  # ফাইনাল
-  - MATCH,🌍 GLOBAL
-
-# ==== Profile ====
-profile:
-  store-selected: true
-  store-fake-ip: true
+  - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
+  - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
+  - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
+  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
+  - 'DOMAIN-SUFFIX,local,DIRECT'
+  - 'DOMAIN-SUFFIX,lan,DIRECT'
+  - 'DST-PORT,9595,DIRECT'
+  - 'MATCH,🌀 Uzumaki-Auto'
