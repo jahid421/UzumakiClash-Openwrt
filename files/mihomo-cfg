@@ -1,46 +1,75 @@
 #!/bin/sh
-# UzumakiClash Config Validator & Optimizer
+echo "Content-Type: text/plain"
+echo ""
+CONF_DIR="/etc/mihomo"; CORE="/usr/bin/mihomo"
 
-CORE="/usr/bin/uzumaki-core"
-CONF_DIR="/etc/uzumaki"
+if [ "$REQUEST_METHOD" = "POST" ]; then
+    TMP="/tmp/raw_$$.yaml"; CLEAN="/tmp/clean_$$.yaml"; FINAL="/tmp/final_$$.yaml"
+    trap "rm -f /tmp/*_$$.yaml /tmp/cfg_err.log" EXIT
+    tr -d '\r' > "$TMP"
+    if [ -s "$TMP" ]; then
+        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
+        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
-case "$1" in
-    validate)
-        FILE="${2:-$CONF_DIR/config.yaml}"
-        if $CORE -t -d $CONF_DIR -f "$FILE" 2>&1 | grep -q "successful"; then
-            echo "✓ Config is valid"
-            exit 0
+        cat << HEOF > "$FINAL"
+mixed-port: 7890
+redir-port: 7892
+tproxy-port: 7893
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: error
+ipv6: false
+external-controller: 0.0.0.0:9595
+external-ui: /etc/mihomo/ui
+secret: "flclash123"
+
+# ⚡ Performance Boost
+tcp-concurrent: true
+unified-delay: true
+global-client-fingerprint: chrome
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - 'time.*.com'
+    - 'ntp.*.com'
+    - '+.pool.ntp.org'
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+    - 1.0.0.1
+HEOF
+
+        awk -v lan="$LAN_IP" '/^rules:/ {
+            print $0
+            print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+            print "  # 🌀 Gaming & CDN Bypass"
+            print "  - DOMAIN-KEYWORD,riotgames,DIRECT\n  - DOMAIN-KEYWORD,playvalorant,DIRECT\n  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+            print "  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,windows,DIRECT\n  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
+            print "  - DOMAIN-SUFFIX,bd,DIRECT\n  - DOMAIN-KEYWORD,bkash,DIRECT"
+            next
+        } { print }' "$CLEAN" >> "$FINAL"
+
+        $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
+        if ! grep -qi "level=fatal\|level=error" /tmp/cfg_err.log; then
+            mv "$FINAL" $CONF_DIR/config.yaml
+            /etc/init.d/mihomo restart >/dev/null 2>&1
+            echo "SAVED"
         else
-            echo "✗ Config is INVALID:"
-            $CORE -t -d $CONF_DIR -f "$FILE"
-            exit 1
+            echo "INVALID YAML: $(head -n 2 /tmp/cfg_err.log)"
         fi
-        ;;
-    
-    optimize)
-        # অপ্রয়োজনীয় প্রক্সি রিমুভ + সাইজ কমানো
-        FILE="${2:-$CONF_DIR/config.yaml}"
-        BACKUP="${FILE}.bak"
-        cp "$FILE" "$BACKUP"
-        
-        # কমেন্ট রিমুভ
-        sed -i '/^\s*#/d;/^\s*$/d' "$FILE"
-        echo "✓ Optimized: $(wc -l < $FILE) lines"
-        ;;
-    
-    backup)
-        tar -czf /tmp/uzumaki-backup-$(date +%Y%m%d).tar.gz -C /etc uzumaki
-        echo "✓ Backup: /tmp/uzumaki-backup-$(date +%Y%m%d).tar.gz"
-        ;;
-    
-    restore)
-        [ -f "$2" ] || { echo "✗ Backup file not found"; exit 1; }
-        tar -xzf "$2" -C /etc/
-        /etc/init.d/uzumaki restart
-        echo "✓ Restored & restarted"
-        ;;
-    
-    *)
-        echo "Usage: $0 {validate|optimize|backup|restore} [file]"
-        ;;
-esac
+    fi
+else
+    cat $CONF_DIR/config.yaml 2>/dev/null
+fi
