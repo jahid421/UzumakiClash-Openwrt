@@ -8,28 +8,13 @@ CONF_DIR="/etc/mihomo"
 TRANSPARENT_FILE="$CONF_DIR/transparent"
 ENABLED_FILE="$CONF_DIR/enabled"
 
-setup_tp() {
-    ip rule del fwmark 0x1 table 100 2>/dev/null
-    ip route flush table 100 2>/dev/null
-    ip rule add fwmark 0x1 table 100
-    ip route add local 0.0.0.0/0 dev lo table 100
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
-    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
-}
-
-flush_tp() {
-    ip rule del fwmark 0x1 table 100 2>/dev/null
-    ip route flush table 100 2>/dev/null
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
-}
-
 case "$ACTION" in
   status)
     ENABLED="1"; [ -f "$ENABLED_FILE" ] && ENABLED=$(cat "$ENABLED_FILE")
     TP="0"; [ -f "$TRANSPARENT_FILE" ] && TP=$(cat "$TRANSPARENT_FILE")
 
-    PID=$(pgrep -f "/usr/bin/mihomo" | head -n 1)
-    if [ -n "$PID" ]; then
+    if pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
+      PID=$(pgrep -f "/usr/bin/mihomo" | head -n 1)
       MEM=$(awk '/VmRSS/{print $2}' /proc/$PID/status 2>/dev/null || echo 0)
       echo "{\"running\":true,\"pid\":$PID,\"memory\":\"${MEM} kB\",\"transparent\":$TP,\"enabled\":$ENABLED}"
     else
@@ -40,15 +25,25 @@ case "$ACTION" in
   start)
     echo "1" > "$ENABLED_FILE"
     echo "1" > "$TRANSPARENT_FILE"
+    rm -f /var/run/mihomo.pid
     /etc/init.d/mihomo restart >/dev/null 2>&1
+    sleep 1
+    if ! pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
+        /usr/bin/mihomo -d "$CONF_DIR" -f "$CONF_DIR/config.yaml" >/dev/null 2>&1 &
+    fi
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
   stop)
     echo "0" > "$ENABLED_FILE"
     echo "0" > "$TRANSPARENT_FILE"
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     /etc/init.d/mihomo stop >/dev/null 2>&1
-    flush_tp
+    killall -9 mihomo 2>/dev/null || true
+    rm -f /var/run/mihomo.pid
     echo "{\"ok\":true}"
     ;;
 
@@ -60,13 +55,13 @@ case "$ACTION" in
 
   enable_tp)
     echo "1" > "$TRANSPARENT_FILE"
-    setup_tp
+    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
   disable_tp)
     echo "0" > "$TRANSPARENT_FILE"
-    flush_tp
+    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
@@ -78,9 +73,9 @@ case "$ACTION" in
   update_geo)
     (
       cd /etc/mihomo
-      curl -sL --connect-timeout 10 --max-time 60 -o geoip.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" &
-      curl -sL --connect-timeout 10 --max-time 60 -o geosite.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" &
-      curl -sL --connect-timeout 10 --max-time 60 -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" &
+      curl -sL -o geoip.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" &
+      curl -sL -o geosite.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" &
+      curl -sL -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" &
       wait
     ) &
     echo "{\"ok\":true,\"message\":\"Updating in background\"}"
