@@ -23,8 +23,6 @@ ipv6: false
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
-
-# ⚡ Performance Boost
 tcp-concurrent: true
 unified-delay: true
 global-client-fingerprint: chrome
@@ -42,32 +40,61 @@ dns:
   fake-ip-filter:
     - '*.lan'
     - '*.local'
-    - 'time.*.com'
-    - 'ntp.*.com'
-    - '+.pool.ntp.org'
+    - '+.microsoft.com'
+    - '+.xboxlive.com'
+    - '+.playvalorant.com'
+    - '+.riotgames.com'
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
-    - 1.0.0.1
 HEOF
 
-        awk -v lan="$LAN_IP" '/^rules:/ {
-            print $0
-            print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  # 🌀 Gaming & CDN Bypass"
-            print "  - DOMAIN-KEYWORD,riotgames,DIRECT\n  - DOMAIN-KEYWORD,playvalorant,DIRECT\n  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-            print "  - DOMAIN-KEYWORD,microsoft,DIRECT\n  - DOMAIN-KEYWORD,windows,DIRECT\n  - DOMAIN-KEYWORD,ultraviewer,DIRECT"
-            print "  - DOMAIN-SUFFIX,bd,DIRECT\n  - DOMAIN-KEYWORD,bkash,DIRECT"
-            next
-        } { print }' "$CLEAN" >> "$FINAL"
+        if grep -q "^rules:" "$CLEAN"; then
+            awk '/^rules:/ {
+                print $0
+                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+                print "  - NETWORK,udp,DIRECT"
+                print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,playvalorant.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
+                print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,windows.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,xboxlive.com,DIRECT"
+                print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
+                print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
+                print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
+                print "  - DOMAIN-SUFFIX,bd,DIRECT"
+                print "  - DOMAIN-KEYWORD,bkash,DIRECT"
+                next
+            } { print }' "$CLEAN" >> "$FINAL"
+        else
+            cat "$CLEAN" >> "$FINAL"
+            cat << 'REOF' >> "$FINAL"
+rules:
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - NETWORK,udp,DIRECT
+  - DOMAIN-SUFFIX,riotgames.com,DIRECT
+  - DOMAIN-SUFFIX,playvalorant.com,DIRECT
+  - DOMAIN-SUFFIX,pvp.net,DIRECT
+  - DOMAIN-SUFFIX,microsoft.com,DIRECT
+  - DOMAIN-SUFFIX,windows.com,DIRECT
+  - DOMAIN-KEYWORD,riotgames,DIRECT
+  - DOMAIN-KEYWORD,microsoft,DIRECT
+  - DOMAIN-SUFFIX,bd,DIRECT
+  - DOMAIN-KEYWORD,bkash,DIRECT
+  - MATCH,DIRECT
+REOF
+        fi
 
         $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
-        if ! grep -qi "level=fatal\|level=error" /tmp/cfg_err.log; then
+        if ! grep -qi "level=fatal\|level=error\|failed" /tmp/cfg_err.log; then
             mv "$FINAL" $CONF_DIR/config.yaml
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
-            echo "INVALID YAML: $(head -n 2 /tmp/cfg_err.log)"
+            ERR_MSG=$(grep -i "error\|fatal\|failed" /tmp/cfg_err.log | head -n 1)
+            [ -z "$ERR_MSG" ] && ERR_MSG=$(tail -n 2 /tmp/cfg_err.log | tr '\n' ' ')
+            echo "INVALID YAML: $ERR_MSG"
         fi
     fi
 else
