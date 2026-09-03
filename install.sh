@@ -1,8 +1,6 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════════════
 # 🌀 UzumakiClash - Master Universal Installer
-# Repo: https://github.com/jahid421/UzumakiClash-Openwrt
-# Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
 # ═══════════════════════════════════════════════════════════════════════
 
 set -e
@@ -18,20 +16,16 @@ echo "║  🌀 UzumakiClash Universal Installer (Master Edition)        ║"
 echo "║  Auto-Detect: opkg/apk | Precision Arch | Turbo Gaming       ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 
-# ডিপেন্ডেন্সি ইন্সটলেশন (opkg ও apk উভয় সাপোর্ট)
 if command -v apk >/dev/null 2>&1; then
     PKG="apk"
-    echo "[*] Detected: APK Package Manager (OpenWrt Snapshot / Alpine)"
     apk update
     apk add curl ca-certificates ip-full kmod-tun coreutils-nohup gzip tar busybox
 else
     PKG="opkg"
-    echo "[*] Detected: OPKG Package Manager (OpenWrt Stable)"
     opkg update
     opkg install curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup gzip tar busybox luci-compat luci-lib-ipkg 2>/dev/null || true
 fi
 
-# পারফেক্ট আর্কিটেকচার ডিটেকশন (MT7621/MIPS/ARM/x86)
 UNAME_M=$(uname -m)
 OPKG_ARCH=""
 [ "$PKG" = "opkg" ] && OPKG_ARCH=$(opkg print-architecture 2>/dev/null | awk '{print $2}' | grep -v 'all\|noarch' | head -n 1)
@@ -54,8 +48,6 @@ fi
 
 echo "[✓] Architecture: $M"
 
-# Mihomo Core ডাউনলোড ও ভ্যালিডেশন
-echo "[*] Downloading Mihomo Core ($V)..."
 cd /tmp && rm -f mihomo.gz mihomo
 curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-$M-$V.gz"
 gzip -d -f mihomo.gz 2>/dev/null || gunzip -f mihomo.gz
@@ -63,15 +55,11 @@ chmod +x mihomo
 
 if ./mihomo -v >/dev/null 2>&1; then
     mv mihomo /usr/bin/mihomo
-    echo "[✓] Core Verified: $(/usr/bin/mihomo -v | head -n 1)"
 else
-    echo "[!] Softfloat failed, fallback to hardfloat..."
     curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/$V/mihomo-linux-mipsle-hardfloat-$V.gz"
     gunzip -f mihomo.gz && chmod +x mihomo && mv mihomo /usr/bin/mihomo
 fi
 
-# ডিরেক্টরি তৈরি ও ফাইল সিঙ্ক
-echo "[*] Syncing project files..."
 mkdir -p $D/ui $D/proxy_provider $D/rule_provider $D/logs
 mkdir -p /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
 mkdir -p /usr/share/luci/menu.d /usr/share/rpcd/acl.d
@@ -85,7 +73,6 @@ curl -sL -o $D/config.yaml "$REPO/files/config.default.yaml?$TS"
 curl -sL -o /usr/lib/lua/luci/controller/mihomo.lua "$REPO/files/mihomo.lua?$TS"
 curl -sL -o /usr/lib/lua/luci/view/mihomo/main.htm "$REPO/files/main.htm?$TS"
 
-# LuCI Menu & ACL রেজিস্ট্রেশন
 cat << 'EOF' > /usr/share/luci/menu.d/luci-app-mihomo.json
 {
     "admin/services/mihomo": {
@@ -108,15 +95,10 @@ cat << 'EOF' > /usr/share/rpcd/acl.d/luci-app-mihomo.json
 }
 EOF
 
-# MetaCubeXD Dashboard ইনস্টলেশন
-echo "[*] Setting up MetaCubeXD Dashboard..."
 cd /tmp && rm -f ui.tgz
 curl -sL -o ui.tgz "https://github.com/MetaCubeX/metacubexd/releases/latest/download/compressed-dist.tgz"
 tar -xzf ui.tgz -C $D/ui/ && [ -d "$D/ui/dist" ] && mv $D/ui/dist/* $D/ui/ && rm -rf $D/ui/dist
-rm -f /tmp/ui.tgz
 
-# সার্ভিস চালু
-echo "[*] Enabling and starting services..."
 echo "1" > $D/enabled
 echo "1" > $D/transparent
 /etc/init.d/mihomo enable
@@ -125,12 +107,4 @@ rm -rf /tmp/luci-*
 /etc/init.d/rpcd restart 2>/dev/null || true
 /etc/init.d/uhttpd restart 2>/dev/null || true
 
-LAN_IP=$(uci get network.lan.ipaddr 2>/dev/null || echo "192.168.1.1")
-
-echo ""
-echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  ✅ UzumakiClash Installed Successfully!                     ║"
-echo "╚══════════════════════════════════════════════════════════════╝"
-echo "  ► LuCI Panel : http://${LAN_IP}/cgi-bin/luci/admin/services/mihomo"
-echo "  ► Dashboard  : http://${LAN_IP}:9595/ui"
-echo ""
+echo "✅ UzumakiClash Installed Successfully!"
