@@ -31,7 +31,7 @@ case "$ACTION" in
     if ! pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
         /usr/bin/mihomo -d "$CONF_DIR" -f "$CONF_DIR/config.yaml" >/dev/null 2>&1 &
     fi
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
@@ -39,7 +39,6 @@ case "$ACTION" in
   stop)
     echo "0" > "$ENABLED_FILE"
     echo "0" > "$TRANSPARENT_FILE"
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
     /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     /etc/init.d/mihomo stop >/dev/null 2>&1
     killall -9 mihomo 2>/dev/null || true
@@ -55,13 +54,14 @@ case "$ACTION" in
 
   enable_tp)
     echo "1" > "$TRANSPARENT_FILE"
+    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
   disable_tp)
     echo "0" > "$TRANSPARENT_FILE"
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
+    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
