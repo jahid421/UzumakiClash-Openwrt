@@ -263,8 +263,14 @@ function addACL(){
   var ip=document.getElementById('aclip').value.trim();
   if(!ip){alert('Enter valid IP');return}
   fetch('/cgi-bin/mihomo-api?action=add_acl_bypass&ip='+encodeURIComponent(ip)).then(function(r){return r.json()}).then(function(d){
-    document.getElementById('aclmsg').innerHTML='<span style="color:#22c55e">✅ '+ip+' added to bypass list!</span>';
-    document.getElementById('aclip').value='';
+    if(d.ok){
+      document.getElementById('aclmsg').innerHTML='<span style="color:#22c55e">✅ '+ip+' added to bypass list!</span>';
+      document.getElementById('aclip').value='';
+    }else{
+      document.getElementById('aclmsg').innerHTML='<span style="color:#ef4444">❌ Error adding IP</span>';
+    }
+  }).catch(function(){
+    document.getElementById('aclmsg').innerHTML='<span style="color:#ef4444">❌ API Error</span>';
   });
 }
 
@@ -283,9 +289,20 @@ function cnl(){fetch(A+'/connections',{headers:H}).then(function(r){return r.jso
 function cnd(id){fetch(A+'/connections/'+id,{method:'DELETE',headers:H}).then(cnl)}
 function cna(){fetch(A+'/connections',{method:'DELETE',headers:H}).then(cnl)}
 
-function lw(){try{var ws=new WebSocket('ws://'+location.hostname+':9595/logs?token='+S+'&level=info');ws.onmessage=function(e){var d=JSON.parse(e.data);var b=document.getElementById('llb');b.innerHTML+='<div>['+d.type+'] '+d.payload+'</div>';b.scrollTop=b.scrollHeight};ws.onclose=function(){setTimeout(lw,2000)}}catch(e){setTimeout(lw,4000)}}
+function lw(){
+  try{
+    var ws=new WebSocket('ws://'+location.hostname+':9595/logs?token='+S+'&level=info');
+    ws.onmessage=function(e){
+      var d=JSON.parse(e.data);
+      var b=document.getElementById('llb');
+      b.innerHTML+='<div style="padding:2px 0; border-bottom:1px solid var(--divider);">['+d.type.toUpperCase()+'] '+d.payload+'</div>';
+      b.scrollTop=b.scrollHeight;
+    };
+    ws.onclose=function(){setTimeout(lw,2000)};
+  }catch(e){setTimeout(lw,4000)}
+}
 
-// ইনিশিয়ালাইজেশন
+// Initializing Dashboard Functions
 chk();
 gc();
 sw();
