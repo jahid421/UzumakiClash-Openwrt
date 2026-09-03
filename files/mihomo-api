@@ -26,17 +26,14 @@ case "$ACTION" in
     echo "1" > "$ENABLED_FILE"
     echo "1" > "$TRANSPARENT_FILE"
     /etc/init.d/mihomo restart >/dev/null 2>&1
-    sleep 1
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
   stop)
     echo "0" > "$ENABLED_FILE"
     echo "0" > "$TRANSPARENT_FILE"
-    /usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
     /etc/init.d/mihomo stop >/dev/null 2>&1
+    killall -9 mihomo 2>/dev/null || true
     echo "{\"ok\":true}"
     ;;
 
@@ -72,17 +69,6 @@ case "$ACTION" in
   flush_fakeip)
     curl -s -X POST "http://127.0.0.1:9595/cache/fakeip/flush" -H "Authorization: Bearer flclash123" >/dev/null 2>&1
     echo "{\"ok\":true}"
-    ;;
-
-  update_geo)
-    (
-      cd /etc/mihomo
-      curl -sL -o geoip.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" &
-      curl -sL -o geosite.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" &
-      curl -sL -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" &
-      wait
-    ) &
-    echo "{\"ok\":true,\"message\":\"Updating in background\"}"
     ;;
 
   *)
