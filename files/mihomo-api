@@ -1,87 +1,66 @@
 #!/bin/sh
-export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
-echo "Content-Type: application/json"
-echo ""
+# UzumakiClash API Controller & RAM Guardian
 
-ACTION=$(echo "$QUERY_STRING" | sed -n 's/.*action=\([a-z_]*\).*/\1/p')
-CONF_DIR="/etc/mihomo"
-TRANSPARENT_FILE="$CONF_DIR/transparent"
-ENABLED_FILE="$CONF_DIR/enabled"
+API_URL="http://127.0.0.1:9090"
+SECRET="uzumaki-clash-secret"
+CONF_DIR="/etc/uzumaki"
 
-case "$ACTION" in
-  status)
-    ENABLED="1"; [ -f "$ENABLED_FILE" ] && ENABLED=$(cat "$ENABLED_FILE")
-    TP="0"; [ -f "$TRANSPARENT_FILE" ] && TP=$(cat "$TRANSPARENT_FILE")
+# API Call Wrapper
+api_call() {
+    local method="$1"
+    local endpoint="$2"
+    local data="$3"
+    
+    curl -s -X "$method" \
+        -H "Authorization: Bearer $SECRET" \
+        -H "Content-Type: application/json" \
+        ${data:+-d "$data"} \
+        "$API_URL$endpoint"
+}
 
-    if pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
-      PID=$(pgrep -f "/usr/bin/mihomo" | head -n 1)
-      MEM=$(awk '/VmRSS/{print $2}' /proc/$PID/status 2>/dev/null || echo 0)
-      echo "{\"running\":true,\"pid\":$PID,\"memory\":\"${MEM} kB\",\"transparent\":$TP,\"enabled\":$ENABLED}"
-    else
-      echo "{\"running\":false,\"transparent\":$TP,\"enabled\":$ENABLED}"
-    fi
-    ;;
-
-  start)
-    echo "1" > "$ENABLED_FILE"
-    echo "1" > "$TRANSPARENT_FILE"
-    rm -f /var/run/mihomo.pid
-    /etc/init.d/mihomo restart >/dev/null 2>&1
-    sleep 1
-    if ! pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
-        /usr/bin/mihomo -d "$CONF_DIR" -f "$CONF_DIR/config.yaml" >/dev/null 2>&1 &
-    fi
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
-    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
-    echo "{\"ok\":true}"
-    ;;
-
-  stop)
-    echo "0" > "$ENABLED_FILE"
-    echo "0" > "$TRANSPARENT_FILE"
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
-    /etc/init.d/mihomo stop >/dev/null 2>&1
-    killall -9 mihomo 2>/dev/null || true
-    rm -f /var/run/mihomo.pid
-    echo "{\"ok\":true}"
-    ;;
-
-  restart)
-    echo "1" > "$ENABLED_FILE"
-    /etc/init.d/mihomo restart >/dev/null 2>&1
-    echo "{\"ok\":true}"
-    ;;
-
-  enable_tp)
-    echo "1" > "$TRANSPARENT_FILE"
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
-    /usr/sbin/nft -f "$CONF_DIR/nft.conf" 2>/dev/null || true
-    echo "{\"ok\":true}"
-    ;;
-
-  disable_tp)
-    echo "0" > "$TRANSPARENT_FILE"
-    /usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
-    echo "{\"ok\":true}"
-    ;;
-
-  flush_fakeip)
-    curl -s -X POST "http://127.0.0.1:9595/cache/fakeip/flush" -H "Authorization: Bearer flclash123" >/dev/null 2>&1
-    echo "{\"ok\":true}"
-    ;;
-
-  update_geo)
-    (
-      cd /etc/mihomo
-      curl -sL -o geoip.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" &
-      curl -sL -o geosite.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" &
-      curl -sL -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" &
-      wait
-    ) &
-    echo "{\"ok\":true,\"message\":\"Updating in background\"}"
-    ;;
-
-  *)
-    echo "{\"ok\":false,\"error\":\"invalid_action\"}"
-    ;;
+case "$1" in
+    status)
+        api_call GET "/version"
+        ;;
+    
+    reload)
+        api_call PUT "/configs?force=true" \
+            "{\"path\":\"$CONF_DIR/config.yaml\"}"
+        ;;
+    
+    mode)
+        api_call PATCH "/configs" "{\"mode\":\"$2\"}"
+        ;;
+    
+    proxies)
+        api_call GET "/proxies"
+        ;;
+    
+    switch)
+        # $2 = group, $3 = proxy name
+        api_call PUT "/proxies/$2" "{\"name\":\"$3\"}"
+        ;;
+    
+    guardian)
+        # RAM Guardian: মেমরি বেশি হলে অটো রিস্টার্ট
+        MAX_MEM_KB=51200   # 50 MB সীমা
+        while true; do
+            sleep 60
+            PID=$(pidof uzumaki-core)
+            [ -z "$PID" ] && continue
+            
+            MEM_KB=$(awk '/VmRSS/ {print $2}' /proc/$PID/status 2>/dev/null)
+            [ -z "$MEM_KB" ] && continue
+            
+            if [ "$MEM_KB" -gt "$MAX_MEM_KB" ]; then
+                logger -t "UzumakiClash" "RAM limit exceeded (${MEM_KB}KB), restarting..."
+                /etc/init.d/uzumaki restart
+            fi
+        done
+        ;;
+    
+    *)
+        echo "Usage: $0 {status|reload|mode|proxies|switch|guardian}"
+        exit 1
+        ;;
 esac
