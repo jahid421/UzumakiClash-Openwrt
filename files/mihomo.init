@@ -1,33 +1,74 @@
 #!/bin/sh /etc/rc.common
+# UzumakiClash Service - With Low RAM Guardian
 
-USE_PROCD=1
 START=99
-CONF_DIR="/etc/mihomo"
-PROG="/usr/bin/mihomo"
+STOP=10
+USE_PROCD=1
+
+PROG=/usr/bin/uzumaki-core
+CONF_DIR=/etc/uzumaki
+CONF_FILE=$CONF_DIR/config.yaml
+LOG_FILE=$CONF_DIR/logs/uzumaki.log
 
 start_service() {
-    [ -f "$CONF_DIR/enabled" ] && [ "$(cat "$CONF_DIR/enabled")" = "0" ] && return 0
+    # TUN ডিভাইস তৈরি
+    [ -e /dev/net/tun ] || {
+        mkdir -p /dev/net
+        mknod /dev/net/tun c 10 200
+        chmod 600 /dev/net/tun
+    }
+    modprobe tun 2>/dev/null
+
+    # কনফিগ ভ্যালিডেট
+    /usr/bin/uzumaki-cfg validate "$CONF_FILE" || {
+        echo "[UzumakiClash] Config validation failed!" >&2
+        return 1
+    }
+
+    # ফায়ারওয়াল রুল অ্যাপ্লাই
+    nft -f $CONF_DIR/nft.conf 2>/dev/null
+
+    # সার্ভিস চালু (Procd দিয়ে)
+    procd_open_instance uzumaki
+    procd_set_param command $PROG -d $CONF_DIR -f $CONF_FILE
     
-    ip rule add fwmark 1 table 100 2>/dev/null
-    ip route add local default dev lo table 100 2>/dev/null
+    # Low-RAM Guardian: Go মেমরি সীমাবদ্ধ
+    procd_set_param env \
+        GOMEMLIMIT=40MiB \
+        GOGC=50 \
+        GODEBUG=madvdontneed=1
     
-    export GOMEMLIMIT=64MiB
-    procd_open_instance mihomo
-    procd_set_param command "$PROG" -d "$CONF_DIR" -f "$CONF_DIR/config.yaml"
     procd_set_param respawn 3600 5 5
-    procd_set_param pidfile /var/run/mihomo.pid
+    procd_set_param limits nofile="65535 65535" core="unlimited"
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_set_param file $CONF_FILE
     procd_close_instance
-    
-    sleep 2
-    if [ -f "$CONF_DIR/transparent" ] && [ "$(cat "$CONF_DIR/transparent")" = "1" ]; then
-        nft delete table inet uzumaki 2>/dev/null
-        nft -f "$CONF_DIR/nft.conf"
-    fi
+
+    # RAM Guardian Watchdog (ব্যাকগ্রাউন্ড)
+    procd_open_instance guardian
+    procd_set_param command /usr/bin/uzumaki-api guardian
+    procd_set_param respawn 3600 30 0
+    procd_close_instance
 }
 
 stop_service() {
+    killall uzumaki-core 2>/dev/null
+    killall uzumaki-api 2>/dev/null
+    
+    # ফায়ারওয়াল পরিষ্কার
     nft delete table inet uzumaki 2>/dev/null
-    ip rule del fwmark 1 table 100 2>/dev/null
-    ip route del local default dev lo table 100 2>/dev/null
-    killall -9 mihomo 2>/dev/null
+    ip rule del fwmark 0x1 table 100 2>/dev/null
+    ip route flush table 100 2>/dev/null
+    ip link del uzumaki-tun 2>/dev/null
+}
+
+reload_service() {
+    stop
+    sleep 1
+    start
+}
+
+service_triggers() {
+    procd_add_reload_trigger "uzumaki"
 }
