@@ -7,10 +7,14 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     TMP="/tmp/raw_$$.yaml"; CLEAN="/tmp/clean_$$.yaml"; FINAL="/tmp/final_$$.yaml"
     trap "rm -f /tmp/*_$$.yaml /tmp/cfg_err.log" EXIT
     tr -d '\r' > "$TMP"
+    
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
+        
+        # ১. পুরনো গ্লোবাল সেটিংস রিমুভ করা
         awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
+        # ২. নতুন অপ্টিমাইজড গ্লোবাল সেটিংস ইনজেক্ট করা
         cat << HEOF > "$FINAL"
 mixed-port: 7890
 tproxy-port: 7893
@@ -41,30 +45,51 @@ dns:
   listen: 0.0.0.0:1053
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  fake-ip-filter: ['+.msftconnecttest.com', '+.msftncsi.com', '+.microsoft.com', '+.windowsupdate.com', '+.riotgames.com', '+.pvp.net', '+.playvalorant.com', '+.riotcdn.net', '+.stun.*.*', '+.stun.*.*.*', '*.lan', '*.local']
+  fake-ip-filter: ['+.msftconnecttest.com', '+.msftncsi.com', '+.microsoft.com', '+.windowsupdate.com', '+.microsoftstore.com', '+.xboxlive.com', '+.riotgames.com', '+.pvp.net', '+.playvalorant.com', '+.riotcdn.net', '+.si.riotgames.com', '+.stun.*.*', '+.stun.*.*.*', '*.lan', '*.local']
   nameserver: [1.1.1.1, 8.8.8.8]
   respect-rules: true
 HEOF
 
-        awk '/^rules:/ {
-            print $0
-            print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-            print "  - DOMAIN-KEYWORD,riotgames,PROXY"
-            print "  - DOMAIN-KEYWORD,playvalorant,PROXY"
-            print "  - DOMAIN-SUFFIX,pvp.net,PROXY"
-            print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-            print "  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT"
-            print "  - DOMAIN-SUFFIX,msftncsi.com,DIRECT"
-            next
-        } { print }' "$CLEAN" >> "$FINAL"
+        # ৩. গেমিং এবং এমএস স্টোর রুলস ইনজেক্ট করা
+        if grep -q "^rules:" "$CLEAN"; then
+            awk '/^rules:/ {
+                print $0
+                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+                print "  - DOMAIN-KEYWORD,riotgames,PROXY"
+                print "  - DOMAIN-KEYWORD,playvalorant,PROXY"
+                print "  - DOMAIN-SUFFIX,pvp.net,PROXY"
+                print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
+                print "  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT"
+                print "  - DOMAIN-SUFFIX,msftncsi.com,DIRECT"
+                next
+            } { print }' "$CLEAN" >> "$FINAL"
+        else
+            echo "rules:" >> "$FINAL"
+            echo "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+            echo "  - DOMAIN-KEYWORD,riotgames,PROXY"
+            echo "  - DOMAIN-KEYWORD,playvalorant,PROXY"
+            echo "  - DOMAIN-SUFFIX,pvp.net,PROXY"
+            echo "  - DOMAIN-KEYWORD,microsoft,DIRECT"
+            echo "  - MATCH,DIRECT" >> "$FINAL"
+            cat "$CLEAN" >> "$FINAL"
+        fi
 
-        $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
-        if ! grep -qi "level=fatal\|level=error" /tmp/cfg_err.log; then
+        # ৪. স্মার্ট ভ্যালিডেশন (এখানেই আগে সমস্যা হচ্ছিল)
+        $CORE -t -d $CONF_DIR -f "$FINAL" > /tmp/cfg_err.log 2>&1
+        
+        # যদি মিহোমো বলে 'test is successful' তবেই সেভ হবে
+        if grep -q "test is successful" /tmp/cfg_err.log; then
             mv "$FINAL" $CONF_DIR/config.yaml
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
-            echo "INVALID YAML: $(head -n 2 /tmp/cfg_err.log)"
+            # আসল এরর লাইনটি খুঁজে বের করে দেখাবে
+            ACTUAL_ERROR=$(grep -i "error\|fatal" /tmp/cfg_err.log | head -n 1)
+            if [ -z "$ACTUAL_ERROR" ]; then
+                echo "INVALID YAML: Structure Error. Please check proxies/rules."
+            else
+                echo "INVALID YAML: $ACTUAL_ERROR"
+            fi
         fi
     fi
 else
