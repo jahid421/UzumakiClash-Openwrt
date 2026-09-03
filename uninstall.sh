@@ -1,54 +1,34 @@
 #!/bin/sh
-# ═══════════════════════════════════════════════════════════════════════
-# 🌀 UzumakiClash - Universal Uninstaller (opkg & apk Clean Purge)
-# Repo: https://github.com/jahid421/UzumakiClash-Openwrt
-# Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
-# ═══════════════════════════════════════════════════════════════════════
+# UzumakiClash - Safe Uninstaller
 
-echo ""
-echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  🌀 UzumakiClash Universal Uninstaller                       ║"
-echo "║  Safely Reverting Network, Firewall & System Changes         ║"
-echo "╚══════════════════════════════════════════════════════════════╝"
-echo ""
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-if [ -f /etc/init.d/mihomo ]; then
-    echo "[*] Stopping UzumakiClash daemon..."
-    /etc/init.d/mihomo stop >/dev/null 2>&1
-    /etc/init.d/mihomo disable >/dev/null 2>&1
-    killall -9 mihomo >/dev/null 2>&1 || true
-    rm -f /etc/init.d/mihomo
-fi
+echo -e "${YELLOW}[!] This will completely remove UzumakiClash. Continue? (y/N)${NC}"
+read -r confirm
+[ "$confirm" != "y" ] && [ "$confirm" != "Y" ] && exit 0
 
-echo "[*] Flushing firewall tables..."
-/usr/sbin/nft delete table ip uzumaki 2>/dev/null || true
-/usr/sbin/nft delete table inet uzumaki 2>/dev/null || true
-rm -f /etc/sysctl.d/99-uzumaki-tune.conf
+echo -e "${YELLOW}[→] Stopping service...${NC}"
+/etc/init.d/uzumaki stop 2>/dev/null
+/etc/init.d/uzumaki disable 2>/dev/null
 
-rm -f /etc/hotplug.d/iface/99-uzumaki
-rm -f /usr/bin/mihomo
-rm -rf /etc/mihomo
+echo -e "${YELLOW}[→] Cleaning firewall rules...${NC}"
+nft delete table inet uzumaki 2>/dev/null
+ip rule del fwmark 0x1 table 100 2>/dev/null
+ip route flush table 100 2>/dev/null
+ip link del uzumaki-tun 2>/dev/null
 
-rm -f /www/cgi-bin/mihomo-api
-rm -f /www/cgi-bin/mihomo-cfg
-rm -f /www/cgi-bin/mihomo-sub
-
-rm -f /usr/lib/lua/luci/controller/mihomo.lua
-rm -rf /usr/lib/lua/luci/view/mihomo
-rm -f /usr/share/luci/menu.d/luci-app-uzumakiclash.json
-
-uci -q delete firewall.uzumaki_rule 2>/dev/null
-uci -q delete firewall.mihomo_proxy 2>/dev/null
-uci commit firewall
-/etc/init.d/firewall restart >/dev/null 2>&1 || true
-
+echo -e "${YELLOW}[→] Removing files...${NC}"
+rm -rf /etc/uzumaki
+rm -rf /www/luci-static/resources/view/uzumaki
+rm -f  /usr/bin/uzumaki-core
+rm -f  /usr/bin/uzumaki-api
+rm -f  /usr/bin/uzumaki-cfg
+rm -f  /usr/bin/uzumaki-sub
+rm -f  /etc/init.d/uzumaki
+rm -f  /usr/lib/lua/luci/controller/uzumaki.lua
 rm -rf /tmp/luci-*
-/etc/init.d/rpcd restart >/dev/null 2>&1
-/etc/init.d/uhttpd restart >/dev/null 2>&1
 
-echo ""
-echo "══════════════════════════════════════════════════════════════"
-echo "✅ UzumakiClash has been completely removed!"
-echo "    Your router's native network has been fully restored."
-echo "══════════════════════════════════════════════════════════════"
-echo ""
+echo -e "${GREEN}[✓] UzumakiClash removed successfully!${NC}"
