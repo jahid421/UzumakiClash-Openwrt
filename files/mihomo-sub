@@ -1,30 +1,59 @@
 #!/bin/sh
-# 🌀 UzumakiClash - Subscription Parser
 echo "Content-Type: text/plain"
 echo ""
 
-RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=\(.*\)$/\1/p')
-URL=$(printf '%b' "$(echo "$RAW" | sed 's/+/ /g; s/%/\\x/g')")
-TMP="/tmp/uzsub_$$.yaml"
+TMP="/tmp/uzsub_$$.raw"
+OUT="/tmp/uzsub_$$.yaml"
+trap 'rm -f /tmp/uzsub_$$.*' EXIT
 
-trap "rm -f ${TMP}* /tmp/uzsub_err.log" EXIT
-
-if [ -z "$URL" ]; then
-    echo "NO_URL"
-    exit 0
-fi
-
-SUB_CONV="https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=true&url="
-
-curl -sL --connect-timeout 15 --max-time 90 -H "User-Agent: ClashMeta/1.18.0" -o "$TMP" "$URL" 2>/dev/null
-
-if [ ! -s "$TMP" ] || ! grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
-    curl -sL --connect-timeout 15 --max-time 90 -o "$TMP" "${SUB_CONV}$(echo "$URL" | sed 's/&/%26/g')" 2>/dev/null
-fi
-
-if [ -s "$TMP" ] && grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
-    export REQUEST_METHOD="POST"
-    cat "$TMP" | /www/cgi-bin/mihomo-cfg
+URL=""
+if [ "$REQUEST_METHOD" = "POST" ]; then
+    URL=$(cat 2>/dev/null | tr -d '\r\n')
 else
-    echo "DOWNLOAD_OR_CONVERSION_FAILED"
+    RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=//p')
+    URL=$(printf '%b' "$(echo "$RAW" | sed 's/+/ /g; s/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g')")
 fi
+
+URL=$(echo "$URL" | awk '{$1=$1;print}')
+
+[ -z "$URL" ] && echo "NO_URL" && exit 0
+
+curl -sL -k --connect-timeout 15 --max-time 60 \
+  -A "ClashMeta/1.18.0" \
+  -H "Accept: */*" \
+  -o "$TMP" "$URL" 2>/dev/null
+
+if [ ! -s "$TMP" ]; then
+    curl -sL -k --connect-timeout 15 --max-time 60 \
+      -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+      -o "$TMP" "$URL" 2>/dev/null
+fi
+
+[ ! -s "$TMP" ] && echo "DOWNLOAD_FAILED" && exit 0
+
+tr -d '\r' < "$TMP" > "$OUT" 2>/dev/null || cp "$TMP" "$OUT"
+
+if ! grep -qE '^proxies:|^proxy-providers:|^proxy-groups:' "$OUT"; then
+    if base64 -d < "$OUT" > "${OUT}.dec" 2>/dev/null && [ -s "${OUT}.dec" ]; then
+        if grep -qE '^proxies:|^proxy-providers:' "${OUT}.dec"; then
+            mv "${OUT}.dec" "$OUT"
+        fi
+    fi
+fi
+
+if ! grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
+    URL_ENC=$(echo "$URL" | sed 's/&/%26/g; s/?/%3F/g; s/=/%3D/g; s/:/%3A/g; s/\//%2F/g; s/+/%2B/g')
+    curl -sL -k --connect-timeout 20 --max-time 90 \
+      -A "ClashMeta/1.18.0" \
+      -o "$OUT" \
+      "https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=false&url=${URL_ENC}" 2>/dev/null
+fi
+
+if grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
+    export REQUEST_METHOD="POST"
+    cat "$OUT" | /www/cgi-bin/mihomo-cfg
+else
+    echo "CONVERSION_FAILED"
+fi
+EOF
+chmod +x /www/cgi-bin/mihomo-sub
