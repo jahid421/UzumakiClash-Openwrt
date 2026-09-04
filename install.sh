@@ -1,4 +1,3 @@
-```bash
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════════════
 # 🌀 UzumakiClash - Master Universal Installer (Themed Edition)
@@ -8,6 +7,7 @@
 
 set -e
 
+# ─── Color Palette ────────────────────────────────────────────
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -21,6 +21,7 @@ TS=$(date +%s)
 V="v1.18.10"
 D="/etc/mihomo"
 
+# ─── Fancy Banner ─────────────────────────────────────────────
 clear
 echo -e "${PURPLE}"
 cat << "EOF"
@@ -29,7 +30,7 @@ cat << "EOF"
   | | | |_  / | | | '_ ` _ \ / _` || |/ / | |   | |/ _` / __| '_ \ 
   | |_| |/ /| |_| | | | | | | (_| ||   <| | |___| | (_| \__ \ | | |
    \___//___|\__,_|_| |_| |_|\__,_||_|\_\_|\____|_|\__,_|___/_| |_|
-
+                                                                    
         🌀 Ultra-Lightweight • Zero-Delay • Gaming Optimized 🎮
 EOF
 echo -e "${NC}"
@@ -40,6 +41,7 @@ echo -e "${CYAN}║${NC}   Developer: ${BOLD}Jahid Hasan Shuvo${NC} ${GREEN}(@cr
 echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
+# ─── Step 1: Package Manager Detection ────────────────────────
 echo -e "${YELLOW}[→] Detecting package manager...${NC}"
 if command -v apk >/dev/null 2>&1; then
     PKG="apk"
@@ -53,6 +55,7 @@ else
     opkg install curl ca-bundle ca-certificates ip-full kmod-tun coreutils-nohup gzip tar busybox luci-compat luci-lib-ipkg >/dev/null 2>&1 || true
 fi
 
+# ─── Step 2: Precision Architecture Detection ────────────────
 echo ""
 echo -e "${YELLOW}[→] Detecting CPU architecture...${NC}"
 UNAME_M=$(uname -m)
@@ -76,6 +79,7 @@ else
 fi
 echo -e "${GREEN}[✓] Target Core: ${BOLD}$M${NC} ${GREEN}(Device: ${OPKG_ARCH:-$UNAME_M})${NC}"
 
+# ─── Step 3: Download Mihomo Core ─────────────────────────────
 echo ""
 echo -e "${YELLOW}[→] Downloading Mihomo Core (${V})...${NC}"
 cd /tmp && rm -f mihomo.gz mihomo
@@ -93,6 +97,7 @@ else
     echo -e "${GREEN}[✓] Core installed (hardfloat)${NC}"
 fi
 
+# ─── Step 4: Directory Setup ──────────────────────────────────
 echo ""
 echo -e "${YELLOW}[→] Creating directory structure...${NC}"
 mkdir -p $D/ui $D/proxy_provider $D/rule_provider $D/logs
@@ -100,6 +105,7 @@ mkdir -p /www/cgi-bin /usr/lib/lua/luci/controller /usr/lib/lua/luci/view/mihomo
 mkdir -p /usr/share/luci/menu.d /usr/share/rpcd/acl.d
 echo -e "${GREEN}[✓] Directories created${NC}"
 
+# ─── Step 5: Sync Project Files from GitHub ───────────────────
 echo ""
 echo -e "${YELLOW}[→] Syncing project files from GitHub...${NC}"
 curl -sL -o /etc/init.d/mihomo "$REPO/files/mihomo.init?$TS" && chmod +x /etc/init.d/mihomo
@@ -112,6 +118,7 @@ curl -sL -o /usr/lib/lua/luci/controller/mihomo.lua "$REPO/files/mihomo.lua?$TS"
 curl -sL -o /usr/lib/lua/luci/view/mihomo/main.htm "$REPO/files/main.htm?$TS"
 echo -e "${GREEN}[✓] All project files synced${NC}"
 
+# ─── Step 6: LuCI Menu & ACL Registration ─────────────────────
 echo ""
 echo -e "${YELLOW}[→] Registering LuCI menu & ACL permissions...${NC}"
 cat << 'EOF' > /usr/share/luci/menu.d/luci-app-mihomo.json
@@ -137,6 +144,7 @@ cat << 'EOF' > /usr/share/rpcd/acl.d/luci-app-mihomo.json
 EOF
 echo -e "${GREEN}[✓] LuCI integration complete${NC}"
 
+# ─── Step 7: Install MetaCubeXD Dashboard ─────────────────────
 echo ""
 echo -e "${YELLOW}[→] Installing MetaCubeXD Dashboard...${NC}"
 cd /tmp && rm -f ui.tgz
@@ -145,6 +153,7 @@ tar -xzf ui.tgz -C $D/ui/ && [ -d "$D/ui/dist" ] && mv $D/ui/dist/* $D/ui/ && rm
 rm -f /tmp/ui.tgz
 echo -e "${GREEN}[✓] Dashboard installed${NC}"
 
+# ─── Step 8: Enable & Start Service ───────────────────────────
 echo ""
 echo -e "${YELLOW}[→] Enabling and starting UzumakiClash service...${NC}"
 echo "1" > $D/enabled
@@ -156,6 +165,7 @@ rm -rf /tmp/luci-*
 /etc/init.d/uhttpd restart 2>/dev/null || true
 sleep 2
 
+# ─── Final Success Banner ─────────────────────────────────────
 LAN_IP=$(uci get network.lan.ipaddr 2>/dev/null || echo "192.168.1.1")
 PID=$(pidof mihomo 2>/dev/null)
 RAM=$(awk '/VmRSS/{print $2}' /proc/$(pidof mihomo)/status 2>/dev/null)
