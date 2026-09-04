@@ -12,7 +12,6 @@ case "$ACTION" in
   status)
     ENABLED="1"; [ -f "$ENABLED_FILE" ] && ENABLED=$(cat "$ENABLED_FILE")
     TP="0"; [ -f "$TRANSPARENT_FILE" ] && TP=$(cat "$TRANSPARENT_FILE")
-
     if pgrep -f "/usr/bin/mihomo" >/dev/null 2>&1; then
       PID=$(pgrep -f "/usr/bin/mihomo" | head -n 1)
       MEM=$(awk '/VmRSS/{print $2}' /proc/$PID/status 2>/dev/null || echo 0)
@@ -22,7 +21,7 @@ case "$ACTION" in
     fi
     ;;
 
-  start)
+  start|restart)
     echo "1" > "$ENABLED_FILE"
     echo "1" > "$TRANSPARENT_FILE"
     /etc/init.d/mihomo restart >/dev/null 2>&1
@@ -34,12 +33,6 @@ case "$ACTION" in
     echo "0" > "$TRANSPARENT_FILE"
     /etc/init.d/mihomo stop >/dev/null 2>&1
     killall -9 mihomo 2>/dev/null || true
-    echo "{\"ok\":true}"
-    ;;
-
-  restart)
-    echo "1" > "$ENABLED_FILE"
-    /etc/init.d/mihomo restart >/dev/null 2>&1
     echo "{\"ok\":true}"
     ;;
 
@@ -69,6 +62,17 @@ case "$ACTION" in
   flush_fakeip)
     curl -s -X POST "http://127.0.0.1:9595/cache/fakeip/flush" -H "Authorization: Bearer flclash123" >/dev/null 2>&1
     echo "{\"ok\":true}"
+    ;;
+
+  update_geo)
+    (
+      cd /etc/mihomo
+      curl -sL -o geoip.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat" &
+      curl -sL -o geosite.dat "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" &
+      curl -sL -o Country.mmdb "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb" &
+      wait
+    ) &
+    echo "{\"ok\":true,\"message\":\"Updating in background\"}"
     ;;
 
   *)
