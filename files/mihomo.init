@@ -7,8 +7,8 @@ start_service() {
 	if [ -f "/etc/mihomo/enabled" ] && [ "$(cat "/etc/mihomo/enabled")" = "0" ]; then
 		return 0
 	fi
-	export GOMEMLIMIT=64MiB
-	export GOGC=100
+	export GOMEMLIMIT=40MiB
+	export GOGC=80
 	export GODEBUG=madvdontneed=1
 
 	procd_open_instance mihomo
