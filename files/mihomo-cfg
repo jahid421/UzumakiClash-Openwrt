@@ -9,7 +9,6 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     tr -d '\r' > "$TMP"
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
-        
         awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
         cat << HEOF > "$FINAL"
@@ -24,40 +23,30 @@ ipv6: false
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
-
 tcp-concurrent: true
 unified-delay: true
+global-client-fingerprint: chrome
 
 profile:
   store-selected: true
   store-fake-ip: true
 
-# ⚡ Zero-Delay Parallel DNS
 dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  respect-rules: true
-  proxy-server-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-  nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
-  direct-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
   fake-ip-filter:
     - '*.lan'
     - '*.local'
-    - 'time.*.com'
-    - 'ntp.*.com'
     - '+.microsoft.com'
     - '+.xboxlive.com'
     - '+.playvalorant.com'
     - '+.riotgames.com'
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
 HEOF
 
         if grep -q "^rules:" "$CLEAN"; then
@@ -74,7 +63,6 @@ HEOF
                 print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
                 print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
                 print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-                print "  - DOMAIN-KEYWORD,windowsupdate,DIRECT"
                 print "  - DOMAIN-SUFFIX,bd,DIRECT"
                 print "  - DOMAIN-KEYWORD,bkash,DIRECT"
                 next
