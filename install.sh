@@ -1,8 +1,9 @@
 #!/bin/sh
 # ═══════════════════════════════════════════════════════════════════════
-# 🌀 UzumakiClash - Master Universal Installer (ash-safe)
+# 🌀 UzumakiClash - Master Universal Installer (Themed + ash-safe)
 # Repo: https://github.com/jahid421/UzumakiClash-Openwrt
 # Developer: Jahid Hasan Shuvo (@crazy_boy_jahid)
+# Run: curl -fsSL .../install.sh | sh
 # ═══════════════════════════════════════════════════════════════════════
 
 set -e
