@@ -1,18 +1,24 @@
 #!/bin/sh
 echo "Content-Type: text/plain"
 echo ""
-CONF_DIR="/etc/mihomo"; CORE="/usr/bin/mihomo"
+
+CONF_DIR="/etc/mihomo"
+CORE="/usr/bin/mihomo"
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
-    TMP="/tmp/raw_$$.yaml"; CLEAN="/tmp/clean_$$.yaml"; FINAL="/tmp/final_$$.yaml"
-    trap "rm -f /tmp/*_$$.yaml /tmp/cfg_err.log" EXIT
+    TMP="/tmp/raw_$$.yaml"
+    CLEAN="/tmp/clean_$$.yaml"
+    FINAL="/tmp/final_$$.yaml"
+    trap 'rm -f /tmp/*_$$.yaml /tmp/cfg_err.log' EXIT
+
     tr -d '\r' > "$TMP"
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
         
+        # global options stripping
         awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
-        cat << HEOF > "$FINAL"
+        cat << 'HEOF' > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
 tproxy-port: 7893
@@ -27,12 +33,12 @@ secret: "flclash123"
 
 tcp-concurrent: true
 unified-delay: true
+global-client-fingerprint: chrome
 
 profile:
   store-selected: true
   store-fake-ip: true
 
-# ⚡ Zero-Delay Parallel DNS
 dns:
   enable: true
   listen: 0.0.0.0:1053
@@ -60,28 +66,14 @@ dns:
     - '+.riotgames.com'
 HEOF
 
-        if grep -q "^rules:" "$CLEAN"; then
-            awk '/^rules:/ {
-                print $0
-                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-                print "  - NETWORK,udp,DIRECT"
-                print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,playvalorant.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-                print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,windows.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,xboxlive.com,DIRECT"
-                print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
-                print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
-                print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-                print "  - DOMAIN-KEYWORD,windowsupdate,DIRECT"
-                print "  - DOMAIN-SUFFIX,bd,DIRECT"
-                print "  - DOMAIN-KEYWORD,bkash,DIRECT"
-                next
-            } { print }' "$CLEAN" >> "$FINAL"
-        else
-            cat "$CLEAN" >> "$FINAL"
-            cat << 'REOF' >> "$FINAL"
+        MAIN_GROUP=$(grep -A 5 "^proxy-groups:" "$CLEAN" 2>/dev/null | grep "name:" | head -n 1 | sed 's/.*name:[ '\''"]*//;s/['\''"]*$//' | tr -d '\r')
+        [ -z "$MAIN_GROUP" ] && MAIN_GROUP="🌀 Uzumaki-Auto"
+        
+        cat "$CLEAN" >> "$FINAL"
+        
+        if ! grep -q "^rules:" "$FINAL"; then
+            cat << REOF >> "$FINAL"
+
 rules:
   - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
   - NETWORK,udp,DIRECT
@@ -94,13 +86,16 @@ rules:
   - DOMAIN-KEYWORD,microsoft,DIRECT
   - DOMAIN-SUFFIX,bd,DIRECT
   - DOMAIN-KEYWORD,bkash,DIRECT
-  - MATCH,DIRECT
+  - MATCH,$MAIN_GROUP
 REOF
+        else
+            sed -i "/MATCH,/d" "$FINAL"
+            echo "  - MATCH,$MAIN_GROUP" >> "$FINAL"
         fi
 
-        $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
-        if ! grep -qi "level=fatal\|level=error\|failed" /tmp/cfg_err.log; then
-            mv "$FINAL" $CONF_DIR/config.yaml
+        $CORE -d "$CONF_DIR" -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
+        if [ $? -eq 0 ]; then
+            mv "$FINAL" "$CONF_DIR/config.yaml"
             /etc/init.d/mihomo restart >/dev/null 2>&1
             echo "SAVED"
         else
@@ -110,5 +105,7 @@ REOF
         fi
     fi
 else
-    cat $CONF_DIR/config.yaml 2>/dev/null
+    cat "$CONF_DIR/config.yaml" 2>/dev/null
 fi
+EOF
+chmod +x /www/cgi-bin/mihomo-cfg
