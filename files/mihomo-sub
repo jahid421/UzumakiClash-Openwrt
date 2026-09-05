@@ -2,23 +2,65 @@
 echo "Content-Type: text/plain"
 echo ""
 
-RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=\(.*\)$/\1/p')
-URL=$(printf '%b' "$(echo "$RAW" | sed 's/+/ /g; s/%/\\x/g')")
-TMP="/tmp/uzsub_$$.yaml"
+TMP="/tmp/uzsub_$$.raw"
+OUT="/tmp/uzsub_$$.yaml"
+trap 'rm -f /tmp/uzsub_$$.*' EXIT
 
-trap "rm -f ${TMP}* /tmp/uzsub_err.log" EXIT
+# URL গ্রহণ (POST বা GET)
+URL=""
+if [ "$REQUEST_METHOD" = "POST" ]; then
+    URL=$(cat 2>/dev/null | tr -d '\r\n')
+else
+    RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=//p')
+    URL=$(printf '%b' "$(echo "$RAW" | sed 's/+/ /g; s/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g')")
+fi
+
+URL=$(echo "$URL" | awk '{$1=$1;print}')
 [ -z "$URL" ] && echo "NO_URL" && exit 0
 
-SUB_CONV="https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=true&url="
-curl -sL --connect-timeout 15 --max-time 90 -H "User-Agent: ClashMeta/1.18.0" -o "$TMP" "$URL" 2>/dev/null
+# ১. সরাসরি ডাউনলোড
+curl -sL -k --connect-timeout 15 --max-time 60 \
+  -A "ClashMeta/1.18.0" \
+  -o "$TMP" "$URL" 2>/dev/null
 
-if [ ! -s "$TMP" ] || ! grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
-    curl -sL --connect-timeout 15 --max-time 90 -o "$TMP" "${SUB_CONV}$(echo "$URL" | sed 's/&/%26/g')" 2>/dev/null
+[ ! -s "$TMP" ] && echo "DOWNLOAD_FAILED" && exit 0
+
+tr -d '\r' < "$TMP" > "$OUT" 2>/dev/null || cp "$TMP" "$OUT"
+
+# ২. Base64 ডিকোড চেক
+if ! grep -qE '^proxies:|^proxy-providers:|^proxy-groups:' "$OUT"; then
+    if base64 -d < "$OUT" > "${OUT}.dec" 2>/dev/null && [ -s "${OUT}.dec" ]; then
+        if grep -qE '^proxies:|^proxy-providers:' "${OUT}.dec"; then
+            mv "${OUT}.dec" "$OUT"
+        fi
+    fi
 fi
 
-if [ -s "$TMP" ] && grep -q "^proxies:\|^proxy-providers:" "$TMP"; then
+# ৩. Subconverter API লিঙ্ক কনভার্সন (যদি Clash YAML না হয়)
+if ! grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
+    URL_ENC=$(echo "$URL" | sed 's/&/%26/g; s/?/%3F/g; s/=/%3D/g; s/:/%3A/g; s/\//%2F/g; s/+/%2B/g')
+    
+    # API Primary
+    curl -sL -k --connect-timeout 20 --max-time 90 \
+      -A "ClashMeta/1.18.0" \
+      -o "$OUT" \
+      "https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=false&url=${URL_ENC}" 2>/dev/null
+
+    # API Secondary Fallback
+    if ! grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
+        curl -sL -k --connect-timeout 20 --max-time 90 \
+          -A "ClashMeta/1.18.0" \
+          -o "$OUT" \
+          "https://sub.id9.cc/sub?target=clash&insert=true&emoji=true&list=false&url=${URL_ENC}" 2>/dev/null
+    fi
+fi
+
+# ৪. সিএফজি ইঞ্জিনে পাঠানো
+if grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
     export REQUEST_METHOD="POST"
-    cat "$TMP" | /www/cgi-bin/mihomo-cfg
+    cat "$OUT" | /www/cgi-bin/mihomo-cfg
 else
-    echo "DOWNLOAD_OR_CONVERSION_FAILED"
+    echo "CONVERSION_FAILED"
 fi
+EOF
+chmod +x /www/cgi-bin/mihomo-sub
