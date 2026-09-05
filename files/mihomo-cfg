@@ -1,31 +1,41 @@
 #!/bin/sh
 echo "Content-Type: text/plain"
 echo ""
-CONF_DIR="/etc/mihomo"; CORE="/usr/bin/mihomo"
+
+CONF_DIR="/etc/mihomo"
+CORE="/usr/bin/mihomo"
 
 if [ "$REQUEST_METHOD" = "POST" ]; then
-    TMP="/tmp/raw_$$.yaml"; CLEAN="/tmp/clean_$$.yaml"; FINAL="/tmp/final_$$.yaml"
-    trap "rm -f /tmp/*_$$.yaml /tmp/cfg_err.log" EXIT
+    TMP="/tmp/raw_$$.yaml"
+    CLEAN="/tmp/clean_$$.yaml"
+    FINAL="/tmp/final_$$.yaml"
+    trap 'rm -f /tmp/*_$$.yaml /tmp/cfg_err.log' EXIT
+
     tr -d '\r' > "$TMP"
     if [ -s "$TMP" ]; then
         LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
-        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
+        
+        # হেডার ট্রিম
+        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile|find-process-mode|global-client-fingerprint):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
-        cat << HEOF > "$FINAL"
+        # ⚡ Low-CPU & High-Speed Master Header
+        cat << 'HEOF' > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
 tproxy-port: 7893
 allow-lan: true
 bind-address: '*'
 mode: rule
-log-level: error
+log-level: silent
 ipv6: false
 external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
+
+# ⚡ CPU Save Parameters
+find-process-mode: off
 tcp-concurrent: true
 unified-delay: true
-global-client-fingerprint: chrome
 
 profile:
   store-selected: true
@@ -37,59 +47,77 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  respect-rules: true
+  proxy-server-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  direct-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
   fake-ip-filter:
     - '*.lan'
     - '*.local'
+    - 'time.*.com'
+    - 'ntp.*.com'
     - '+.microsoft.com'
     - '+.xboxlive.com'
     - '+.playvalorant.com'
     - '+.riotgames.com'
-  nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
 HEOF
 
-        if grep -q "^rules:" "$CLEAN"; then
-            awk '/^rules:/ {
-                print $0
-                print "  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
-                print "  - NETWORK,udp,DIRECT"
-                print "  - DOMAIN-SUFFIX,riotgames.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,playvalorant.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,pvp.net,DIRECT"
-                print "  - DOMAIN-SUFFIX,microsoft.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,windows.com,DIRECT"
-                print "  - DOMAIN-SUFFIX,xboxlive.com,DIRECT"
-                print "  - DOMAIN-KEYWORD,riotgames,DIRECT"
-                print "  - DOMAIN-KEYWORD,playvalorant,DIRECT"
-                print "  - DOMAIN-KEYWORD,microsoft,DIRECT"
-                print "  - DOMAIN-SUFFIX,bd,DIRECT"
-                print "  - DOMAIN-KEYWORD,bkash,DIRECT"
-                next
-            } { print }' "$CLEAN" >> "$FINAL"
-        else
-            cat "$CLEAN" >> "$FINAL"
-            cat << 'REOF' >> "$FINAL"
-rules:
+        # সাবস্ক্রিপশনের আসল প্রক্সি গ্রুপের নাম অটো-ডিটেক্ট
+        MAIN_GROUP=$(grep -A 5 "^proxy-groups:" "$CLEAN" 2>/dev/null | grep "name:" | head -n 1 | sed 's/.*name:[ '\''"]*//;s/['\''"]*$//' | tr -d '\r')
+        [ -z "$MAIN_GROUP" ] && MAIN_GROUP="🌀 Uzumaki-Auto"
+        
+        cat "$CLEAN" >> "$FINAL"
+
+        # রুলস সেকশন ইনজেকশন
+        if ! grep -q "^rules:" "$FINAL"; then
+            echo "" >> "$FINAL"
+            echo "rules:" >> "$FINAL"
+        fi
+
+        # আগের MATCH রুল মুছে আমাদের ফাস্ট-পাথ রুল বসানো
+        sed -i '/MATCH,/d' "$FINAL"
+        
+        cat << REOF >> "$FINAL"
   - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
   - NETWORK,udp,DIRECT
   - DOMAIN-SUFFIX,riotgames.com,DIRECT
   - DOMAIN-SUFFIX,playvalorant.com,DIRECT
   - DOMAIN-SUFFIX,pvp.net,DIRECT
+  - DOMAIN-SUFFIX,leagueoflegends.com,DIRECT
+  - DOMAIN-KEYWORD,riot,DIRECT
+  - DOMAIN-KEYWORD,valorant,DIRECT
   - DOMAIN-SUFFIX,microsoft.com,DIRECT
   - DOMAIN-SUFFIX,windows.com,DIRECT
-  - DOMAIN-KEYWORD,riotgames,DIRECT
+  - DOMAIN-SUFFIX,xboxlive.com,DIRECT
   - DOMAIN-KEYWORD,microsoft,DIRECT
   - DOMAIN-SUFFIX,bd,DIRECT
   - DOMAIN-KEYWORD,bkash,DIRECT
-  - MATCH,DIRECT
+  - MATCH,$MAIN_GROUP
 REOF
-        fi
 
-        $CORE -d $CONF_DIR -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
-        if ! grep -qi "level=fatal\|level=error\|failed" /tmp/cfg_err.log; then
-            mv "$FINAL" $CONF_DIR/config.yaml
+        # ভ্যালিডেশন চেক
+        $CORE -d "$CONF_DIR" -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
+        if [ $? -eq 0 ]; then
+            mv "$FINAL" "$CONF_DIR/config.yaml"
             /etc/init.d/mihomo restart >/dev/null 2>&1
+            
+            # ব্যাকগ্রাউন্ডে প্রথম কাজ করা নোড অটো একটিভ করা
+            (
+                sleep 3
+                FIRST_NODE=$(curl -s -H "Authorization: Bearer flclash123" "http://127.0.0.1:9595/proxies/$MAIN_GROUP" | grep -o '"all":\[[^]]*\]' | head -n 1 | sed 's/.*"all":\["//;s/".*//')
+                if [ -n "$FIRST_NODE" ] && [ "$FIRST_NODE" != "DIRECT" ]; then
+                    curl -s -X PUT -H "Authorization: Bearer flclash123" -H "Content-Type: application/json" -d "{\"name\":\"$FIRST_NODE\"}" "http://127.0.0.1:9595/proxies/$MAIN_GROUP" >/dev/null 2>&1
+                fi
+            ) &
+
             echo "SAVED"
         else
             ERR_MSG=$(grep -i "error\|fatal\|failed" /tmp/cfg_err.log | head -n 1)
@@ -98,5 +126,7 @@ REOF
         fi
     fi
 else
-    cat $CONF_DIR/config.yaml 2>/dev/null
+    cat "$CONF_DIR/config.yaml" 2>/dev/null
 fi
+EOF
+chmod +x /www/cgi-bin/mihomo-cfg
