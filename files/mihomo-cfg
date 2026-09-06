@@ -11,34 +11,14 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     FINAL="/tmp/final_$$.yaml"
     trap 'rm -f /tmp/*_$$.yaml /tmp/cfg_err.log' EXIT
 
-    # Line endings & cleanup
     tr -d '\r' > "$TMP"
-    echo "" >> "$TMP"
-
     if [ -s "$TMP" ]; then
-        LAN_IP=$(uci -q get network.lan.ipaddr 2>/dev/null || echo "192.168.1.1")
+        LAN_IP=$(uci -q get network.lan.ipaddr || echo "192.168.1.1")
+        
+        # হেডার ট্রিম
+        awk 'BEGIN { skip=0 } /^[a-zA-Z0-9_-]+:/ { key=$1; if (key ~ /^(mixed-port|redir-port|tproxy-port|port|socks-port|allow-lan|bind-address|mode|log-level|ipv6|external-controller|external-ui|secret|dns|sniffer|profile|find-process-mode|global-client-fingerprint):/) skip=1; else skip=0 } { if (!skip) print $0 }' "$TMP" > "$CLEAN"
 
-        # ⚡ 1. Root Block Extraction (Preserves Indentation & Objects Verbatim)
-        awk '
-        BEGIN { in_block = 0 }
-        /^[a-zA-Z0-9_-]+:[[:space:]]*/ {
-            key = $1
-            sub(/:.*/, "", key)
-            if (key ~ /^(proxies|proxy-groups|proxy-providers|rule-providers)$/) {
-                in_block = 1
-            } else {
-                in_block = 0
-            }
-        }
-        {
-            if (in_block == 1) {
-                print $0
-            }
-        }' "$TMP" > "$CLEAN"
-
-        echo "" >> "$CLEAN"
-
-        # ⚡ 2. Master Optimized System Header
+        # ⚡ Low-CPU & High-Speed Master Header
         cat << 'HEOF' > "$FINAL"
 mixed-port: 7890
 redir-port: 7892
@@ -52,6 +32,7 @@ external-controller: 0.0.0.0:9595
 external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
+# ⚡ CPU Save Parameters
 find-process-mode: 'off'
 tcp-concurrent: true
 unified-delay: true
@@ -87,32 +68,22 @@ dns:
     - '+.riotgames.com'
 HEOF
 
-        # Merge extracted proxy sections
-        echo "" >> "$FINAL"
+        # সাবস্ক্রিপশনের আসল প্রক্সি গ্রুপের নাম অটো-ডিটেক্ট
+        MAIN_GROUP=$(grep -A 5 "^proxy-groups:" "$CLEAN" 2>/dev/null | grep "name:" | head -n 1 | sed 's/.*name:[ '\''"]*//;s/['\''"]*$//' | tr -d '\r')
+        [ -z "$MAIN_GROUP" ] && MAIN_GROUP="🌀 Uzumaki-Auto"
+        
         cat "$CLEAN" >> "$FINAL"
-        echo "" >> "$FINAL"
 
-        # Inject default group if missing
-        if ! grep -q "^proxy-groups:" "$FINAL"; then
-            cat << 'GEOF' >> "$FINAL"
-
-proxy-groups:
-  - name: "🌀 Uzumaki-Auto"
-    type: select
-    proxies:
-      - DIRECT
-GEOF
+        # রুলস সেকশন ইনজেকশন
+        if ! grep -q "^rules:" "$FINAL"; then
             echo "" >> "$FINAL"
+            echo "rules:" >> "$FINAL"
         fi
 
-        # Detect main active group
-        MAIN_GROUP=$(grep -A 5 "^proxy-groups:" "$FINAL" 2>/dev/null | grep "name:" | head -n 1 | sed 's/.*name:[ '\''"]*//;s/['\''"]*$//' | tr -d '\r\n"')
-        [ -z "$MAIN_GROUP" ] && MAIN_GROUP="🌀 Uzumaki-Auto"
-
-        # ⚡ 3. Inject Clean Master Rules
+        # আগের MATCH রুল মুছে আমাদের ফাস্ট-পাথ রুল বসানো
+        sed -i '/MATCH,/d' "$FINAL"
+        
         cat << REOF >> "$FINAL"
-
-rules:
   - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
   - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
@@ -129,21 +100,21 @@ rules:
   - DOMAIN-KEYWORD,microsoft,DIRECT
   - DOMAIN-SUFFIX,bd,DIRECT
   - DOMAIN-KEYWORD,bkash,DIRECT
-  - MATCH,"$MAIN_GROUP"
+  - MATCH,$MAIN_GROUP
 REOF
 
-        # ⚡ 4. Mihomo Core Validation
+        # ভ্যালিডেশন চেক
         $CORE -d "$CONF_DIR" -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
         if [ $? -eq 0 ]; then
             mv "$FINAL" "$CONF_DIR/config.yaml"
             /etc/init.d/mihomo restart >/dev/null 2>&1
-
+            
+            # ব্যাকগ্রাউন্ডে প্রথম কাজ করা নোড অটো একটিভ করা
             (
-                sleep 2
-                ENCODED_GROUP=$(echo "$MAIN_GROUP" | sed 's/ /%20/g')
-                FIRST_NODE=$(curl -4 -s --max-time 5 -H "Authorization: Bearer flclash123" "http://127.0.0.1:9595/proxies/$ENCODED_GROUP" | grep -o '"all":\[[^]]*\]' | head -n 1 | sed 's/.*"all":\["//;s/".*//' | tr -d '"')
+                sleep 3
+                FIRST_NODE=$(curl -s -H "Authorization: Bearer flclash123" "http://127.0.0.1:9595/proxies/$MAIN_GROUP" | grep -o '"all":\[[^]]*\]' | head -n 1 | sed 's/.*"all":\["//;s/".*//')
                 if [ -n "$FIRST_NODE" ] && [ "$FIRST_NODE" != "DIRECT" ]; then
-                    curl -4 -s --max-time 5 -X PUT -H "Authorization: Bearer flclash123" -H "Content-Type: application/json" -d "{\"name\":\"$FIRST_NODE\"}" "http://127.0.0.1:9595/proxies/$ENCODED_GROUP" >/dev/null 2>&1
+                    curl -s -X PUT -H "Authorization: Bearer flclash123" -H "Content-Type: application/json" -d "{\"name\":\"$FIRST_NODE\"}" "http://127.0.0.1:9595/proxies/$MAIN_GROUP" >/dev/null 2>&1
                 fi
             ) &
 
