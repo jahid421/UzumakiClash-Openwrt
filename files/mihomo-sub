@@ -1,24 +1,64 @@
 #!/bin/sh
+# UzumakiClash - Robust CGI Subscription Engine
+# Preserves 100% of your mihomo-cfg engine and configuration structures.
+
 echo "Content-Type: text/plain"
+echo "Cache-Control: no-cache"
 echo ""
 
 TMP="/tmp/uzsub_$$.raw"
 OUT="/tmp/uzsub_$$.yaml"
 trap 'rm -f /tmp/uzsub_$$.*' EXIT
 
-# URL গ্রহণ (POST বা GET)
+# URL ডিকোডার (স্পেশাল ক্যারেক্টার এবং টোকেন ঠিক রাখার জন্য)
+urldecode() {
+    local url_encoded="${1//+/ }"
+    printf '%b' "${url_encoded//%/\\x}" 2>/dev/null || echo "$1"
+}
+
+# পিউর শেল URL এনকোডার (সাবকনভার্টার এপিআই-র জন্য নিরাপদ)
+urlencode() {
+    local string="${1}"
+    local strlen=${#string}
+    local encoded=""
+    local i=1
+    while [ $i -le $strlen ]; do
+        local c=$(echo "$string" | cut -c $i)
+        case "$c" in
+            [a-zA-Z0-9.~_-]) o="${c}" ;;
+            *) o=$(printf '%%%02X' "'$c") ;;
+        esac
+        encoded="${encoded}${o}"
+        i=$((i + 1))
+    done
+    echo "${encoded}"
+}
+
+# GET বা POST থেকে নিখুঁতভাবে মূল সাবস্ক্রিপশন লিঙ্কটি বের করা
 URL=""
 if [ "$REQUEST_METHOD" = "POST" ]; then
-    URL=$(cat 2>/dev/null | tr -d '\r\n')
+    if [ -n "$CONTENT_LENGTH" ] && [ "$CONTENT_LENGTH" -gt 0 ]; then
+        INPUT_DATA=$(dd bs=1 count="$CONTENT_LENGTH" 2>/dev/null)
+    else
+        INPUT_DATA=$(cat 2>/dev/null)
+    fi
+    
+    if echo "$INPUT_DATA" | grep -q '^url='; then
+        RAW=$(echo "$INPUT_DATA" | sed -n 's/^url=//p')
+        URL=$(urldecode "$RAW")
+    else
+        URL=$(echo "$INPUT_DATA" | tr -d '\r\n')
+    fi
 else
-    RAW=$(echo "$QUERY_STRING" | sed -n 's/.*url=//p')
-    URL=$(printf '%b' "$(echo "$RAW" | sed 's/+/ /g; s/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g')")
+    # GET query string থেকে url= এর পরের পুরো অংশ নিয়ে ডিকোড করা
+    RAW=$(echo "$QUERY_STRING" | grep -oE '(^|&)url=[^&]*' | cut -d= -f2)
+    URL=$(urldecode "$RAW")
 fi
 
 URL=$(echo "$URL" | awk '{$1=$1;print}')
 [ -z "$URL" ] && echo "NO_URL" && exit 0
 
-# ১. সরাসরি ডাউনলোড
+# ১. সরাসরি ডাউনলোড (User-Agent ব্লক এড়াতে ClashMeta সেট করা)
 curl -sL -k --connect-timeout 15 --max-time 60 \
   -A "ClashMeta/1.18.0" \
   -o "$TMP" "$URL" 2>/dev/null
@@ -38,7 +78,7 @@ fi
 
 # ৩. Subconverter API লিঙ্ক কনভার্সন (যদি Clash YAML না হয়)
 if ! grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
-    URL_ENC=$(echo "$URL" | sed 's/&/%26/g; s/?/%3F/g; s/=/%3D/g; s/:/%3A/g; s/\//%2F/g; s/+/%2B/g')
+    URL_ENC=$(urlencode "$URL")
     
     # API Primary
     curl -sL -k --connect-timeout 20 --max-time 90 \
@@ -55,12 +95,10 @@ if ! grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
     fi
 fi
 
-# ৪. সিএফজি ইঞ্জিনে পাঠানো
+# ৪. সিএফজি ইঞ্জিনে পাঠানো (ডাবল সিজিআই হেডার ট্রিম করতে tail -n +3 ব্যবহার করা হয়েছে)
 if grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
     export REQUEST_METHOD="POST"
-    cat "$OUT" | /www/cgi-bin/mihomo-cfg
+    cat "$OUT" | /www/cgi-bin/mihomo-cfg | tail -n +3
 else
     echo "CONVERSION_FAILED"
 fi
-EOF
-chmod +x /www/cgi-bin/mihomo-sub
