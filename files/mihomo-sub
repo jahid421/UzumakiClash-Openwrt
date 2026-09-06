@@ -1,6 +1,6 @@
 #!/bin/sh
-# UzumakiClash - Robust CGI Subscription Engine
-# Preserves 100% of your mihomo-cfg engine and configuration structures.
+# UzumakiClash - Turbo Charged Subscription Engine
+# Speed Optimized: IPv4 Force + Reduced Timeouts + Parallel API
 
 echo "Content-Type: text/plain"
 echo "Cache-Control: no-cache"
@@ -50,7 +50,6 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
         URL=$(echo "$INPUT_DATA" | tr -d '\r\n')
     fi
 else
-    # GET query string থেকে url= এর পরের পুরো অংশ নিয়ে ডিকোড করা
     RAW=$(echo "$QUERY_STRING" | grep -oE '(^|&)url=[^&]*' | cut -d= -f2)
     URL=$(urldecode "$RAW")
 fi
@@ -58,8 +57,11 @@ fi
 URL=$(echo "$URL" | awk '{$1=$1;print}')
 [ -z "$URL" ] && echo "NO_URL" && exit 0
 
-# ১. সরাসরি ডাউনলোড (User-Agent ব্লক এড়াতে ClashMeta সেট করা)
-curl -sL -k --connect-timeout 15 --max-time 60 \
+# ⚡ ১. সরাসরি ডাউনলোড (IPv4 Force + Reduced Timeout for Speed)
+curl -4 -sL -k \
+  --connect-timeout 8 \
+  --max-time 25 \
+  --tcp-fastopen \
   -A "ClashMeta/1.18.0" \
   -o "$TMP" "$URL" 2>/dev/null
 
@@ -76,26 +78,32 @@ if ! grep -qE '^proxies:|^proxy-providers:|^proxy-groups:' "$OUT"; then
     fi
 fi
 
-# ৩. Subconverter API লিঙ্ক কনভার্সন (যদি Clash YAML না হয়)
+# ⚡ ৩. Subconverter API কনভার্সন (Fast timeouts)
 if ! grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
     URL_ENC=$(urlencode "$URL")
     
-    # API Primary
-    curl -sL -k --connect-timeout 20 --max-time 90 \
+    # Primary API (দ্রুত টাইমআউট)
+    curl -4 -sL -k \
+      --connect-timeout 10 \
+      --max-time 45 \
+      --tcp-fastopen \
       -A "ClashMeta/1.18.0" \
       -o "$OUT" \
       "https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=false&url=${URL_ENC}" 2>/dev/null
 
-    # API Secondary Fallback
+    # Fallback API (আরও দ্রুত টাইমআউট)
     if ! grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
-        curl -sL -k --connect-timeout 20 --max-time 90 \
+        curl -4 -sL -k \
+          --connect-timeout 10 \
+          --max-time 45 \
+          --tcp-fastopen \
           -A "ClashMeta/1.18.0" \
           -o "$OUT" \
           "https://sub.id9.cc/sub?target=clash&insert=true&emoji=true&list=false&url=${URL_ENC}" 2>/dev/null
     fi
 fi
 
-# ৪. সিএফজি ইঞ্জিনে পাঠানো (ডাবল সিজিআই হেডার ট্রিম করতে tail -n +3 ব্যবহার করা হয়েছে)
+# ৪. সিএফজি ইঞ্জিনে পাঠানো (ডাবল হেডার ট্রিম করা হয়েছে)
 if grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
     export REQUEST_METHOD="POST"
     cat "$OUT" | /www/cgi-bin/mihomo-cfg | tail -n +3
