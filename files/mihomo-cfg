@@ -33,7 +33,7 @@ external-ui: /etc/mihomo/ui
 secret: "flclash123"
 
 # ⚡ CPU Save Parameters
-find-process-mode: off
+find-process-mode: 'off'
 tcp-concurrent: true
 unified-delay: true
 
@@ -128,5 +128,3 @@ REOF
 else
     cat "$CONF_DIR/config.yaml" 2>/dev/null
 fi
-EOF
-chmod +x /www/cgi-bin/mihomo-cfg
