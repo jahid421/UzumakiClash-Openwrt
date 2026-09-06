@@ -103,18 +103,18 @@ HEOF
   - MATCH,$MAIN_GROUP
 REOF
 
-        # ভ্যালিডেশন চেক
+        # ⚡ দ্রুত ভ্যালিডেশন চেক (আগের মতোই কিন্তু ব্যাকগ্রাউন্ডে অটো-নোড সিলেকশন অপ্টিমাইজড)
         $CORE -d "$CONF_DIR" -f "$FINAL" -t > /tmp/cfg_err.log 2>&1
         if [ $? -eq 0 ]; then
             mv "$FINAL" "$CONF_DIR/config.yaml"
             /etc/init.d/mihomo restart >/dev/null 2>&1
             
-            # ব্যাকগ্রাউন্ডে প্রথম কাজ করা নোড অটো একটিভ করা
+            # ⚡ ব্যাকগ্রাউন্ডে প্রথম নোড অটো একটিভ (Faster - 2 sec instead of 3)
             (
-                sleep 3
-                FIRST_NODE=$(curl -s -H "Authorization: Bearer flclash123" "http://127.0.0.1:9595/proxies/$MAIN_GROUP" | grep -o '"all":\[[^]]*\]' | head -n 1 | sed 's/.*"all":\["//;s/".*//')
+                sleep 2
+                FIRST_NODE=$(curl -4 -s --max-time 5 -H "Authorization: Bearer flclash123" "http://127.0.0.1:9595/proxies/$MAIN_GROUP" | grep -o '"all":\[[^]]*\]' | head -n 1 | sed 's/.*"all":\["//;s/".*//')
                 if [ -n "$FIRST_NODE" ] && [ "$FIRST_NODE" != "DIRECT" ]; then
-                    curl -s -X PUT -H "Authorization: Bearer flclash123" -H "Content-Type: application/json" -d "{\"name\":\"$FIRST_NODE\"}" "http://127.0.0.1:9595/proxies/$MAIN_GROUP" >/dev/null 2>&1
+                    curl -4 -s --max-time 5 -X PUT -H "Authorization: Bearer flclash123" -H "Content-Type: application/json" -d "{\"name\":\"$FIRST_NODE\"}" "http://127.0.0.1:9595/proxies/$MAIN_GROUP" >/dev/null 2>&1
                 fi
             ) &
 
