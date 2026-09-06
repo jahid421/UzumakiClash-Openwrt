@@ -1,22 +1,15 @@
 #!/bin/sh
-# UzumakiClash - Turbo Charged Subscription Engine
-# Speed Optimized: IPv4 Force + Reduced Timeouts + Parallel API
-
-echo "Content-Type: text/plain"
-echo "Cache-Control: no-cache"
-echo ""
+# UzumakiClash - Turbo Charged Subscription Downloader & Converter Engine
 
 TMP="/tmp/uzsub_$$.raw"
 OUT="/tmp/uzsub_$$.yaml"
 trap 'rm -f /tmp/uzsub_$$.*' EXIT
 
-# URL ডিকোডার (স্পেশাল ক্যারেক্টার এবং টোকেন ঠিক রাখার জন্য)
 urldecode() {
     local url_encoded="${1//+/ }"
     printf '%b' "${url_encoded//%/\\x}" 2>/dev/null || echo "$1"
 }
 
-# পিউর শেল URL এনকোডার (সাবকনভার্টার এপিআই-র জন্য নিরাপদ)
 urlencode() {
     local string="${1}"
     local strlen=${#string}
@@ -34,7 +27,6 @@ urlencode() {
     echo "${encoded}"
 }
 
-# GET বা POST থেকে নিখুঁতভাবে মূল সাবস্ক্রিপশন লিঙ্কটি বের করা
 URL=""
 if [ "$REQUEST_METHOD" = "POST" ]; then
     if [ -n "$CONTENT_LENGTH" ] && [ "$CONTENT_LENGTH" -gt 0 ]; then
@@ -55,21 +47,32 @@ else
 fi
 
 URL=$(echo "$URL" | awk '{$1=$1;print}')
-[ -z "$URL" ] && echo "NO_URL" && exit 0
 
-# ⚡ ১. সরাসরি ডাউনলোড (IPv4 Force + Reduced Timeout for Speed)
+if [ -z "$URL" ]; then
+    echo "Content-Type: text/plain"
+    echo ""
+    echo "NO_URL"
+    exit 0
+fi
+
+# 1. Download Direct Link
 curl -4 -sL -k \
-  --connect-timeout 8 \
-  --max-time 25 \
+  --connect-timeout 10 \
+  --max-time 30 \
   --tcp-fastopen \
   -A "ClashMeta/1.18.0" \
   -o "$TMP" "$URL" 2>/dev/null
 
-[ ! -s "$TMP" ] && echo "DOWNLOAD_FAILED" && exit 0
+if [ ! -s "$TMP" ]; then
+    echo "Content-Type: text/plain"
+    echo ""
+    echo "DOWNLOAD_FAILED"
+    exit 0
+fi
 
 tr -d '\r' < "$TMP" > "$OUT" 2>/dev/null || cp "$TMP" "$OUT"
 
-# ২. Base64 ডিকোড চেক
+# 2. Check & Decode Base64 Content
 if ! grep -qE '^proxies:|^proxy-providers:|^proxy-groups:' "$OUT"; then
     if base64 -d < "$OUT" > "${OUT}.dec" 2>/dev/null && [ -s "${OUT}.dec" ]; then
         if grep -qE '^proxies:|^proxy-providers:' "${OUT}.dec"; then
@@ -78,23 +81,21 @@ if ! grep -qE '^proxies:|^proxy-providers:|^proxy-groups:' "$OUT"; then
     fi
 fi
 
-# ⚡ ৩. Subconverter API কনভার্সন (Fast timeouts)
+# 3. Subconverter API Fallbacks
 if ! grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
     URL_ENC=$(urlencode "$URL")
     
-    # Primary API (দ্রুত টাইমআউট)
     curl -4 -sL -k \
-      --connect-timeout 10 \
+      --connect-timeout 12 \
       --max-time 45 \
       --tcp-fastopen \
       -A "ClashMeta/1.18.0" \
       -o "$OUT" \
       "https://api.v1.mk/sub?target=clash&insert=true&emoji=true&list=false&url=${URL_ENC}" 2>/dev/null
 
-    # Fallback API (আরও দ্রুত টাইমআউট)
     if ! grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
         curl -4 -sL -k \
-          --connect-timeout 10 \
+          --connect-timeout 12 \
           --max-time 45 \
           --tcp-fastopen \
           -A "ClashMeta/1.18.0" \
@@ -103,10 +104,12 @@ if ! grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
     fi
 fi
 
-# ৪. সিএফজি ইঞ্জিনে পাঠানো (ডাবল হেডার ট্রিম করা হয়েছে)
+# 4. Forward to Config Engine
 if grep -qE '^proxies:|^proxy-providers:' "$OUT"; then
     export REQUEST_METHOD="POST"
-    cat "$OUT" | /www/cgi-bin/mihomo-cfg | tail -n +3
+    cat "$OUT" | /www/cgi-bin/mihomo-cfg
 else
+    echo "Content-Type: text/plain"
+    echo ""
     echo "CONVERSION_FAILED"
 fi
