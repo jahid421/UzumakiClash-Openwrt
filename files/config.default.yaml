@@ -24,55 +24,34 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
+    # Local & Router Discovery
     - '*.lan'
     - '*.local'
-  default-nameserver:
-    - 1.1.1.1
-  nameserver:
-    - 1.1.1.1
-
-proxies:
-  - name: "Dummy-Socks5"
-    type: socks5
-    server: 127.0.0.1
-    port: 1080
-
-proxy-groups:
-  - name: "🌀 Uzumaki-Auto"
-    type: select
-    proxies:
-      - DIRECT
-      - "Dummy-Socks5"
-
-rules:
-  - 'MATCH,🌀 Uzumaki-Auto'mixed-port: 7890
-redir-port: 7892
-tproxy-port: 7893
-allow-lan: true
-bind-address: '*'
-mode: rule
-log-level: error
-ipv6: false
-external-controller: 0.0.0.0:9595
-external-ui: /etc/mihomo/ui
-secret: "flclash123"
-tcp-concurrent: true
-unified-delay: true
-global-client-fingerprint: chrome
-
-profile:
-  store-selected: true
-  store-fake-ip: true
-
-dns:
-  enable: true
-  listen: 0.0.0.0:1053
-  ipv6: false
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  fake-ip-filter:
-    - '*.lan'
-    - '*.local'
+    - '*.home'
+    - 'router.asus.com'
+    - 'tplinkwifi.net'
+    - 'tendawifi.com'
+    - 'netis.cc'
+    - 'miwifi.com'
+    # Windows & Microsoft Connectivity Checks
+    - '+.microsoft.com'
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
+    - '+.xboxlive.com'
+    # Google & Android Connectivity Checks
+    - '+.gstatic.com'
+    - 'connectivitycheck.gstatic.com'
+    - 'connectivitycheck.android.com'
+    - 'clients3.google.com'
+    - 'play.googleapis.com'
+    # Apple Captive Portal Checks
+    - 'captive.apple.com'
+    - '+.icloud.com'
+    # Xiaomi/Tenda/Other Vendors Connectivity Checks
+    - '+.miui.com'
+    - '+.xiaomi.com'
+    - '*.safetynet.android.com'
+    - 'detectportal.firefox.com'
   default-nameserver:
     - 1.1.1.1
   nameserver:
