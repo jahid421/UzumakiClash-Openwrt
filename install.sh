@@ -49,7 +49,6 @@ if command -v apk >/dev/null 2>&1; then
     PKG="apk"
     printf "%b\n" "${GREEN}[✓] Detected: APK (OpenWrt 25+ / Snapshot)${NC}"
     apk update >/dev/null 2>&1 || true
-    # NOTE: apk has NO ca-bundle package — use ca-certificates
     apk add curl ca-certificates kmod-tun ip-full coreutils-nohup gzip tar busybox \
             luci-lua-runtime lua luci-compat \
             luci-lib-nixio luci-lib-ip luci-lib-jsonc \
@@ -217,6 +216,36 @@ if curl -fsSL -o ui.tgz "https://github.com/MetaCubeX/metacubexd/releases/latest
 else
     printf "%b\n" "${YELLOW}[!] Dashboard download skipped (optional)${NC}"
 fi
+
+# ─── 7.5 Network Speed Tuning (TCP/IP Buffer Boost) ──────────
+printf "\n"
+printf "%b\n" "${YELLOW}[→] Tuning network kernel for ultra-speed...${NC}"
+cat << 'EOF' > /etc/sysctl.d/99-uzumaki-tune.conf
+# 🌀 UzumakiClash Network Turbo Boost
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.core.rmem_default = 262144
+net.core.wmem_default = 262144
+net.ipv4.tcp_rmem = 4096 87380 16777216
+net.ipv4.tcp_wmem = 4096 65536 16777216
+net.core.netdev_max_backlog = 10000
+net.ipv4.tcp_max_syn_backlog = 8192
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_slow_start_after_idle = 0
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_keepalive_time = 600
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_sack = 1
+net.ipv4.tcp_window_scaling = 1
+net.ipv4.tcp_timestamps = 1
+net.ipv4.tcp_no_metrics_save = 1
+net.ipv4.tcp_moderate_rcvbuf = 1
+net.core.default_qdisc = fq_codel
+net.ipv4.tcp_congestion_control = bbr
+EOF
+sysctl -p /etc/sysctl.d/99-uzumaki-tune.conf >/dev/null 2>&1 || true
+printf "%b\n" "${GREEN}[✓] Network kernel tuned (BBR + FQ_CODEL)${NC}"
 
 # ─── 8. Enable flags + start service ─────────────────────────
 printf "\n"
