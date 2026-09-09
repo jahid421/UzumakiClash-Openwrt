@@ -36,6 +36,7 @@ secret: "flclash123"
 find-process-mode: 'off'
 tcp-concurrent: true
 unified-delay: true
+keep-alive-interval: 30
 
 profile:
   store-selected: true
@@ -48,6 +49,9 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   respect-rules: true
+  prefer-h3: true
+  use-hosts: true
+  use-system-hosts: true
   proxy-server-nameserver:
     - 1.1.1.1
     - 8.8.8.8
