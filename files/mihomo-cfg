@@ -36,7 +36,6 @@ secret: "flclash123"
 find-process-mode: 'off'
 tcp-concurrent: true
 unified-delay: true
-keep-alive-interval: 30
 
 profile:
   store-selected: true
@@ -49,7 +48,6 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   respect-rules: true
-  prefer-h3: true
   use-hosts: true
   use-system-hosts: true
   proxy-server-nameserver:
@@ -65,38 +63,20 @@ dns:
     - '*.lan'
     - '*.local'
     - '*.home'
-    - '*.arpa'
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
     - 'connectivitycheck.gstatic.com'
     - 'connectivitycheck.android.com'
     - 'captive.apple.com'
-    - '+.apple.com'
     - 'clients3.google.com'
-    - 'clients.l.google.com'
     - '+.gstatic.com'
-    - 'detectportal.firefox.com'
-    - 'nmcheck.gnome.org'
-    - 'network-test.debian.org'
     - 'tplinkwifi.net'
-    - 'tplinklogin.net'
     - 'tendawifi.com'
-    - 'tendawifi.net'
     - 'router.asus.com'
     - 'miwifi.com'
-    - 'mediarouter.home'
-    - 'routerlogin.net'
-    - 'routerlogin.com'
     - 'netis.cc'
     - 'time.*.com'
-    - 'time.*.gov'
     - 'ntp.*.com'
-    - '+.pool.ntp.org'
-    - '+.xboxlive.com'
-    - '+.microsoft.com'
-    - '+.windowsupdate.com'
-    - '+.playvalorant.com'
-    - '+.riotgames.com'
 HEOF
 
         # সাবস্ক্রিপশনের আসল প্রক্সি গ্রুপের নাম অটো-ডিটেক্ট
@@ -118,9 +98,6 @@ HEOF
   - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
   - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
-  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
-  - IP-CIDR,224.0.0.0/4,DIRECT,no-resolve
   - NETWORK,udp,DIRECT
   - DOMAIN-SUFFIX,riotgames.com,DIRECT
   - DOMAIN-SUFFIX,playvalorant.com,DIRECT
