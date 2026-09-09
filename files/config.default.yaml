@@ -24,44 +24,27 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   respect-rules: true
-  # ⚡ Speed Boost Parameters
-  prefer-h3: true
+  # ⚡ Optimized DNS for Raw Speed
   use-hosts: true
   use-system-hosts: true
   fake-ip-filter:
     - '*.lan'
     - '*.local'
     - '*.home'
-    - '*.arpa'
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
     - 'connectivitycheck.gstatic.com'
     - 'connectivitycheck.android.com'
     - 'captive.apple.com'
-    - '+.apple.com'
     - 'clients3.google.com'
-    - 'clients.l.google.com'
     - '+.gstatic.com'
-    - 'detectportal.firefox.com'
-    - 'nmcheck.gnome.org'
-    - 'network-test.debian.org'
     - 'tplinkwifi.net'
-    - 'tplinklogin.net'
     - 'tendawifi.com'
-    - 'tendawifi.net'
     - 'router.asus.com'
     - 'miwifi.com'
-    - 'mediarouter.home'
-    - 'routerlogin.net'
-    - 'routerlogin.com'
     - 'netis.cc'
     - 'time.*.com'
-    - 'time.*.gov'
     - 'ntp.*.com'
-    - '+.pool.ntp.org'
-    - '+.xboxlive.com'
-    - '+.microsoft.com'
-    - '+.windowsupdate.com'
   default-nameserver:
     - 1.1.1.1
     - 8.8.8.8
@@ -71,19 +54,3 @@ dns:
   direct-nameserver:
     - 1.1.1.1
     - 8.8.8.8
-
-proxies:
-  - name: "Dummy-Socks5"
-    type: socks5
-    server: 127.0.0.1
-    port: 1080
-
-proxy-groups:
-  - name: "🌀 Uzumaki-Auto"
-    type: select
-    proxies:
-      - DIRECT
-      - "Dummy-Socks5"
-
-rules:
-  - 'MATCH,🌀 Uzumaki-Auto'
