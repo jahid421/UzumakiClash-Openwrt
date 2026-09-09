@@ -48,8 +48,6 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   respect-rules: true
-  use-hosts: true
-  use-system-hosts: true
   proxy-server-nameserver:
     - 1.1.1.1
     - 8.8.8.8
@@ -63,7 +61,6 @@ dns:
     - '*.lan'
     - '*.local'
     - '*.home'
-    - '*.arpa'
     - '+.playvalorant.com'
     - '+.riotgames.com'
     - '+.riotcdn.net'
@@ -71,7 +68,6 @@ dns:
     - '+.leagueoflegends.com'
     - '+.microsoft.com'
     - '+.xboxlive.com'
-    - '+.windowsupdate.com'
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
     - 'connectivitycheck.gstatic.com'
@@ -81,23 +77,11 @@ dns:
     - 'clients3.google.com'
     - 'clients.l.google.com'
     - '+.gstatic.com'
-    - 'detectportal.firefox.com'
-    - 'nmcheck.gnome.org'
-    - 'network-test.debian.org'
     - 'tplinkwifi.net'
-    - 'tplinklogin.net'
     - 'tendawifi.com'
-    - 'tendawifi.net'
     - 'router.asus.com'
     - 'miwifi.com'
-    - 'mediarouter.home'
-    - 'routerlogin.net'
-    - 'routerlogin.com'
     - 'netis.cc'
-    - 'time.*.com'
-    - 'time.*.gov'
-    - 'ntp.*.com'
-    - '+.pool.ntp.org'
 HEOF
 
         # সাবস্ক্রিপশনের আসল প্রক্সি গ্রুপের নাম অটো-ডিটেক্ট
@@ -119,9 +103,6 @@ HEOF
   - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
   - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
-  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
-  - IP-CIDR,224.0.0.0/4,DIRECT,no-resolve
   - NETWORK,udp,DIRECT
   - DOMAIN-SUFFIX,riotgames.com,DIRECT
   - DOMAIN-SUFFIX,playvalorant.com,DIRECT
@@ -132,15 +113,7 @@ HEOF
   - DOMAIN-SUFFIX,microsoft.com,DIRECT
   - DOMAIN-SUFFIX,windows.com,DIRECT
   - DOMAIN-SUFFIX,xboxlive.com,DIRECT
-  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT
-  - DOMAIN-SUFFIX,msftncsi.com,DIRECT
   - DOMAIN-KEYWORD,microsoft,DIRECT
-  - DOMAIN-SUFFIX,gstatic.com,DIRECT
-  - DOMAIN-SUFFIX,apple.com,DIRECT
-  - DOMAIN-SUFFIX,tplinkwifi.net,DIRECT
-  - DOMAIN-SUFFIX,tendawifi.com,DIRECT
-  - DOMAIN-SUFFIX,router.asus.com,DIRECT
-  - DOMAIN-SUFFIX,miwifi.com,DIRECT
   - DOMAIN-SUFFIX,bd,DIRECT
   - DOMAIN-KEYWORD,bkash,DIRECT
   - MATCH,$MAIN_GROUP
