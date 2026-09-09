@@ -217,35 +217,26 @@ else
     printf "%b\n" "${YELLOW}[!] Dashboard download skipped (optional)${NC}"
 fi
 
-# ─── 7.5 Network Speed Tuning (TCP/IP Buffer Boost) ──────────
+# ─── 7.5 Lightweight Buffer Optimization (HWNAT Compatible) ─
 printf "\n"
-printf "%b\n" "${YELLOW}[→] Tuning network kernel for ultra-speed...${NC}"
+printf "%b\n" "${YELLOW}[→] Tuning network kernel for maximum throughput...${NC}"
+rm -f /etc/sysctl.d/99-uzumaki-tune.conf
 cat << 'EOF' > /etc/sysctl.d/99-uzumaki-tune.conf
-# 🌀 UzumakiClash Network Turbo Boost
-net.core.rmem_max = 16777216
-net.core.wmem_max = 16777216
+# ⚡ UzumakiClash High-Speed Lightweight Buffers (HWNAT Friendly)
+net.core.rmem_max = 8388608
+net.core.wmem_max = 8388608
 net.core.rmem_default = 262144
 net.core.wmem_default = 262144
-net.ipv4.tcp_rmem = 4096 87380 16777216
-net.ipv4.tcp_wmem = 4096 65536 16777216
-net.core.netdev_max_backlog = 10000
-net.ipv4.tcp_max_syn_backlog = 8192
-net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_rmem = 4096 87380 8388608
+net.ipv4.tcp_wmem = 4096 65536 8388608
+net.core.netdev_max_backlog = 5000
+net.ipv4.tcp_max_syn_backlog = 4096
 net.ipv4.tcp_slow_start_after_idle = 0
 net.ipv4.tcp_tw_reuse = 1
 net.ipv4.tcp_fin_timeout = 15
-net.ipv4.tcp_keepalive_time = 600
-net.ipv4.tcp_mtu_probing = 1
-net.ipv4.tcp_sack = 1
-net.ipv4.tcp_window_scaling = 1
-net.ipv4.tcp_timestamps = 1
-net.ipv4.tcp_no_metrics_save = 1
-net.ipv4.tcp_moderate_rcvbuf = 1
-net.core.default_qdisc = fq_codel
-net.ipv4.tcp_congestion_control = bbr
 EOF
 sysctl -p /etc/sysctl.d/99-uzumaki-tune.conf >/dev/null 2>&1 || true
-printf "%b\n" "${GREEN}[✓] Network kernel tuned (BBR + FQ_CODEL)${NC}"
+printf "%b\n" "${GREEN}[✓] Kernel tuned without hardware offloading bypass${NC}"
 
 # ─── 8. Enable flags + start service ─────────────────────────
 printf "\n"
