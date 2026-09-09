@@ -102,7 +102,7 @@ UzumakiClash is designed specifically for routers with limited hardware resource
 
 ## 🚀 Installation
 
-### 1. OpenWrt v19 - v24 (`opkg`):
+### 1. OpenWrt v21 - v24 (`opkg`):
 ```bash
 opkg update && opkg install curl ca-bundle ca-certificates kmod-tun && sh -c "$(curl -fsSL https://raw.githubusercontent.com/jahid421/UzumakiClash-Openwrt/main/install.sh)"
 ```
