@@ -23,6 +23,11 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  respect-rules: true
+  # ⚡ Speed Boost Parameters
+  prefer-h3: true
+  use-hosts: true
+  use-system-hosts: true
   fake-ip-filter:
     - '*.lan'
     - '*.local'
@@ -61,6 +66,9 @@ dns:
     - 1.1.1.1
     - 8.8.8.8
   nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  direct-nameserver:
     - 1.1.1.1
     - 8.8.8.8
 
