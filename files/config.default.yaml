@@ -24,38 +24,45 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
-    # Local & Router Discovery
     - '*.lan'
     - '*.local'
     - '*.home'
-    - 'router.asus.com'
-    - 'tplinkwifi.net'
-    - 'tendawifi.com'
-    - 'netis.cc'
-    - 'miwifi.com'
-    # Windows & Microsoft Connectivity Checks
-    - '+.microsoft.com'
+    - '*.arpa'
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
-    - '+.xboxlive.com'
-    # Google & Android Connectivity Checks
-    - '+.gstatic.com'
     - 'connectivitycheck.gstatic.com'
     - 'connectivitycheck.android.com'
-    - 'clients3.google.com'
-    - 'play.googleapis.com'
-    # Apple Captive Portal Checks
     - 'captive.apple.com'
-    - '+.icloud.com'
-    # Xiaomi/Tenda/Other Vendors Connectivity Checks
-    - '+.miui.com'
-    - '+.xiaomi.com'
-    - '*.safetynet.android.com'
+    - '+.apple.com'
+    - 'clients3.google.com'
+    - 'clients.l.google.com'
+    - '+.gstatic.com'
     - 'detectportal.firefox.com'
+    - 'nmcheck.gnome.org'
+    - 'network-test.debian.org'
+    - 'tplinkwifi.net'
+    - 'tplinklogin.net'
+    - 'tendawifi.com'
+    - 'tendawifi.net'
+    - 'router.asus.com'
+    - 'miwifi.com'
+    - 'mediarouter.home'
+    - 'routerlogin.net'
+    - 'routerlogin.com'
+    - 'netis.cc'
+    - 'time.*.com'
+    - 'time.*.gov'
+    - 'ntp.*.com'
+    - '+.pool.ntp.org'
+    - '+.xboxlive.com'
+    - '+.microsoft.com'
+    - '+.windowsupdate.com'
   default-nameserver:
     - 1.1.1.1
+    - 8.8.8.8
   nameserver:
     - 1.1.1.1
+    - 8.8.8.8
 
 proxies:
   - name: "Dummy-Socks5"
